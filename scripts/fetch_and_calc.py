@@ -86,8 +86,6 @@ def calc_ma(df: pd.DataFrame) -> dict:
         return "Silent"
 
     cur = st(n - 1)
-    cnt = sum(1 for i in range(n - 2, -1, -1) if st(i) == cur or cnt_break(i))
-    # 重写：手动累计
     cnt = 1
     for i in range(n - 2, -1, -1):
         if st(i) == cur: cnt += 1
@@ -228,6 +226,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-# 辅助（避免 linter 报 undefined）
-def cnt_break(_): return False

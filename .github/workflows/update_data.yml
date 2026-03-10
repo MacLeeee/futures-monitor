@@ -15,6 +15,11 @@ on:
     - cron: "0,30 13,14,15 * * 1-5" # 夜盘 21:00-23:00 BJ (13:00-15:00 UTC)
     - cron: "30 15 * * 1-5"         # 夜盘 23:30 BJ (15:30 UTC)
   workflow_dispatch:
+  # push 到 main 时也触发一次，保持仓库活跃（防止 GitHub 因不活跃而跳过 cron）
+  push:
+    branches: [main]
+    paths-ignore:
+      - "futures-monitor/public/data.json"  # data.json 自身的提交不再触发，避免死循环
 
 permissions:
   contents: write

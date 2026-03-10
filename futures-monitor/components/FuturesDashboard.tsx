@@ -49,13 +49,14 @@ export default function FuturesDashboard() {
   const [selectedMAStatus, setSelectedMAStatus] = useState("全部");
 
   // 数据 URL 优先级:
-  //   1. NEXT_PUBLIC_DATA_URL (CI 构建时注入，生产用 /data.json)
-  //   2. 开发环境: /api/futures (本地 AKShare Python 服务)
+  //   1. NEXT_PUBLIC_DATA_URL (CI 构建时注入)
+  //   2. 生产环境: 直接从 GitHub Raw 拉最新 data.json，绕过 Cloudflare 缓存
+  //   3. 开发环境 (localhost): 走本地 /api/futures
   const DATA_URL =
     process.env.NEXT_PUBLIC_DATA_URL ??
     (typeof window !== "undefined" && window.location.port !== ""
-      ? "/api/futures"   // localhost 开发
-      : "/data.json");   // 生产兜底
+      ? "/api/futures"
+      : "https://raw.githubusercontent.com/MacLeeee/futures-monitor/main/futures-monitor/public/data.json");
 
   const loadData = useCallback(async () => {
     setIsLoading(true);

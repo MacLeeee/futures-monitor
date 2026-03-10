@@ -40,7 +40,7 @@ jobs:
           node-version: "20"
 
       - name: Install Node dependencies
-        run: npm ci
+        run: npm install --prefer-offline
         working-directory: futures-monitor
 
       # ── 4. 抓取行情 + 计算指标 → data.json ────────────────

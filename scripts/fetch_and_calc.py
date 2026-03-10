@@ -8,6 +8,8 @@
 import json
 import os
 import sys
+import urllib.request
+import urllib.parse
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, time
 from pathlib import Path
@@ -216,6 +218,133 @@ def process_symbol(args: tuple) -> dict | None:
         print(f"  [SKIP] {symbol}({code}): {e}", file=sys.stderr)
         return None
 
+# ── Telegram 推送 ─────────────────────────────────────────────
+
+def tg_send(token: str, chat_id: str, text: str) -> None:
+    """调用 Telegram Bot API 发送消息，失败不崩溃。"""
+    try:
+        url = f"https://api.telegram.org/bot{token}/sendMessage"
+        payload = urllib.parse.urlencode({
+            "chat_id":    chat_id,
+            "text":       text,
+            "parse_mode": "HTML",
+        }).encode()
+        req = urllib.request.Request(url, data=payload, method="POST")
+        with urllib.request.urlopen(req, timeout=10):
+            pass
+        print(f"[TG] 推送成功 ({len(text)} chars)")
+    except Exception as e:
+        print(f"[TG] 推送失败: {e}", file=sys.stderr)
+
+
+def build_signal_message(data: list[dict], update_time: str) -> str | None:
+    """
+    扫描全量数据，生成推送文本。无信号返回 None。
+
+    触发条件：
+    1. 做多信号（4/4）：MA上行 + MACD金叉区走扩 + 放量 + 增仓
+    2. 做空信号（4/4）：MA下行 + MACD死叉区走扩 + 放量 + 增仓
+    3. 待观察做多（3/4）
+    4. 待观察做空（3/4）
+    5. 均线第一根上行（cumulative == 1）
+    6. 均线第一根下行（cumulative == 1）
+    """
+    def is_long(d):
+        return (d["ma"]["status"] == "Upward"
+                and d["macd"]["sign"] == "positive"
+                and d["macd"]["rapidExpanding"]
+                and d["volume"]["status"] == "Surge"
+                and d["openInterest"]["status"] == "Increasing")
+
+    def is_short(d):
+        return (d["ma"]["status"] == "Downward"
+                and d["macd"]["sign"] == "negative"
+                and d["macd"]["rapidExpanding"]
+                and d["volume"]["status"] == "Surge"
+                and d["openInterest"]["status"] == "Increasing")
+
+    def long_score(d):
+        return sum([
+            d["ma"]["status"] == "Upward",
+            d["macd"]["sign"] == "positive" and d["macd"]["rapidExpanding"],
+            d["volume"]["status"] == "Surge",
+            d["openInterest"]["status"] == "Increasing",
+        ])
+
+    def short_score(d):
+        return sum([
+            d["ma"]["status"] == "Downward",
+            d["macd"]["sign"] == "negative" and d["macd"]["rapidExpanding"],
+            d["volume"]["status"] == "Surge",
+            d["openInterest"]["status"] == "Increasing",
+        ])
+
+    longs       = [d for d in data if is_long(d)]
+    shorts      = [d for d in data if is_short(d)]
+    near_longs  = [d for d in data if not is_long(d) and long_score(d) == 3]
+    near_shorts = [d for d in data if not is_short(d) and short_score(d) == 3]
+    ma_first_up = [d for d in data if d["ma"]["status"] == "Upward"   and d["ma"]["cumulative"] == 1]
+    ma_first_dn = [d for d in data if d["ma"]["status"] == "Downward" and d["ma"]["cumulative"] == 1]
+
+    # 无任何信号 → 不推送
+    if not any([longs, shorts, near_longs, near_shorts, ma_first_up, ma_first_dn]):
+        return None
+
+    lines = [f"<b>📊 期货监控信号 {update_time}</b>"]
+
+    def fmt(d):
+        sign = "+" if d["change"] > 0 else ""
+        return f"{d['symbol']}({d['category']}) {sign}{d['change']:.2f}%"
+
+    if longs:
+        lines.append("\n🔴 <b>做多信号（4/4满足）</b>")
+        for d in longs:
+            lines.append(f"  ✅ {fmt(d)}")
+            lines.append(f"     MA上行×{d['ma']['cumulative']} | MACD金叉走扩{d['macd']['expansionRate']:.1f}x | 放量 | 增仓")
+
+    if shorts:
+        lines.append("\n🟢 <b>做空信号（4/4满足）</b>")
+        for d in shorts:
+            lines.append(f"  ✅ {fmt(d)}")
+            lines.append(f"     MA下行×{d['ma']['cumulative']} | MACD死叉走扩{d['macd']['expansionRate']:.1f}x | 放量 | 增仓")
+
+    if near_longs:
+        lines.append("\n🔸 <b>待观察做多（3/4）</b>")
+        missing_map = {
+            "MA":   lambda d: d["ma"]["status"] != "Upward",
+            "MACD": lambda d: not (d["macd"]["sign"] == "positive" and d["macd"]["rapidExpanding"]),
+            "V":    lambda d: d["volume"]["status"] != "Surge",
+            "OI":   lambda d: d["openInterest"]["status"] != "Increasing",
+        }
+        for d in near_longs:
+            missing = [k for k, fn in missing_map.items() if fn(d)]
+            lines.append(f"  ⚠️ {fmt(d)}  缺: {', '.join(missing)}")
+
+    if near_shorts:
+        lines.append("\n🔹 <b>待观察做空（3/4）</b>")
+        missing_map = {
+            "MA":   lambda d: d["ma"]["status"] != "Downward",
+            "MACD": lambda d: not (d["macd"]["sign"] == "negative" and d["macd"]["rapidExpanding"]),
+            "V":    lambda d: d["volume"]["status"] != "Surge",
+            "OI":   lambda d: d["openInterest"]["status"] != "Increasing",
+        }
+        for d in near_shorts:
+            missing = [k for k, fn in missing_map.items() if fn(d)]
+            lines.append(f"  ⚠️ {fmt(d)}  缺: {', '.join(missing)}")
+
+    if ma_first_up:
+        lines.append("\n📈 <b>均线首根上行（新突破）</b>")
+        for d in ma_first_up:
+            lines.append(f"  ↗ {fmt(d)}")
+
+    if ma_first_dn:
+        lines.append("\n📉 <b>均线首根下行（新跌破）</b>")
+        for d in ma_first_dn:
+            lines.append(f"  ↘ {fmt(d)}")
+
+    return "\n".join(lines)
+
+
 # ── 主流程 ────────────────────────────────────────────────────
 def main():
     # 非交易时段不抓取、不写文件、不提交，避免空刷；手动触发时可设 FORCE_FETCH=1 强制执行
@@ -256,6 +385,17 @@ def main():
     }
     OUTPUT.write_text(json.dumps(output, ensure_ascii=False, indent=2), "utf-8")
     print(f"✓ {len(results)}/{len(SYMBOLS)} symbols → {OUTPUT}")
+
+    # ── Telegram 推送 ──
+    tg_token   = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+    tg_chat_id = os.environ.get("TELEGRAM_CHAT_ID", "")
+    if tg_token and tg_chat_id:
+        bj_time = datetime.now(ZoneInfo("Asia/Shanghai")).strftime("%m-%d %H:%M")
+        msg = build_signal_message(merged, bj_time)
+        if msg:
+            tg_send(tg_token, tg_chat_id, msg)
+        else:
+            print("[TG] 无信号，不推送")
 
 if __name__ == "__main__":
     main()

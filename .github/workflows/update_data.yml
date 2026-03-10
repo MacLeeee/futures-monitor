@@ -1,0 +1,79 @@
+name: Update Futures Data
+
+on:
+  schedule:
+    # 每 30 分钟抓取一次行情（GitHub 调度实际延迟约 ±10min）
+    - cron: "*/30 * * * *"
+  workflow_dispatch: # 手动触发
+
+permissions:
+  contents: write
+
+jobs:
+  update-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      # ── 1. 拉取仓库 ────────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # ── 2. Python 环境 + AKShare ───────────────────────────
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Python dependencies
+        run: pip install akshare pandas numpy --quiet
+
+      # ── 3. Node.js 环境 (构建用) ───────────────────────────
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: futures-monitor/package-lock.json
+
+      - name: Install Node dependencies
+        run: npm ci
+        working-directory: futures-monitor
+
+      # ── 4. 抓取行情 + 计算指标 → data.json ────────────────
+      - name: Fetch & calculate (Python + AKShare)
+        run: python scripts/fetch_and_calc.py
+
+      # ── 5. Next.js 静态构建 ────────────────────────────────
+      - name: Build static export
+        run: npm run build
+        working-directory: futures-monitor
+        env:
+          NEXT_PUBLIC_DATA_URL: /data.json
+          NEXT_TELEMETRY_DISABLED: 1
+
+      # ── 6. 部署到 Cloudflare Pages (Direct Upload) ─────────
+      # Direct Upload 不消耗 Cloudflare 的 500 次/月构建配额
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: >
+            pages deploy futures-monitor/out
+            --project-name=${{ secrets.CF_PAGES_PROJECT_NAME }}
+            --commit-dirty=true
+            --branch=main
+
+      # ── 7. 回写 data.json 到仓库 (审计 + 本地开发备用) ────
+      - name: Commit data.json
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add futures-monitor/public/data.json
+          git diff --quiet && git diff --staged --quiet \
+            || git commit -m "chore: update futures data [skip ci]"
+          git push

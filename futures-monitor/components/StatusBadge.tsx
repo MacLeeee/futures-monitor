@@ -45,9 +45,9 @@ export function MACDBadge({
     ? { label: "金叉区", color: "text-red-300",   bg: "bg-red-950/70",   border: "border-red-700" }
     : { label: "死叉区", color: "text-green-300", bg: "bg-green-950/70", border: "border-green-700" };
 
-  // 走扩速率颜色：快速走扩=橙色高亮，缩口=天蓝
+  // 走扩/粘合颜色：走扩=橙色高亮，粘合=天蓝
   const expandColor = rapidExpanding ? "text-amber-400" : "text-sky-500";
-  const expandLabel = rapidExpanding ? "快速走扩" : "走扩放缓";
+  const expandLabel = rapidExpanding ? "走扩" : "粘合";
 
   return (
     <div className="flex flex-col gap-0.5">

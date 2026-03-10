@@ -150,10 +150,10 @@ export default function SignalPanel({ data }: SignalPanelProps) {
           {/* 图例说明 */}
           <div className="flex flex-wrap gap-x-4 gap-y-1 pt-1 border-t border-gray-800/40 text-[10px] text-gray-600">
             <ConditionLegend icon="MA" color="text-blue-400" label="均线方向" />
-            <ConditionLegend icon="MACD" color="text-amber-400" label="金叉/死叉区快速走扩" />
+            <ConditionLegend icon="MACD" color="text-amber-400" label="金叉/死叉区走扩" />
             <ConditionLegend icon="V" color="text-orange-400" label="成交量放量" />
             <ConditionLegend icon="OI" color="text-purple-400" label="持仓量增仓" />
-            <span className="ml-auto text-gray-700">做多=金叉区走扩 · 做空=死叉区走扩</span>
+            <span className="ml-auto text-gray-700">做多=金叉区+走扩 · 做空=死叉区+走扩 · 否则=粘合</span>
           </div>
         </div>
       )}

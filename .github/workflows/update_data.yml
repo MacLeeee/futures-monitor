@@ -1,8 +1,19 @@
 name: Update Futures Data
 
+# 中国期货交易时段（北京时间 = UTC+8）
+# 早盘: 09:00-11:30 BJ = 01:00-03:30 UTC
+# 午盘: 13:30-15:00 BJ = 05:30-07:00 UTC
+# 夜盘: 21:00-23:30 BJ = 13:00-15:30 UTC
+# 每 30 分钟一次，仅周一至周五（cron 用 5 字段：分 时 日 月 周）
 on:
   schedule:
-    - cron: "*/30 * * * *"
+    - cron: "0,30 1,2,3 * * 1-5"    # 早盘 09:00-11:00 BJ (01:00-03:30 UTC)
+    - cron: "30 3 * * 1-5"          # 早盘 11:30 BJ (03:30 UTC)
+    - cron: "30 5 * * 1-5"          # 午盘 13:30 BJ (05:30 UTC)
+    - cron: "0,30 6 * * 1-5"        # 午盘 14:00-14:30 BJ (06:00-06:30 UTC)
+    - cron: "0 7 * * 1-5"           # 午盘 15:00 BJ (07:00 UTC)
+    - cron: "0,30 13,14,15 * * 1-5" # 夜盘 21:00-23:00 BJ (13:00-15:00 UTC)
+    - cron: "30 15 * * 1-5"         # 夜盘 23:30 BJ (15:30 UTC)
   workflow_dispatch:
 
 permissions:
@@ -33,8 +44,7 @@ jobs:
       - name: Fetch & calculate
         run: python scripts/fetch_and_calc.py
 
-      # 将 data.json 提交回仓库，触发 Cloudflare Pages 自动构建
-      # 注意：不加 [skip ci]，让 Cloudflare 重新构建以更新静态文件
+      # data.json 有变化才提交，触发 Cloudflare Pages 重新构建
       - name: Commit data.json
         run: |
           git config --local user.email "action@github.com"

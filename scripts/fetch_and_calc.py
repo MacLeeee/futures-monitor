@@ -6,12 +6,12 @@
 # ============================================================
 
 import json
-import math
 import os
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime
+from datetime import datetime, time
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import numpy as np
 import pandas as pd
@@ -21,6 +21,25 @@ try:
 except ImportError:
     print("[FATAL] akshare 未安装，请执行: pip install akshare pandas numpy")
     sys.exit(1)
+
+# 中国期货交易时段（北京时间）
+TRADING_WINDOWS = [
+    (time(8, 55), time(11, 35)),   # 早盘 9:00-11:30，前后留 5 分钟缓冲
+    (time(13, 25), time(15, 5)),   # 午盘 13:30-15:00
+    (time(20, 55), time(23, 35)),  # 夜盘 21:00-23:30
+]
+
+def is_trading_time() -> bool:
+    """当前是否在交易时段内（北京时间），且为工作日。"""
+    tz = ZoneInfo("Asia/Shanghai")
+    now = datetime.now(tz).time()
+    weekday = datetime.now(tz).weekday()  # 0=Mon .. 6=Sun
+    if weekday >= 5:  # 周六、周日
+        return False
+    for start, end in TRADING_WINDOWS:
+        if start <= now <= end:
+            return True
+    return False
 
 ROOT = Path(__file__).parent.parent
 OUTPUT = ROOT / "futures-monitor" / "public" / "data.json"
@@ -199,6 +218,11 @@ def process_symbol(args: tuple) -> dict | None:
 
 # ── 主流程 ────────────────────────────────────────────────────
 def main():
+    # 非交易时段不抓取、不写文件、不提交，避免空刷；手动触发时可设 FORCE_FETCH=1 强制执行
+    if os.environ.get("FORCE_FETCH") != "1" and not is_trading_time():
+        print("[SKIP] 非交易时段或非交易日，跳过抓取（不写入、不提交）")
+        sys.exit(0)
+
     print(f"[{datetime.utcnow().isoformat()}Z] Fetching {len(SYMBOLS)} symbols ...")
 
     results = []

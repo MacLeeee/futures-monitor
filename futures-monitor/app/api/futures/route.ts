@@ -7,8 +7,7 @@
 import { NextResponse } from "next/server";
 import { generateAllMockData } from "@/lib/mockData";
 
-// 禁止 Next.js 对此路由做任何缓存，保证每次都取实时数据
-export const dynamic = "force-dynamic";
+// 本路由仅用于本地开发（静态构建时会被自动跳过）
 
 const AKSHARE_SERVICE_URL =
   process.env.AKSHARE_SERVICE_URL?.replace(/\/$/, "") ?? "";

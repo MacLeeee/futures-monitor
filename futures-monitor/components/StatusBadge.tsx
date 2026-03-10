@@ -28,38 +28,45 @@ export function MABadge({ status, cumulative }: { status: string; cumulative: nu
 
 // ---------- MACD 状态 ----------
 export function MACDBadge({
-  crossStatus,
-  spreadStatus,
+  sign,
+  rapidExpanding,
+  expansionRate,
   cumulative,
 }: {
-  crossStatus: string;
-  spreadStatus: string;
+  sign: string;           // "positive" = 金叉区, "negative" = 死叉区
+  rapidExpanding: boolean;
+  expansionRate: number;  // 走扩倍率
   cumulative: number;
 }) {
-  // 金叉/死叉标签
-  const crossCfg: Record<string, { color: string; bg: string; border: string }> = {
-    "水上金叉": { color: "text-red-300",   bg: "bg-red-950/80",   border: "border-red-600" },
-    "水下死叉": { color: "text-green-300", bg: "bg-green-950/80", border: "border-green-600" },
-    "无":       { color: "text-gray-500",  bg: "bg-gray-900",     border: "border-gray-700" },
-  };
-  const cc = crossCfg[crossStatus] ?? crossCfg["无"];
+  const isPositive = sign === "positive";
 
-  // 开口状态
-  const spreadLabel = spreadStatus === "Expanding" ? "扩口" : "缩口";
-  const spreadColor = spreadStatus === "Expanding" ? "text-amber-400" : "text-sky-400";
+  // 方向标签样式
+  const signCfg = isPositive
+    ? { label: "金叉区", color: "text-red-300",   bg: "bg-red-950/70",   border: "border-red-700" }
+    : { label: "死叉区", color: "text-green-300", bg: "bg-green-950/70", border: "border-green-700" };
+
+  // 走扩速率颜色：快速走扩=橙色高亮，缩口=天蓝
+  const expandColor = rapidExpanding ? "text-amber-400" : "text-sky-500";
+  const expandLabel = rapidExpanding ? "快速走扩" : "走扩放缓";
 
   return (
     <div className="flex flex-col gap-0.5">
-      {crossStatus !== "无" && (
-        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold border ${cc.bg} ${cc.border} ${cc.color}`}>
-          <Zap size={10} />
-          {crossStatus}
-        </span>
-      )}
-      <span className={`inline-flex items-center gap-1 text-xs font-mono ${spreadColor}`}>
-        {spreadStatus === "Expanding" ? <Zap size={10} /> : <ZapOff size={10} />}
-        {spreadLabel}
-        <span className="text-gray-500">×{cumulative}</span>
+      {/* 方向标签 + 连续根数 */}
+      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold border ${signCfg.bg} ${signCfg.border} ${signCfg.color}`}>
+        {isPositive ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+        {signCfg.label}
+        <span className="text-gray-500 font-mono font-normal">×{cumulative}</span>
+      </span>
+
+      {/* 走扩状态 + 倍率 */}
+      <span className={`inline-flex items-center gap-1 text-xs font-mono ${expandColor}`}>
+        {rapidExpanding ? <Zap size={10} /> : <ZapOff size={10} />}
+        {expandLabel}
+        {expansionRate > 0 && (
+          <span className="text-gray-500 text-[10px]">
+            {expansionRate.toFixed(1)}x
+          </span>
+        )}
       </span>
     </div>
   );

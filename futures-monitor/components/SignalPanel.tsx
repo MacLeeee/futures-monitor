@@ -13,39 +13,38 @@ interface SignalPanelProps {
   data: FuturesStatus[];
 }
 
-// 做多信号：均线上行 + MACD 水上区且扩口 + 放量 + 增仓
+// 做多信号：均线上行 + MACD金叉区且快速走扩 + 放量 + 增仓
 function isLongSignal(d: FuturesStatus): boolean {
   return (
     d.ma.status === "Upward" &&
-    d.macd.region === "水上" &&
-    d.macd.spreadStatus === "Expanding" &&
+    d.macd.sign === "positive" &&
+    d.macd.rapidExpanding &&
     d.volume.status === "Surge" &&
     d.openInterest.status === "Increasing"
   );
 }
 
-// 做空信号：均线下行 + MACD 水下区且扩口 + 放量 + 增仓
+// 做空信号：均线下行 + MACD死叉区且快速走扩 + 放量 + 增仓
 function isShortSignal(d: FuturesStatus): boolean {
   return (
     d.ma.status === "Downward" &&
-    d.macd.region === "水下" &&
-    d.macd.spreadStatus === "Expanding" &&
+    d.macd.sign === "negative" &&
+    d.macd.rapidExpanding &&
     d.volume.status === "Surge" &&
     d.openInterest.status === "Increasing"
   );
 }
 
-// 计算满足条件的数量（MACD 算一个：region + spread 同时满足才得分）
 function signalScore(d: FuturesStatus, direction: "long" | "short"): number {
   let score = 0;
   if (direction === "long") {
     if (d.ma.status === "Upward") score++;
-    if (d.macd.region === "水上" && d.macd.spreadStatus === "Expanding") score++;
+    if (d.macd.sign === "positive" && d.macd.rapidExpanding) score++;
     if (d.volume.status === "Surge") score++;
     if (d.openInterest.status === "Increasing") score++;
   } else {
     if (d.ma.status === "Downward") score++;
-    if (d.macd.region === "水下" && d.macd.spreadStatus === "Expanding") score++;
+    if (d.macd.sign === "negative" && d.macd.rapidExpanding) score++;
     if (d.volume.status === "Surge") score++;
     if (d.openInterest.status === "Increasing") score++;
   }
@@ -130,7 +129,7 @@ export default function SignalPanel({ data }: SignalPanelProps) {
             {/* 做多信号 */}
             <SignalColumn
               title="做多信号"
-              subtitle="均线上行 · MACD水上扩口 · 放量 · 增仓"
+              subtitle="均线上行 · MACD金叉区快速走扩 · 放量 · 增仓"
               direction="long"
               signals={longSignals}
               near={nearLong}
@@ -140,7 +139,7 @@ export default function SignalPanel({ data }: SignalPanelProps) {
             {/* 做空信号 */}
             <SignalColumn
               title="做空信号"
-              subtitle="均线下行 · MACD水下扩口 · 放量 · 增仓"
+              subtitle="均线下行 · MACD死叉区快速走扩 · 放量 · 增仓"
               direction="short"
               signals={shortSignals}
               near={nearShort}
@@ -151,10 +150,10 @@ export default function SignalPanel({ data }: SignalPanelProps) {
           {/* 图例说明 */}
           <div className="flex flex-wrap gap-x-4 gap-y-1 pt-1 border-t border-gray-800/40 text-[10px] text-gray-600">
             <ConditionLegend icon="MA" color="text-blue-400" label="均线方向" />
-            <ConditionLegend icon="MACD" color="text-amber-400" label="水上/水下区且扩口" />
+            <ConditionLegend icon="MACD" color="text-amber-400" label="金叉/死叉区快速走扩" />
             <ConditionLegend icon="V" color="text-orange-400" label="成交量放量" />
             <ConditionLegend icon="OI" color="text-purple-400" label="持仓量增仓" />
-            <span className="ml-auto text-gray-700">做多=水上金叉区扩口 · 做空=水下死叉区扩口</span>
+            <span className="ml-auto text-gray-700">做多=金叉区走扩 · 做空=死叉区走扩</span>
           </div>
         </div>
       )}
@@ -237,17 +236,17 @@ function SignalCard({
 }) {
   const isLong = direction === "long";
 
-  // 各条件是否满足（MACD = 区域正确 且 扩口）
+  // 各条件是否满足（MACD = 方向正确 且 快速走扩）
   const conds = isLong
     ? {
         MA:   data.ma.status === "Upward",
-        MACD: data.macd.region === "水上" && data.macd.spreadStatus === "Expanding",
+        MACD: data.macd.sign === "positive" && data.macd.rapidExpanding,
         V:    data.volume.status === "Surge",
         OI:   data.openInterest.status === "Increasing",
       }
     : {
         MA:   data.ma.status === "Downward",
-        MACD: data.macd.region === "水下" && data.macd.spreadStatus === "Expanding",
+        MACD: data.macd.sign === "negative" && data.macd.rapidExpanding,
         V:    data.volume.status === "Surge",
         OI:   data.openInterest.status === "Increasing",
       };

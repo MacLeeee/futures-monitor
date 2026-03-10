@@ -44,8 +44,8 @@ export default function DashboardHeader({
   const surgeCount = data.filter((d) => d.volume.status === "Surge").length;
   // 增仓统计
   const oiIncCount = data.filter((d) => d.openInterest.status === "Increasing").length;
-  // 金叉品种
-  const goldenCross = data.filter((d) => d.macd.crossStatus === "水上金叉").length;
+  // 金叉区品种（diff-dea > 0）
+  const goldenCross = data.filter((d) => d.macd.sign === "positive").length;
 
   const formatTime = (d: Date) =>
     `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}:${String(d.getSeconds()).padStart(2, "0")}`;

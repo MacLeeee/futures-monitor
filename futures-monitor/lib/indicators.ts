@@ -3,7 +3,7 @@
 // 严格遵循 Prompt 中的数学定义
 // ============================================================
 
-import { KLineData, MaStatus, SpreadStatus, VolumeStatus, OIStatus } from "./types";
+import { KLineData, MaStatus, MacdSign, VolumeStatus, OIStatus } from "./types";
 
 // --- 均线计算 ---
 export function calcMA(closes: number[], period: number): number[] {
@@ -77,69 +77,54 @@ export function calcMACD(
 }
 
 export function calcMACDStatus(klines: KLineData[]): {
-  crossStatus: string;
-  spreadStatus: SpreadStatus;
+  sign: MacdSign;
+  rapidExpanding: boolean;
+  expansionRate: number;
   cumulative: number;
-  region: "水上" | "水下" | "中性";
 } {
   if (klines.length < 30) {
-    return { crossStatus: "无", spreadStatus: "Shrinking", cumulative: 0, region: "中性" };
+    return { sign: "negative", rapidExpanding: false, expansionRate: 0, cumulative: 0 };
   }
 
   const closes = klines.map((k) => k.close);
   const { diff, dea, hist } = calcMACD(closes);
   const n = klines.length;
 
-  const prevDiff = diff[n - 2];
-  const curDiff = diff[n - 1];
-  const prevDea = dea[n - 2];
-  const curDea = dea[n - 1];
+  // ── 方向（持续状态）：diff - dea 的正负 ──
+  // positive = 金叉区（DIFF > DEA，多头柱），negative = 死叉区（DIFF < DEA，空头柱）
+  const curHist = hist[n - 1];
+  const sign: MacdSign = curHist >= 0 ? "positive" : "negative";
 
-  // 金叉/死叉：仅在穿越当根标注（事件型）
-  let crossStatus = "无";
-  if (curDiff > 0 && curDea > 0 && prevDiff < prevDea && curDiff > curDea) {
-    crossStatus = "水上金叉";
-  } else if (curDiff < 0 && curDea < 0 && prevDiff > prevDea && curDiff < curDea) {
-    crossStatus = "水下死叉";
-  }
-
-  // 区域（持续状态）：DIFF 与 DEA 的相对位置
-  // 水上区：DIFF > DEA 且 DIFF > 0（多头主导）
-  // 水下区：DIFF < DEA 且 DIFF < 0（空头主导）
-  let region: "水上" | "水下" | "中性";
-  if (curDiff > curDea && curDiff > 0) {
-    region = "水上";
-  } else if (curDiff < curDea && curDiff < 0) {
-    region = "水下";
-  } else {
-    region = "中性";
-  }
-
-  // 开口扩大/缩小
-  const curAbs = Math.abs(hist[n - 1]);
-  const prevAbs = Math.abs(hist[n - 2]);
-  const sameSign = hist[n - 1] * hist[n - 2] > 0;
-  const spreadStatus: SpreadStatus =
-    sameSign && curAbs > prevAbs ? "Expanding" : "Shrinking";
-
-  const getSpread = (i: number): SpreadStatus => {
-    if (i < 1) return "Shrinking";
-    const ca = Math.abs(hist[i]);
-    const pa = Math.abs(hist[i - 1]);
-    const ss = hist[i] * hist[i - 1] > 0;
-    return ss && ca > pa ? "Expanding" : "Shrinking";
-  };
-
+  // ── 连续同向根数 ──
+  const getSign = (i: number): MacdSign => (hist[i] >= 0 ? "positive" : "negative");
   let cumulative = 1;
-  for (let i = n - 2; i >= 1; i--) {
-    if (getSpread(i) === spreadStatus) {
-      cumulative++;
-    } else {
-      break;
-    }
+  for (let i = n - 2; i >= 0; i--) {
+    if (getSign(i) === sign) cumulative++;
+    else break;
   }
 
-  return { crossStatus, spreadStatus, cumulative, region };
+  // ── 快速走扩：|hist| 的逐根变化速率 vs 近10期均值 ──
+  // delta[i] = |hist[i]| - |hist[i-1]|（正=扩口，负=缩口）
+  const LOOKBACK = 10;
+  const histAbs = hist.map(Math.abs);
+  const deltas: number[] = [];
+  for (let i = Math.max(1, n - LOOKBACK); i < n; i++) {
+    deltas.push(histAbs[i] - histAbs[i - 1]);
+  }
+  const currentDelta = deltas[deltas.length - 1];
+  // 用前 N-1 根的绝对变化量均值作为基准（排除当根，避免自我比较）
+  const prevDeltas = deltas.slice(0, deltas.length - 1);
+  const avgAbsDelta =
+    prevDeltas.length > 0
+      ? prevDeltas.reduce((s, v) => s + Math.abs(v), 0) / prevDeltas.length
+      : 0;
+
+  // 快速走扩 = 当根在扩口（delta > 0）且速度超过均值
+  const rapidExpanding = currentDelta > 0 && (avgAbsDelta === 0 || currentDelta > avgAbsDelta);
+  const expansionRate =
+    avgAbsDelta > 0 ? Math.round((currentDelta / avgAbsDelta) * 100) / 100 : (currentDelta > 0 ? 1 : 0);
+
+  return { sign, rapidExpanding, expansionRate, cumulative };
 }
 
 // --- 成交量状态（环比上一根 K 线） ---

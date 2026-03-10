@@ -3,10 +3,10 @@
 // ============================================================
 
 export type MaStatus = "Upward" | "Downward" | "Silent";
-export type SpreadStatus = "Expanding" | "Shrinking";
 export type VolumeStatus = "Surge" | "Shrink";
 export type OIStatus = "Increasing" | "Decreasing";
-export type CrossStatus = "水上金叉" | "水下死叉" | "无";
+// MACD 方向：diff-dea > 0 为金叉区(positive)，< 0 为死叉区(negative)
+export type MacdSign = "positive" | "negative";
 
 export interface FuturesStatus {
   symbol: string;         // 品种名称，如 "苯乙烯"
@@ -20,10 +20,10 @@ export interface FuturesStatus {
     cumulative: number;   // 连续持续 K 线数
   };
   macd: {
-    crossStatus: CrossStatus;   // 当根是否发生金叉/死叉（事件型）
-    spreadStatus: SpreadStatus; // 当前开口扩大/缩小
-    cumulative: number;         // 连续扩口/缩口根数
-    region: "水上" | "水下" | "中性"; // DIFF/DEA 所在区域（持续状态）
+    sign: MacdSign;           // diff-dea 正负：positive=金叉区 / negative=死叉区
+    rapidExpanding: boolean;  // |diff-dea| 是否快速走扩（当前变化速率 > 近10期均值）
+    expansionRate: number;    // 走扩倍率（当前 delta / 均值 delta，>1 代表超均速）
+    cumulative: number;       // 当前 sign 方向连续 K 线数
   };
   volume: {
     status: VolumeStatus;

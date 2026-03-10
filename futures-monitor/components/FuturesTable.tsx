@@ -138,8 +138,9 @@ function DataRow({ row, idx, cat }: { row: FuturesStatus; idx: number; cat: stri
       {/* MACD 状态 */}
       <td className="px-3 py-2.5">
         <MACDBadge
-          crossStatus={row.macd.crossStatus}
-          spreadStatus={row.macd.spreadStatus}
+          sign={row.macd.sign}
+          rapidExpanding={row.macd.rapidExpanding}
+          expansionRate={row.macd.expansionRate}
           cumulative={row.macd.cumulative}
         />
       </td>

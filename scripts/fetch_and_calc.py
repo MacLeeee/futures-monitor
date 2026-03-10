@@ -96,32 +96,41 @@ def calc_macd(df: pd.DataFrame) -> dict:
     c = df["close"]
     diff = ema(c, 12) - ema(c, 26)
     dea  = ema(diff, 9)
-    hist = diff - dea
+    hist = diff - dea          # MACD 柱状图（diff - dea）
     n = len(df)
 
-    cross = "无"
-    if diff.iloc[-1] > 0 and dea.iloc[-1] > 0 and diff.iloc[-2] < dea.iloc[-2] and diff.iloc[-1] > dea.iloc[-1]:
-        cross = "水上金叉"
-    elif diff.iloc[-1] < 0 and dea.iloc[-1] < 0 and diff.iloc[-2] > dea.iloc[-2] and diff.iloc[-1] < dea.iloc[-1]:
-        cross = "水下死叉"
+    # ── 方向：hist 正负决定金叉区 / 死叉区 ──
+    sign = "positive" if float(hist.iloc[-1]) >= 0 else "negative"
 
-    d, d2 = float(diff.iloc[-1]), float(dea.iloc[-1])
-    region = "水上" if d > d2 and d > 0 else "水下" if d < d2 and d < 0 else "中性"
-
-    cur_abs, prev_abs = abs(hist.iloc[-1]), abs(hist.iloc[-2])
-    same_sign = hist.iloc[-1] * hist.iloc[-2] > 0
-    spread = "Expanding" if same_sign and cur_abs > prev_abs else "Shrinking"
-
-    def sp(i):
-        if i < 1: return "Shrinking"
-        ss = hist.iloc[i] * hist.iloc[i - 1] > 0
-        return "Expanding" if ss and abs(hist.iloc[i]) > abs(hist.iloc[i - 1]) else "Shrinking"
-
+    # ── 连续同向根数 ──
+    def get_sign(i):
+        return "positive" if float(hist.iloc[i]) >= 0 else "negative"
     cnt = 1
-    for i in range(n - 2, 0, -1):
-        if sp(i) == spread: cnt += 1
-        else: break
-    return {"crossStatus": cross, "spreadStatus": spread, "cumulative": cnt, "region": region}
+    for i in range(n - 2, -1, -1):
+        if get_sign(i) == sign:
+            cnt += 1
+        else:
+            break
+
+    # ── 快速走扩：|hist| 逐根变化速率 vs 近 10 期均值 ──
+    LOOKBACK = 10
+    hist_abs = hist.abs()
+    start = max(1, n - LOOKBACK)
+    deltas = [float(hist_abs.iloc[i]) - float(hist_abs.iloc[i - 1]) for i in range(start, n)]
+
+    current_delta = deltas[-1] if deltas else 0.0
+    prev_deltas = [abs(d) for d in deltas[:-1]]
+    avg_abs_delta = float(np.mean(prev_deltas)) if prev_deltas else 0.0
+
+    rapid_expanding = bool(current_delta > 0 and (avg_abs_delta == 0 or current_delta > avg_abs_delta))
+    expansion_rate = round(current_delta / avg_abs_delta, 2) if avg_abs_delta > 0 else (1.0 if current_delta > 0 else 0.0)
+
+    return {
+        "sign":           sign,
+        "rapidExpanding": rapid_expanding,
+        "expansionRate":  expansion_rate,
+        "cumulative":     cnt,
+    }
 
 def calc_volume(df: pd.DataFrame) -> dict:
     v = df["volume"]

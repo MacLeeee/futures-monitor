@@ -6,11 +6,6 @@
 import {
   FuturesStatus,
   KLineData,
-  MaStatus,
-  SpreadStatus,
-  VolumeStatus,
-  OIStatus,
-  CrossStatus,
 } from "./types";
 import {
   calcMAStatus,
@@ -140,10 +135,10 @@ function buildFuturesStatus(
     change: Math.round(change * 100) / 100,
     ma: maResult,
     macd: {
-      crossStatus: macdResult.crossStatus as CrossStatus,
-      spreadStatus: macdResult.spreadStatus,
-      cumulative: macdResult.cumulative,
-      region: macdResult.region,
+      sign:           macdResult.sign,
+      rapidExpanding: macdResult.rapidExpanding,
+      expansionRate:  macdResult.expansionRate,
+      cumulative:     macdResult.cumulative,
     },
     volume: {
       status:     volResult.status,

@@ -15,6 +15,22 @@ import { AlertCircle, WifiOff, Database } from "lucide-react";
 // 30 分钟自动刷新（与 K 线周期对齐）
 const AUTO_REFRESH_INTERVAL = 30 * 60 * 1000;
 
+// 兼容旧版 data.json（crossStatus/spreadStatus/region → sign/rapidExpanding）
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function normalizeMacd(data: any[]): FuturesStatus[] {
+  return data.map((d) => {
+    if (d.macd && d.macd.sign === undefined) {
+      // 旧字段：region "水上"→positive, 其余→negative
+      const oldRegion: string = d.macd.region ?? "";
+      d.macd.sign = oldRegion === "水上" ? "positive" : "negative";
+      // 旧字段：spreadStatus "Expanding"→走扩
+      d.macd.rapidExpanding = d.macd.spreadStatus === "Expanding";
+      d.macd.expansionRate = d.macd.rapidExpanding ? 1.0 : 0.0;
+    }
+    return d as FuturesStatus;
+  });
+}
+
 // 数据来源类型
 type DataSource = "akshare" | "mock" | "github-actions" | null;
 
@@ -49,7 +65,7 @@ export default function FuturesDashboard() {
       const res = await fetch(url, { signal: AbortSignal.timeout(20000) });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
-      setData(json.data ?? []);
+      setData(normalizeMacd(json.data ?? []));
       setDataSource(json.source as DataSource);
       if (json.updatedAt) setRemoteUpdatedAt(json.updatedAt);
     } catch (err) {

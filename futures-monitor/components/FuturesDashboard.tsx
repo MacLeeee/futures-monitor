@@ -48,15 +48,13 @@ export default function FuturesDashboard() {
   const [selectedCategory, setSelectedCategory] = useState("全部");
   const [selectedMAStatus, setSelectedMAStatus] = useState("全部");
 
-  // 数据 URL 优先级:
-  //   1. NEXT_PUBLIC_DATA_URL (CI 构建时注入)
-  //   2. 生产环境: 直接从 GitHub Raw 拉最新 data.json，绕过 Cloudflare 缓存
-  //   3. 开发环境 (localhost): 走本地 /api/futures
+  // 运行时判断数据源（不使用构建时 env var，避免 Cloudflare 打包旧数据）：
+  // - localhost 开发：走本地 /api/futures
+  // - 生产环境：直接读 GitHub Raw，绕过 Cloudflare 静态文件缓存
   const DATA_URL =
-    process.env.NEXT_PUBLIC_DATA_URL ??
-    (typeof window !== "undefined" && window.location.port !== ""
+    typeof window !== "undefined" && window.location.port !== ""
       ? "/api/futures"
-      : "https://raw.githubusercontent.com/MacLeeee/futures-monitor/main/futures-monitor/public/data.json");
+      : "https://raw.githubusercontent.com/MacLeeee/futures-monitor/main/futures-monitor/public/data.json";
 
   const loadData = useCallback(async () => {
     setIsLoading(true);

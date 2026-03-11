@@ -1,11 +1,12 @@
 name: Update Futures Data
 
-# 每 30 分钟全天候触发（单条 cron 可靠性远高于多条）
+# 在每小时的 :05 和 :35 触发（北京时间 9:05/9:35/10:05/10:35/13:05/13:35 ...）
+# 刻意错开 :00/:30 整点——那是 GitHub Actions 全局负载峰值，容易被延迟或跳过
 # 交易时间判断完全交由 Python 脚本内的 is_trading_time() 守卫处理
 # 非交易时段脚本立即退出 (exit 0)，不抓数据、不提交、不推送
 on:
   schedule:
-    - cron: "*/30 * * * *"
+    - cron: "5,35 * * * *"
   workflow_dispatch:
   push:
     branches: [main]

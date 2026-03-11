@@ -25,10 +25,11 @@ except ImportError:
     sys.exit(1)
 
 # 中国期货交易时段（北京时间）
+# 窗口比实际交易时间各宽约 5 分钟，确保 :25/:55 的 cron 也能通过守卫
 TRADING_WINDOWS = [
-    (time(8, 55), time(11, 35)),
-    (time(13, 25), time(15, 5)),
-    (time(20, 55), time(23, 35)),
+    (time(8, 50), time(11, 40)),
+    (time(13, 20), time(15, 10)),
+    (time(20, 50), time(23, 40)),
 ]
 
 # 三个开盘时间窗口（各90分钟，覆盖 GitHub cron 最大延迟）

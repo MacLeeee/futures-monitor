@@ -1,12 +1,12 @@
 name: Update Futures Data
 
-# 在每小时的 :05 和 :35 触发（北京时间 9:05/9:35/10:05/10:35/13:05/13:35 ...）
-# 刻意错开 :00/:30 整点——那是 GitHub Actions 全局负载峰值，容易被延迟或跳过
-# 交易时间判断完全交由 Python 脚本内的 is_trading_time() 守卫处理
+# 每半小时有两次触发机会，降低单次被跳过概率（如 14:35 常被跳过）
+# 主: :05/:35（BJ 13:05/13:35/14:05/14:35…） 备: :10/:40（BJ 13:10/13:40/14:10/14:40…）
 # 非交易时段脚本立即退出 (exit 0)，不抓数据、不提交、不推送
 on:
   schedule:
     - cron: "5,35 * * * *"
+    - cron: "10,40 * * * *"
   workflow_dispatch:
   push:
     branches: [main]
@@ -20,15 +20,17 @@ jobs:
   update-data:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.11"
           cache: "pip"

@@ -42,6 +42,17 @@ export interface FuturesStatus {
   };
 }
 
+// 开盘跳空预警
+export interface GapAlert {
+  symbol: string;
+  category: string;
+  gapPct: number;        // 正=跳涨，负=跳跌
+  direction: "up" | "down";
+  openPrice: number;     // 当前开盘价（最新K线开盘）
+  prevClose: number;     // 上一根K线收盘价
+  session: string;       // "早盘" | "午盘" | "夜盘"
+}
+
 // 板块分组，用于表格分组渲染
 export interface CategoryGroup {
   name: string;

@@ -5,7 +5,7 @@
 // ============================================================
 
 import React, { useState, useEffect, useCallback } from "react";
-import { FuturesStatus } from "@/lib/types";
+import { FuturesStatus, GapAlert } from "@/lib/types";
 import DashboardHeader from "./DashboardHeader";
 import FuturesTable from "./FuturesTable";
 import FilterBar from "./FilterBar";
@@ -37,6 +37,7 @@ type DataSource = "akshare" | "mock" | "github-actions" | null;
 export default function FuturesDashboard() {
   const [data, setData] = useState<FuturesStatus[]>([]);
   const [filteredData, setFilteredData] = useState<FuturesStatus[]>([]);
+  const [gapAlerts, setGapAlerts] = useState<GapAlert[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastRefresh, setLastRefresh] = useState(new Date());
@@ -67,6 +68,7 @@ export default function FuturesDashboard() {
       setData(normalizeMacd(json.data ?? []));
       setDataSource(json.source as DataSource);
       if (json.updatedAt) setRemoteUpdatedAt(json.updatedAt);
+      setGapAlerts((json.gapAlerts ?? []) as GapAlert[]);
     } catch (err) {
       console.error("[Dashboard] 数据加载失败:", err);
     } finally {
@@ -133,6 +135,7 @@ export default function FuturesDashboard() {
         {/* 头部：概览统计 + 刷新控制 */}
         <DashboardHeader
           data={data}
+          gapAlerts={gapAlerts}
           lastRefresh={lastRefresh}
           autoRefresh={autoRefresh}
           onToggleAutoRefresh={() => setAutoRefresh((v) => !v)}

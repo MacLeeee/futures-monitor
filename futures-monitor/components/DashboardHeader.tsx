@@ -4,21 +4,23 @@
 // ============================================================
 
 import React, { useEffect, useState } from "react";
-import { Activity, RefreshCw, Clock, TrendingUp, TrendingDown, Minus } from "lucide-react";
-import { FuturesStatus } from "@/lib/types";
+import { Activity, RefreshCw, Clock, TrendingUp, TrendingDown, Minus, AlertTriangle } from "lucide-react";
+import { FuturesStatus, GapAlert } from "@/lib/types";
 
 interface DashboardHeaderProps {
   data: FuturesStatus[];
+  gapAlerts: GapAlert[];
   lastRefresh: Date;
   autoRefresh: boolean;
   onToggleAutoRefresh: () => void;
   onManualRefresh: () => void;
   isLoading: boolean;
-  nextRefreshIn: string | null; // 格式 "MM:SS"，null 表示自动刷新已关闭
+  nextRefreshIn: string | null;
 }
 
 export default function DashboardHeader({
   data,
+  gapAlerts,
   lastRefresh,
   autoRefresh,
   onToggleAutoRefresh,
@@ -52,6 +54,47 @@ export default function DashboardHeader({
 
   return (
     <header className="flex flex-col gap-3 mb-4">
+      {/* 开盘跳空预警横幅 */}
+      {gapAlerts.length > 0 && (
+        <div className="rounded-lg border border-yellow-600/60 bg-yellow-950/30 overflow-hidden">
+          {/* 标题行 */}
+          <div className="flex items-center gap-2 px-3 py-1.5 border-b border-yellow-700/40 bg-yellow-900/20">
+            <AlertTriangle size={13} className="text-yellow-400 flex-shrink-0" />
+            <span className="text-xs font-bold text-yellow-300">
+              开盘跳空预警 · {gapAlerts[0].session}
+            </span>
+            <span className="text-[10px] text-yellow-700 ml-1">
+              共 {gapAlerts.length} 个品种跳空幅度 ≥ 0.2%
+            </span>
+          </div>
+          {/* 滚动列表 */}
+          <div className="flex flex-wrap gap-1.5 px-3 py-2">
+            {gapAlerts.map((g) => {
+              const isUp = g.direction === "up";
+              return (
+                <span
+                  key={g.symbol}
+                  className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-mono border ${
+                    isUp
+                      ? "text-red-300 bg-red-950/60 border-red-700/60"
+                      : "text-green-300 bg-green-950/60 border-green-700/60"
+                  }`}
+                >
+                  {isUp ? "↑" : "↓"}
+                  <span className="font-semibold">{g.symbol}</span>
+                  <span className={isUp ? "text-red-400" : "text-green-400"}>
+                    {isUp ? "+" : ""}{g.gapPct.toFixed(2)}%
+                  </span>
+                  <span className="text-gray-600 text-[10px]">
+                    开{g.openPrice} / 前收{g.prevClose}
+                  </span>
+                </span>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* 顶部标题栏 */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">

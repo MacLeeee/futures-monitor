@@ -31,32 +31,60 @@ TRADING_WINDOWS = [
     (time(20, 55), time(23, 35)),
 ]
 
-# 三个开盘时间窗口（±8 分钟容差，覆盖 GitHub cron 延迟）
+# 三个开盘时间窗口（各90分钟，覆盖 GitHub cron 最大延迟）
 OPEN_WINDOWS: list[tuple[time, time, str]] = [
-    (time(8, 52), time(9, 18),   "早盘"),
-    (time(13, 22), time(13, 48), "午盘"),
-    (time(20, 52), time(21, 18), "夜盘"),
+    (time(8, 45),  time(10, 15), "早盘"),
+    (time(13, 00), time(14, 30), "午盘"),
+    (time(20, 45), time(22, 15), "夜盘"),
 ]
 
 def is_trading_time() -> bool:
     tz = ZoneInfo("Asia/Shanghai")
-    now = datetime.now(tz).time()
-    if datetime.now(tz).weekday() >= 5:
+    now_bj = datetime.now(tz)
+    if now_bj.weekday() >= 5:
         return False
+    t = now_bj.time()
     for s, e in TRADING_WINDOWS:
-        if s <= now <= e:
+        if s <= t <= e:
             return True
     return False
 
 def get_open_session() -> str | None:
     """返回当前开盘时间窗口名称，不在窗口内返回 None。"""
     tz = ZoneInfo("Asia/Shanghai")
-    now = datetime.now(tz).time()
-    if datetime.now(tz).weekday() >= 5:
+    now_bj = datetime.now(tz)
+    if now_bj.weekday() >= 5:
         return None
+    t = now_bj.time()
     for start, end, name in OPEN_WINDOWS:
-        if start <= now <= end:
+        if start <= t <= end:
             return name
+    return None
+
+def find_session_gap(df: pd.DataFrame) -> tuple[float, float, float] | None:
+    """
+    扫描最近4对相邻K线，找到跨越交易时段的断层（间隔>60分钟）。
+    返回 (gap_pct, new_session_open, prev_session_close) 或 None。
+    这比直接用 df.iloc[-1].open 更可靠——避免因 AKShare 延迟未返回新K线时误比较。
+    """
+    n = len(df)
+    if n < 3:
+        return None
+    for lag in range(1, min(5, n)):
+        idx_new = n - lag
+        idx_old = n - lag - 1
+        try:
+            t_new = pd.to_datetime(df["time"].iloc[idx_new])
+            t_old = pd.to_datetime(df["time"].iloc[idx_old])
+            gap_min = (t_new - t_old).total_seconds() / 60
+            if gap_min >= 60:
+                op = float(df["open"].iloc[idx_new])
+                pc = float(df["close"].iloc[idx_old])
+                if pc > 0:
+                    gap_pct = round((op - pc) / pc * 100, 3)
+                    return gap_pct, round(op, 2), round(pc, 2)
+        except Exception:
+            continue
     return None
 
 ROOT = Path(__file__).parent.parent
@@ -218,8 +246,8 @@ def process_symbol(args: tuple) -> dict | None:
         df = fetch_klines(code)
         last, prev = float(df["close"].iloc[-1]), float(df["close"].iloc[-2])
         change = round((last - prev) / prev * 100, 2) if prev else 0.0
-        # 最新K线开盘价（供开盘跳空检测使用）
-        latest_open = round(float(df["open"].iloc[-1]), 2)
+        # 用时间间隔法检测跨时段跳空（比 iloc[-1].open 更可靠）
+        gap_info = find_session_gap(df)  # (gap_pct, open_price, prev_close) or None
         return {
             "symbol":   symbol,
             "category": category,
@@ -227,8 +255,7 @@ def process_symbol(args: tuple) -> dict | None:
             "lastUpdate": datetime.now().strftime("%H:%M:%S"),
             "price":     round(last, 2),
             "change":    change,
-            "_openPrice": latest_open,   # 临时字段，输出前剥离
-            "_prevClose": round(prev, 2),
+            "_gapInfo":  gap_info,       # 临时字段，输出前剥离
             "ma":           calc_ma(df),
             "macd":         calc_macd(df),
             "volume":       calc_volume(df),
@@ -430,12 +457,13 @@ def main():
     session = get_open_session()
     gap_alerts: list[dict] = []
     GAP_THRESHOLD = 0.2  # 跳空阈值 %
+    tz_bj = ZoneInfo("Asia/Shanghai")
+    bj_now = datetime.now(tz_bj)
 
     for d in merged:
-        open_price = d.pop("_openPrice", None)
-        prev_close = d.pop("_prevClose", None)
-        if session and open_price and prev_close and prev_close > 0:
-            gap_pct = round((open_price - prev_close) / prev_close * 100, 3)
+        gap_info = d.pop("_gapInfo", None)  # (gap_pct, open_price, prev_close) or None
+        if session and gap_info:
+            gap_pct, open_price, prev_close = gap_info
             if abs(gap_pct) >= GAP_THRESHOLD:
                 gap_alerts.append({
                     "symbol":    d["symbol"],
@@ -448,14 +476,25 @@ def main():
                 })
 
     gap_alerts.sort(key=lambda x: abs(x["gapPct"]), reverse=True)
-    if gap_alerts:
-        print(f"[GAP] 检测到 {len(gap_alerts)} 个跳空品种（{session}）")
+
+    # 跳空扫描确认信息（不论有无跳空，只要在开盘窗口内就记录）
+    gap_check_info: dict | None = None
+    if session:
+        gap_check_info = {
+            "checkedAt": bj_now.strftime("%H:%M"),
+            "session":   session,
+            "count":     len(gap_alerts),
+        }
+        print(f"[GAP] {session} 跳空扫描完成：{len(gap_alerts)} 个品种跳空幅度≥{GAP_THRESHOLD}%")
+    else:
+        print("[GAP] 非开盘窗口，跳过跳空检测")
 
     output = {
-        "source":     "github-actions",
-        "updatedAt":  datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.000Z"),
-        "gapAlerts":  gap_alerts,
-        "data":       merged,
+        "source":       "github-actions",
+        "updatedAt":    datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.000Z"),
+        "gapCheckInfo": gap_check_info,
+        "gapAlerts":    gap_alerts,
+        "data":         merged,
     }
     OUTPUT.write_text(json.dumps(output, ensure_ascii=False, indent=2), "utf-8")
     print(f"✓ {len(results)}/{len(SYMBOLS)} symbols → {OUTPUT}")

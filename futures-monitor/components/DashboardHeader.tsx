@@ -4,12 +4,13 @@
 // ============================================================
 
 import React, { useEffect, useState } from "react";
-import { Activity, RefreshCw, Clock, TrendingUp, TrendingDown, Minus, AlertTriangle } from "lucide-react";
-import { FuturesStatus, GapAlert } from "@/lib/types";
+import { Activity, RefreshCw, Clock, TrendingUp, TrendingDown, Minus, AlertTriangle, CheckCircle } from "lucide-react";
+import { FuturesStatus, GapAlert, GapCheckInfo } from "@/lib/types";
 
 interface DashboardHeaderProps {
   data: FuturesStatus[];
   gapAlerts: GapAlert[];
+  gapCheckInfo: GapCheckInfo | null;
   lastRefresh: Date;
   autoRefresh: boolean;
   onToggleAutoRefresh: () => void;
@@ -21,6 +22,7 @@ interface DashboardHeaderProps {
 export default function DashboardHeader({
   data,
   gapAlerts,
+  gapCheckInfo,
   lastRefresh,
   autoRefresh,
   onToggleAutoRefresh,
@@ -54,10 +56,9 @@ export default function DashboardHeader({
 
   return (
     <header className="flex flex-col gap-3 mb-4">
-      {/* 开盘跳空预警横幅 */}
-      {gapAlerts.length > 0 && (
+      {/* 开盘跳空横幅：有跳空时显示预警，无跳空但扫描过时显示确认 */}
+      {gapAlerts.length > 0 ? (
         <div className="rounded-lg border border-yellow-600/60 bg-yellow-950/30 overflow-hidden">
-          {/* 标题行 */}
           <div className="flex items-center gap-2 px-3 py-1.5 border-b border-yellow-700/40 bg-yellow-900/20">
             <AlertTriangle size={13} className="text-yellow-400 flex-shrink-0" />
             <span className="text-xs font-bold text-yellow-300">
@@ -67,7 +68,6 @@ export default function DashboardHeader({
               共 {gapAlerts.length} 个品种跳空幅度 ≥ 0.2%
             </span>
           </div>
-          {/* 滚动列表 */}
           <div className="flex flex-wrap gap-1.5 px-3 py-2">
             {gapAlerts.map((g) => {
               const isUp = g.direction === "up";
@@ -93,7 +93,17 @@ export default function DashboardHeader({
             })}
           </div>
         </div>
-      )}
+      ) : gapCheckInfo ? (
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-700/50 bg-gray-900/40 text-xs text-gray-500">
+          <CheckCircle size={12} className="text-gray-600 flex-shrink-0" />
+          <span>
+            <span className="text-gray-400 font-medium">{gapCheckInfo.session}</span>
+            {" "}开盘跳空扫描完成
+            <span className="ml-1 text-gray-600">({gapCheckInfo.checkedAt})</span>
+            <span className="ml-2 text-gray-600">— 无显著跳空（阈值 0.2%）</span>
+          </span>
+        </div>
+      ) : null}
 
       {/* 顶部标题栏 */}
       <div className="flex items-center justify-between">

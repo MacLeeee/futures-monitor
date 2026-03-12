@@ -128,14 +128,23 @@ SYMBOLS = [
 ]
 
 # ── K 线获取 ──────────────────────────────────────────────────
-def fetch_klines(code: str, rows: int = 200) -> pd.DataFrame:
-    df = ak.futures_zh_minute_sina(symbol=code, period="30")
-    if df is None or len(df) < 30:
-        raise ValueError(f"数据不足: {len(df) if df is not None else 0} 行")
-    df.columns = df.columns.str.lower()
-    df = df.rename(columns={"datetime": "time"})
-    df["open_interest"] = pd.to_numeric(df.get("hold", np.nan), errors="coerce")
-    return df.tail(rows).reset_index(drop=True)
+def fetch_klines(code: str, rows: int = 200, _retries: int = 3) -> pd.DataFrame:
+    import time as _time
+    last_err: Exception = RuntimeError("未知错误")
+    for attempt in range(1, _retries + 1):
+        try:
+            df = ak.futures_zh_minute_sina(symbol=code, period="30")
+            if df is None or len(df) < 30:
+                raise ValueError(f"数据不足: {len(df) if df is not None else 0} 行")
+            df.columns = df.columns.str.lower()
+            df = df.rename(columns={"datetime": "time"})
+            df["open_interest"] = pd.to_numeric(df.get("hold", np.nan), errors="coerce")
+            return df.tail(rows).reset_index(drop=True)
+        except Exception as e:
+            last_err = e
+            if attempt < _retries:
+                _time.sleep(2 * attempt)  # 2s, 4s 退避后重试
+    raise last_err
 
 def fetch_klines_daily(code: str, rows: int = 200) -> pd.DataFrame:
     """获取日K线数据（近 rows 根），使用 Sina 主力合约历史接口。"""

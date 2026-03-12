@@ -19,6 +19,12 @@ on:
 permissions:
   contents: write
 
+# 同一时刻只允许一个 job 运行，取消排队中的旧任务（始终保留最新一次）
+# 防止 :25/:35 两次 cron 并发导致 git push non-fast-forward 错误从而崩溃 workflow
+concurrency:
+  group: update-data
+  cancel-in-progress: true
+
 jobs:
   update-data:
     runs-on: ubuntu-latest
@@ -51,12 +57,16 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID:   ${{ secrets.TELEGRAM_CHAT_ID }}
 
-      # data.json 有变化才提交，触发 Cloudflare Pages 重新构建
+      # data.json 有变化才提交；pull --rebase 防止并发 push 冲突导致 workflow 崩溃
       - name: Commit data.json
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add futures-monitor/public/data.json
-          git diff --quiet && git diff --staged --quiet \
-            || git commit -m "chore: update futures data"
+          if git diff --quiet && git diff --staged --quiet; then
+            echo "[SKIP] data.json 无变化，跳过 commit"
+            exit 0
+          fi
+          git commit -m "chore: update futures data"
+          git pull --rebase origin main
           git push

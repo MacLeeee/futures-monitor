@@ -141,11 +141,12 @@ def ema(s: pd.Series, n: int) -> pd.Series:
 
 def calc_ma(df: pd.DataFrame) -> dict:
     c = df["close"]
-    ma20, ma60 = c.rolling(20).mean(), c.rolling(60).mean()
+    ma20s = c.rolling(20).mean()
+    ma60s = c.rolling(60).mean()
     n = len(df)
 
     def st(i):
-        v, m20, m60 = c.iloc[i], ma20.iloc[i], ma60.iloc[i]
+        v, m20, m60 = c.iloc[i], ma20s.iloc[i], ma60s.iloc[i]
         if pd.isna(m20) or pd.isna(m60): return "Silent"
         if v > m20 and v > m60:  return "Upward"
         if v < m20 and v < m60:  return "Downward"
@@ -156,7 +157,59 @@ def calc_ma(df: pd.DataFrame) -> dict:
     for i in range(n - 2, -1, -1):
         if st(i) == cur: cnt += 1
         else: break
-    return {"status": cur, "cumulative": cnt}
+
+    ma20_cur = float(ma20s.iloc[-1]) if not pd.isna(ma20s.iloc[-1]) else None
+    ma60_cur = float(ma60s.iloc[-1]) if not pd.isna(ma60s.iloc[-1]) else None
+
+    # MA20斜率：用倒数第4根K线（3根前）作基准，计算3根内的累计%变化
+    slope20_pct = 0.0
+    slope_type  = "flat"
+    if ma20_cur and n >= 5:
+        old_val = float(ma20s.iloc[-4]) if not pd.isna(ma20s.iloc[-4]) else None
+        if old_val and old_val > 0:
+            slope20_pct = round((ma20_cur - old_val) / old_val * 100, 4)
+            # 0.2% / 3根K线 ≈ 视觉上 45° 参考线
+            if slope20_pct > 0.2:
+                slope_type = "steep"      # 急速上行（≥45°）
+            elif slope20_pct >= 0:
+                slope_type = "gentle"     # 缓慢上行（<45°）
+            else:
+                slope_type = "declining"  # 下行
+
+    return {
+        "status":     cur,
+        "cumulative": cnt,
+        "ma20":       round(ma20_cur, 2) if ma20_cur else None,
+        "ma60":       round(ma60_cur, 2) if ma60_cur else None,
+        "slope20Pct": slope20_pct,
+        "slopeType":  slope_type,
+    }
+
+# 抄底阈值：收盘价距支撑均线最大距离（%）
+_DIP_TOL = 0.5
+
+def calc_dip_signal(close: float, ma: dict, macd: dict) -> dict | None:
+    """
+    抄底信号：MACD 死叉区 + 幅度缩窄（粘合），收盘触及支撑均线。
+    - MA20 急速上行（steep）→ MA20 支撑，收盘在 MA20 ± 0.5%
+    - MA20 缓慢上行（gentle）→ MA60 支撑，收盘在 MA60 ± 0.5%
+    """
+    if macd["sign"] != "negative" or macd["rapidExpanding"]:
+        return None
+    slope_type = ma.get("slopeType", "flat")
+    ma20 = ma.get("ma20")
+    ma60 = ma.get("ma60")
+    if slope_type == "steep" and ma20 and ma20 > 0:
+        dist = abs(close - ma20) / ma20 * 100
+        if dist <= _DIP_TOL:
+            return {"type": "MA20", "support": round(ma20, 2),
+                    "distPct": round(dist, 3), "slopeType": slope_type}
+    elif slope_type == "gentle" and ma60 and ma60 > 0:
+        dist = abs(close - ma60) / ma60 * 100
+        if dist <= _DIP_TOL:
+            return {"type": "MA60", "support": round(ma60, 2),
+                    "distPct": round(dist, 3), "slopeType": slope_type}
+    return None
 
 def calc_macd(df: pd.DataFrame) -> dict:
     c = df["close"]
@@ -249,18 +302,21 @@ def process_symbol(args: tuple) -> dict | None:
         change = round((last - prev) / prev * 100, 2) if prev else 0.0
         # 用时间间隔法检测跨时段跳空（比 iloc[-1].open 更可靠）
         gap_info = find_session_gap(df)  # (gap_pct, open_price, prev_close) or None
+        ma_data   = calc_ma(df)
+        macd_data = calc_macd(df)
         return {
-            "symbol":   symbol,
-            "category": category,
-            "timeframe": "30min",
+            "symbol":     symbol,
+            "category":   category,
+            "timeframe":  "30min",
             "lastUpdate": datetime.now().strftime("%H:%M:%S"),
-            "price":     round(last, 2),
-            "change":    change,
-            "_gapInfo":  gap_info,       # 临时字段，输出前剥离
-            "ma":           calc_ma(df),
-            "macd":         calc_macd(df),
-            "volume":       calc_volume(df),
+            "price":      round(last, 2),
+            "change":     change,
+            "_gapInfo":   gap_info,       # 临时字段，输出前剥离
+            "ma":         ma_data,
+            "macd":       macd_data,
+            "volume":     calc_volume(df),
             "openInterest": calc_oi(df),
+            "dipSignal":  calc_dip_signal(round(last, 2), ma_data, macd_data),
         }
     except Exception as e:
         print(f"  [SKIP] {symbol}({code}): {e}", file=sys.stderr)

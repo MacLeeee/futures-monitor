@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+# ============================================================
+# 本地期货数据采集脚本
+# 用法：
+#   ./run_local.sh          # 立即抓取一次后，每 30 分钟自动抓取
+#   ./run_local.sh --once   # 只抓取一次后退出
+# 停止：Ctrl+C
+# ============================================================
+
+set -euo pipefail
+
+REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT="$REPO_DIR/scripts/fetch_and_calc.py"
+DATA_JSON="$REPO_DIR/futures-monitor/public/data.json"
+INTERVAL=1800   # 30 分钟（秒）
+
+# ── Telegram（可选）──────────────────────────────────────
+# 在此填入你的 Token 和 Chat ID，或在终端中预先 export
+: "${TELEGRAM_BOT_TOKEN:=8052508202:AAGoOBWn-V1yXuaZAz9Q5-533pq-j4jJ5jI}"
+: "${TELEGRAM_CHAT_ID:=6414409185}"
+export TELEGRAM_BOT_TOKEN TELEGRAM_CHAT_ID
+
+# ── 内部函数 ─────────────────────────────────────────────
+log() { echo "[$(date '+%H:%M:%S')] $*"; }
+
+run_once() {
+    log "▶ 开始抓取 $(python3 -c 'from datetime import datetime; from zoneinfo import ZoneInfo; print(datetime.now(ZoneInfo("Asia/Shanghai")).strftime("%Y-%m-%d %H:%M"))')"
+
+    # FORCE_FETCH=1：本地模式不受交易时间守卫限制，由用户手动控制开关
+    FORCE_FETCH=1 python3 "$SCRIPT"
+
+    cd "$REPO_DIR"
+    git add "$DATA_JSON"
+    if git diff --staged --quiet; then
+        log "✓ data.json 无变化，跳过 commit"
+    else
+        git commit -m "chore: update futures data (local $(date '+%H:%M'))"
+        git pull --rebase origin main
+        git push
+        log "✓ data.json 已推送到 GitHub"
+    fi
+}
+
+# ── 主逻辑 ───────────────────────────────────────────────
+echo "╔════════════════════════════════════════╗"
+echo "║  期货监控 · 本地数据采集               ║"
+echo "║  每 30 分钟自动抓取 + 推送 GitHub      ║"
+echo "║  Ctrl+C 停止                           ║"
+echo "╚════════════════════════════════════════╝"
+echo ""
+
+# 立即执行一次
+run_once
+
+if [[ "${1:-}" == "--once" ]]; then
+    log "--once 模式，结束。"
+    exit 0
+fi
+
+# 循环执行
+while true; do
+    log "⏳ 等待 30 分钟..."
+    sleep $INTERVAL
+    run_once
+done

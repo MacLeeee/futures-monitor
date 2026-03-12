@@ -1,19 +1,12 @@
 name: Update Futures Data
 
-# ─── cron 说明 ────────────────────────────────────────────────────────────────
-# 只用一条 cron 表达式（多条 schedule 条目会互相 cancel，反而更不可靠）
-# 在每小时的 :25/:35 和 :55/:05 触发，恰好覆盖 :30 前后 5 分钟 + :00 前后 5 分钟
-#   :25 / :55  → 半小时 K 线即将收口，提前预热
-#   :35 / :05  → 半小时 K 线已收口，主力抓取时机
-# 避开 :00/:30 整点（GitHub 全局负载峰值，最容易被跳过/延迟）
-# 非交易时段由 Python is_trading_time() 守卫立即退出，不抓数据、不提交
+# 改为本地脚本（run_local.sh）手动驱动，GitHub Actions 仅保留 workflow_dispatch
+# 供紧急时从 GitHub 网页手动触发，不再使用 cron
 on:
-  schedule:
-    - cron: "5,25,35,55 * * * *"
   workflow_dispatch:
     inputs:
       force:
-        description: '强制执行（绕过交易时间校验，用于手动测试）'
+        description: '强制执行（绕过交易时间校验）'
         type: boolean
         default: false
   push:

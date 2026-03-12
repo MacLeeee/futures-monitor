@@ -14,9 +14,7 @@ name: Keepalive – trigger data update
 # ─────────────────────────────────────────────────────────────────────────────
 
 on:
-  schedule:
-    - cron: "15,45 * * * *"
-  workflow_dispatch:
+  workflow_dispatch:  # 改为本地运行模式后，keepalive cron 不再需要
 
 permissions:
   actions: write   # 允许本 workflow 通过 API dispatch 其他 workflow

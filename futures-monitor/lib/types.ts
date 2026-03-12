@@ -8,6 +8,15 @@ export type OIStatus = "Increasing" | "Decreasing";
 // MACD 方向：diff-dea > 0 为金叉区(positive)，< 0 为死叉区(negative)
 export type MacdSign = "positive" | "negative";
 
+export type MaSlopeType = "steep" | "gentle" | "declining" | "flat";
+
+export interface DipSignal {
+  type: "MA20" | "MA60";   // 支撑均线
+  support: number;          // 支撑位价格
+  distPct: number;          // 距支撑位的 % 距离（≤0.5%）
+  slopeType: MaSlopeType;
+}
+
 export interface FuturesStatus {
   symbol: string;         // 品种名称，如 "苯乙烯"
   category: string;       // 板块分类
@@ -18,7 +27,12 @@ export interface FuturesStatus {
   ma: {
     status: MaStatus;
     cumulative: number;   // 连续持续 K 线数
+    ma20: number | null;       // 当前 MA20 值
+    ma60: number | null;       // 当前 MA60 值
+    slope20Pct: number;        // MA20 斜率（3根K线内累计%变化）
+    slopeType: MaSlopeType;    // steep=急速上行(≥45°) gentle=缓慢 declining=下行
   };
+  dipSignal: DipSignal | null; // 抄底信号，null=无
   macd: {
     sign: MacdSign;           // diff-dea 正负：positive=金叉区 / negative=死叉区
     rapidExpanding: boolean;  // |diff-dea| 是否快速走扩（当前变化速率 > 近10期均值）

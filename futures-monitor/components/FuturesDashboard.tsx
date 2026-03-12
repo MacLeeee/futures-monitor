@@ -10,6 +10,7 @@ import DashboardHeader from "./DashboardHeader";
 import FuturesTable from "./FuturesTable";
 import FilterBar from "./FilterBar";
 import SignalPanel from "./SignalPanel";
+import DipBuyPanel from "./DipBuyPanel";
 import { AlertCircle, WifiOff, Database } from "lucide-react";
 
 // 30 分钟自动刷新（与 K 线周期对齐）
@@ -157,8 +158,11 @@ export default function FuturesDashboard() {
           filteredCount={filteredData.length}
         />
 
-        {/* 交易信号面板 */}
+        {/* 突破交易信号面板 */}
         <SignalPanel data={data} />
+
+        {/* 抄底信号面板 */}
+        <DipBuyPanel data={data} />
 
         {/* 主数据表格 */}
         {isLoading && data.length === 0 ? (

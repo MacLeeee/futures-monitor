@@ -16,17 +16,22 @@ export function calcMA(closes: number[], period: number): number[] {
 }
 
 // 均线状态判定 (基于最新 K 线)
-export function calcMAStatus(klines: KLineData[]): { status: MaStatus; cumulative: number } {
-  if (klines.length < 60) return { status: "Silent", cumulative: 0 };
+export function calcMAStatus(klines: KLineData[]): {
+  status: MaStatus; cumulative: number;
+  ma20: number | null; ma60: number | null;
+  slope20Pct: number; slopeType: "steep" | "gentle" | "declining" | "flat";
+} {
+  const empty = { status: "Silent" as MaStatus, cumulative: 0, ma20: null, ma60: null, slope20Pct: 0, slopeType: "flat" as const };
+  if (klines.length < 60) return empty;
 
   const closes = klines.map((k) => k.close);
-  const ma20 = calcMA(closes, 20);
-  const ma60 = calcMA(closes, 60);
+  const ma20arr = calcMA(closes, 20);
+  const ma60arr = calcMA(closes, 60);
 
   const getStatus = (i: number): MaStatus => {
     const c = closes[i];
-    const m20 = ma20[i];
-    const m60 = ma60[i];
+    const m20 = ma20arr[i];
+    const m60 = ma60arr[i];
     if (isNaN(m20) || isNaN(m60)) return "Silent";
     if (c > m20 && c > m60) return "Upward";
     if (c < m20 && c < m60) return "Downward";
@@ -38,14 +43,32 @@ export function calcMAStatus(klines: KLineData[]): { status: MaStatus; cumulativ
 
   let cumulative = 1;
   for (let i = lastIdx - 1; i >= 0; i--) {
-    if (getStatus(i) === currentStatus) {
-      cumulative++;
-    } else {
-      break;
+    if (getStatus(i) === currentStatus) cumulative++;
+    else break;
+  }
+
+  const ma20Val = ma20arr[lastIdx];
+  const ma60Val = ma60arr[lastIdx];
+
+  // MA20 斜率（3根K线内累计%变化，与 Python 端保持一致）
+  let slope20Pct = 0;
+  let slopeType: "steep" | "gentle" | "declining" | "flat" = "flat";
+  if (lastIdx >= 3) {
+    const ma20Old = ma20arr[lastIdx - 3];
+    if (!isNaN(ma20Old) && ma20Old > 0) {
+      slope20Pct = parseFloat((((ma20Val - ma20Old) / ma20Old) * 100).toFixed(4));
+      slopeType = slope20Pct > 0.2 ? "steep" : slope20Pct >= 0 ? "gentle" : "declining";
     }
   }
 
-  return { status: currentStatus, cumulative };
+  return {
+    status: currentStatus,
+    cumulative,
+    ma20: isNaN(ma20Val) ? null : parseFloat(ma20Val.toFixed(2)),
+    ma60: isNaN(ma60Val) ? null : parseFloat(ma60Val.toFixed(2)),
+    slope20Pct,
+    slopeType,
+  };
 }
 
 // --- MACD 计算 (12, 26, 9) ---

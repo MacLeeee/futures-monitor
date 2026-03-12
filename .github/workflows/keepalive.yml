@@ -1,0 +1,38 @@
+name: Keepalive – trigger data update
+
+# ─── 为什么需要这个文件 ────────────────────────────────────────────────────────
+# GitHub Actions 的 cron 调度器在高负载时会跳过触发，单个 workflow 可能连续数小时
+# 没有运行。解决方案：用两个 **独立** workflow 分别持有 cron，GitHub 对它们独立排队，
+# 其中一个被跳过时另一个仍有机会触发。
+#
+# 本 workflow 极轻量（无 checkout / 无 Python / 约 5 秒完成），不占用太多 runner 时间。
+# 它使用 GitHub 自动提供的 github.token（无需手动创建 PAT）来 dispatch 主 workflow。
+#
+# 触发时机与主 workflow 错开 15 分钟，覆盖两者都被跳过的概率死角：
+#   主 workflow : :05, :25, :35, :55（BJ 9:05, 9:25, 9:35, 9:55 ...）
+#   本 keepalive: :15, :45            （BJ 9:15, 9:45, 10:15, 10:45 ...）
+# ─────────────────────────────────────────────────────────────────────────────
+
+on:
+  schedule:
+    - cron: "15,45 * * * *"
+  workflow_dispatch:
+
+permissions:
+  actions: write   # 允许本 workflow 通过 API dispatch 其他 workflow
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Dispatch update_data workflow
+        run: |
+          curl -s -o /dev/null -w "HTTP %{http_code}\n" \
+            -X POST \
+            -H "Authorization: Bearer ${{ github.token }}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/update_data.yml/dispatches" \
+            -d '{"ref":"main"}'
+          echo "keepalive dispatch done at $(date -u '+%Y-%m-%d %H:%M:%S') UTC"

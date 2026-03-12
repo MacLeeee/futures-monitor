@@ -11,7 +11,7 @@ set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
 SCRIPT="$REPO_DIR/scripts/fetch_and_calc.py"
-DATA_JSON="$REPO_DIR/futures-monitor/public/data.json"
+DATA_DIR="$REPO_DIR/futures-monitor/public"
 INTERVAL=1800   # 30 分钟（秒）
 
 # ── Telegram（可选）──────────────────────────────────────
@@ -30,14 +30,15 @@ run_once() {
     FORCE_FETCH=1 python3 "$SCRIPT"
 
     cd "$REPO_DIR"
-    git add "$DATA_JSON"
+    # 同时暂存 data.json 和 data_daily.json（日K数据）
+    git add "$DATA_DIR/data.json" "$DATA_DIR/data_daily.json" 2>/dev/null || true
     if git diff --staged --quiet; then
-        log "✓ data.json 无变化，跳过 commit"
+        log "✓ 数据无变化，跳过 commit"
     else
         git commit -m "chore: update futures data (local $(date '+%H:%M'))"
         git pull --rebase origin main
         git push
-        log "✓ data.json 已推送到 GitHub"
+        log "✓ 数据已推送到 GitHub"
     fi
 }
 

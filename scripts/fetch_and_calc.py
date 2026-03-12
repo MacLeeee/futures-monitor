@@ -2,7 +2,8 @@
 # ============================================================
 # 期货监控系统 - 数据抓取与指标计算 (Python + AKShare)
 # 运行环境: Python 3.10+  依赖: akshare pandas numpy
-# 输出:     futures-monitor/public/data.json
+# 输出:     futures-monitor/public/data.json       (30min)
+#           futures-monitor/public/data_daily.json (日K 复盘)
 # ============================================================
 
 import json
@@ -88,8 +89,9 @@ def find_session_gap(df: pd.DataFrame) -> tuple[float, float, float] | None:
             continue
     return None
 
-ROOT = Path(__file__).parent.parent
-OUTPUT = ROOT / "futures-monitor" / "public" / "data.json"
+ROOT         = Path(__file__).parent.parent
+OUTPUT       = ROOT / "futures-monitor" / "public" / "data.json"
+OUTPUT_DAILY = ROOT / "futures-monitor" / "public" / "data_daily.json"
 
 # ── 品种定义 ─────────────────────────────────────────────────
 SYMBOLS = [
@@ -133,6 +135,27 @@ def fetch_klines(code: str, rows: int = 200) -> pd.DataFrame:
     df.columns = df.columns.str.lower()
     df = df.rename(columns={"datetime": "time"})
     df["open_interest"] = pd.to_numeric(df.get("hold", np.nan), errors="coerce")
+    return df.tail(rows).reset_index(drop=True)
+
+def fetch_klines_daily(code: str, rows: int = 200) -> pd.DataFrame:
+    """获取日K线数据（近 rows 根），使用 Sina 主力合约历史接口。"""
+    from datetime import date, timedelta
+    end_d   = date.today().strftime("%Y%m%d")
+    start_d = (date.today() - timedelta(days=600)).strftime("%Y%m%d")
+    df = ak.futures_main_sina(symbol=code, start_date=start_d, end_date=end_d)
+    if df is None or len(df) < 30:
+        raise ValueError(f"日K数据不足: {len(df) if df is not None else 0} 行")
+    col_map = {
+        "日期": "time", "开盘价": "open", "最高价": "high",
+        "最低价": "low", "收盘价": "close", "成交量": "volume", "持仓量": "open_interest",
+    }
+    df = df.rename(columns={k: v for k, v in col_map.items() if k in df.columns})
+    for c in ["open", "high", "low", "close", "volume"]:
+        df[c] = pd.to_numeric(df[c], errors="coerce")
+    if "open_interest" not in df.columns:
+        df["open_interest"] = 0.0
+    df["open_interest"] = pd.to_numeric(df["open_interest"], errors="coerce").fillna(0)
+    df = df.dropna(subset=["close"])
     return df.tail(rows).reset_index(drop=True)
 
 # ── 指标计算 ──────────────────────────────────────────────────
@@ -322,6 +345,32 @@ def process_symbol(args: tuple) -> dict | None:
         print(f"  [SKIP] {symbol}({code}): {e}", file=sys.stderr)
         return None
 
+def process_symbol_daily(args: tuple) -> dict | None:
+    """处理单品种日K数据（与 process_symbol 逻辑相同，仅数据源不同）。"""
+    symbol, category, code = args
+    try:
+        df = fetch_klines_daily(code)
+        last, prev = float(df["close"].iloc[-1]), float(df["close"].iloc[-2])
+        change = round((last - prev) / prev * 100, 2) if prev else 0.0
+        ma_data   = calc_ma(df)
+        macd_data = calc_macd(df)
+        return {
+            "symbol":       symbol,
+            "category":     category,
+            "timeframe":    "daily",
+            "lastUpdate":   str(df["time"].iloc[-1]) if "time" in df.columns else "",
+            "price":        round(last, 2),
+            "change":       change,
+            "ma":           ma_data,
+            "macd":         macd_data,
+            "volume":       calc_volume(df),
+            "openInterest": calc_oi(df),
+            "dipSignal":    calc_dip_signal(round(last, 2), ma_data, macd_data),
+        }
+    except Exception as e:
+        print(f"  [SKIP-D] {symbol}({code}): {e}", file=sys.stderr)
+        return None
+
 # ── Telegram 推送 ─────────────────────────────────────────────
 
 def tg_send(token: str, chat_id: str, text: str) -> None:
@@ -472,6 +521,33 @@ def build_signal_message(data: list[dict], update_time: str) -> str | None:
     return "\n".join(lines)
 
 
+def build_dip_message(data: list[dict], bj_time: str) -> str | None:
+    """构建抄底信号推送文本。"""
+    dips = [d for d in data if d.get("dipSignal")]
+    if not dips:
+        return None
+    ma20_dips = [d for d in dips if d["dipSignal"]["type"] == "MA20"]
+    ma60_dips = [d for d in dips if d["dipSignal"]["type"] == "MA60"]
+
+    def fmt_dip(d: dict) -> str:
+        sig  = d["dipSignal"]
+        chg  = f"+{d['change']:.2f}%" if d["change"] >= 0 else f"{d['change']:.2f}%"
+        slp  = f"+{d['ma']['slope20Pct']:.3f}%" if d['ma']['slope20Pct'] >= 0 else f"{d['ma']['slope20Pct']:.3f}%"
+        return (f"  ↩ {d['symbol']}({d['category']}) {chg}"
+                f"  距{sig['type']}: {sig['distPct']:.3f}%"
+                f"  斜率: {slp}/3K"
+                f"  MACD死叉×{d['macd']['cumulative']}")
+
+    lines = [f"<b>🎯 抄底信号 {bj_time}</b>"]
+    if ma20_dips:
+        lines.append("\n🟦 <b>MA20 抄底</b>（急速上行≥45°·收盘触及MA20）")
+        lines.extend(fmt_dip(d) for d in ma20_dips)
+    if ma60_dips:
+        lines.append("\n🟩 <b>MA60 抄底</b>（缓慢上行&lt;45°·收盘触及MA60）")
+        lines.extend(fmt_dip(d) for d in ma60_dips)
+    return "\n".join(lines)
+
+
 # ── 主流程 ────────────────────────────────────────────────────
 def main():
     # 非交易时段不抓取、不写文件、不提交，避免空刷；手动触发时可设 FORCE_FETCH=1 强制执行
@@ -556,23 +632,43 @@ def main():
     OUTPUT.write_text(json.dumps(output, ensure_ascii=False, indent=2), "utf-8")
     print(f"✓ {len(results)}/{len(SYMBOLS)} symbols → {OUTPUT}")
 
-    # ── Telegram 推送 ──
+    # ── 日K数据（复盘用，每次同步更新，不推送 Telegram）──
+    print(f"[DAILY] 开始抓取日K数据 ...")
+    daily_results = []
+    with ThreadPoolExecutor(max_workers=6) as pool:
+        futs = {pool.submit(process_symbol_daily, s): s for s in SYMBOLS}
+        for fut in as_completed(futs):
+            r = fut.result()
+            if r: daily_results.append(r)
+    if daily_results:
+        daily_output = {
+            "source":    "local-runner",
+            "updatedAt": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.000Z"),
+            "data":      daily_results,
+        }
+        OUTPUT_DAILY.write_text(json.dumps(daily_output, ensure_ascii=False, indent=2), "utf-8")
+        print(f"✓ {len(daily_results)}/{len(SYMBOLS)} daily symbols → {OUTPUT_DAILY}")
+    else:
+        print("[DAILY] 无日K数据写入", file=sys.stderr)
+
+    # ── Telegram 推送（仅30min信号，日K不推）──
     tg_token   = os.environ.get("TELEGRAM_BOT_TOKEN", "")
     tg_chat_id = os.environ.get("TELEGRAM_CHAT_ID", "")
     if tg_token and tg_chat_id:
         bj_time = datetime.now(ZoneInfo("Asia/Shanghai")).strftime("%m-%d %H:%M")
         messages = []
-        # 跳空推送
         if gap_alerts:
             messages.append(build_gap_message(gap_alerts, bj_time))
-        # 信号推送
         sig_msg = build_signal_message(merged, bj_time)
         if sig_msg:
             messages.append(sig_msg)
+        dip_msg = build_dip_message(merged, bj_time)
+        if dip_msg:
+            messages.append(dip_msg)
         if messages:
             tg_send(tg_token, tg_chat_id, "\n\n".join(messages))
         else:
-            print("[TG] 无跳空/信号，不推送")
+            print("[TG] 无跳空/突破/抄底信号，不推送")
 
 if __name__ == "__main__":
     main()

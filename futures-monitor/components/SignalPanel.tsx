@@ -1,6 +1,6 @@
 "use client";
 // ============================================================
-// 交易信号面板
+// 突破信号面板
 // 做多信号：均线上行 + MACD扩口 + 放量 + 增仓
 // 做空信号：均线下行 + MACD缩口 + 放量 + 增仓
 // ============================================================
@@ -89,7 +89,7 @@ export default function SignalPanel({ data }: SignalPanelProps) {
         <div className="flex items-center gap-3">
           <Zap size={14} className={hasSignal ? "text-amber-400" : "text-gray-500"} />
           <span className="text-sm font-semibold text-gray-200">
-            交易信号
+            突破信号
           </span>
           <div className="flex items-center gap-2">
             {longSignals.length > 0 && (

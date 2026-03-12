@@ -11,10 +11,18 @@ import FuturesTable from "./FuturesTable";
 import FilterBar from "./FilterBar";
 import SignalPanel from "./SignalPanel";
 import DipBuyPanel from "./DipBuyPanel";
-import { AlertCircle, WifiOff, Database } from "lucide-react";
+import { AlertCircle, WifiOff, Database, Activity, CalendarDays } from "lucide-react";
 
-// 30 分钟自动刷新（与 K 线周期对齐）
+// 30 分钟自动刷新；日K 不自动刷新（每日复盘即可）
 const AUTO_REFRESH_INTERVAL = 30 * 60 * 1000;
+type Timeframe = "30min" | "daily";
+
+const GITHUB_RAW = "https://raw.githubusercontent.com/MacLeeee/futures-monitor/main/futures-monitor/public";
+function getDataUrl(tf: Timeframe): string {
+  const isLocalhost = typeof window !== "undefined" && window.location.port !== "";
+  const base = isLocalhost ? "" : GITHUB_RAW;
+  return tf === "daily" ? `${base}/data_daily.json` : `${base}/data.json`;
+}
 
 // 兼容旧版 data.json（crossStatus/spreadStatus/region → sign/rapidExpanding）
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -36,6 +44,7 @@ function normalizeMacd(data: any[]): FuturesStatus[] {
 type DataSource = "akshare" | "mock" | "github-actions" | null;
 
 export default function FuturesDashboard() {
+  const [timeframe, setTimeframe] = useState<Timeframe>("30min");
   const [data, setData] = useState<FuturesStatus[]>([]);
   const [filteredData, setFilteredData] = useState<FuturesStatus[]>([]);
   const [gapAlerts, setGapAlerts] = useState<GapAlert[]>([]);
@@ -51,27 +60,20 @@ export default function FuturesDashboard() {
   const [selectedCategory, setSelectedCategory] = useState("全部");
   const [selectedMAStatus, setSelectedMAStatus] = useState("全部");
 
-  // 运行时判断数据源（不使用构建时 env var，避免 Cloudflare 打包旧数据）：
-  // - localhost 开发：走本地 /api/futures
-  // - 生产环境：直接读 GitHub Raw，绕过 Cloudflare 静态文件缓存
-  const DATA_URL =
-    typeof window !== "undefined" && window.location.port !== ""
-      ? "/api/futures"
-      : "https://raw.githubusercontent.com/MacLeeee/futures-monitor/main/futures-monitor/public/data.json";
-
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (tf: Timeframe = timeframe) => {
     setIsLoading(true);
     try {
-      // 添加时间戳强制跳过浏览器缓存
-      const url = `${DATA_URL}${DATA_URL.includes("?") ? "&" : "?"}t=${Date.now()}`;
+      const base = getDataUrl(tf);
+      const url = `${base}?t=${Date.now()}`;
       const res = await fetch(url, { signal: AbortSignal.timeout(20000) });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
       setData(normalizeMacd(json.data ?? []));
       setDataSource(json.source as DataSource);
       if (json.updatedAt) setRemoteUpdatedAt(json.updatedAt);
-      setGapAlerts((json.gapAlerts ?? []) as GapAlert[]);
-      setGapCheckInfo((json.gapCheckInfo ?? null) as GapCheckInfo | null);
+      // 日K 无跳空检测
+      setGapAlerts(tf === "30min" ? (json.gapAlerts ?? []) as GapAlert[] : []);
+      setGapCheckInfo(tf === "30min" ? (json.gapCheckInfo ?? null) as GapCheckInfo | null : null);
     } catch (err) {
       console.error("[Dashboard] 数据加载失败:", err);
     } finally {
@@ -79,7 +81,7 @@ export default function FuturesDashboard() {
       setLastRefresh(new Date());
       setNextRefreshIn(AUTO_REFRESH_INTERVAL);
     }
-  }, [DATA_URL]);
+  }, [timeframe]);
 
   // 初始加载
   useEffect(() => {
@@ -102,11 +104,18 @@ export default function FuturesDashboard() {
     return () => clearInterval(tick);
   }, [autoRefresh, lastRefresh]);
 
+  // 切换周期 Tab
+  const handleTimeframeChange = useCallback((tf: Timeframe) => {
+    setTimeframe(tf);
+    setData([]);
+    loadData(tf);
+  }, [loadData]);
+
   // 手动刷新时重置倒计时
   const handleManualRefresh = useCallback(() => {
     setNextRefreshIn(AUTO_REFRESH_INTERVAL);
-    loadData();
-  }, [loadData]);
+    loadData(timeframe);
+  }, [loadData, timeframe]);
 
   // 筛选逻辑
   useEffect(() => {
@@ -132,6 +141,35 @@ export default function FuturesDashboard() {
     <div className="min-h-screen bg-gray-950 text-gray-100 p-4 font-mono">
       <div className="max-w-screen-2xl mx-auto space-y-3">
 
+        {/* 周期切换 Tab */}
+        <div className="flex gap-2 items-center border-b border-gray-800 pb-2">
+          <button
+            onClick={() => handleTimeframeChange("30min")}
+            className={`flex items-center gap-1.5 px-4 py-1.5 text-xs rounded border transition-colors ${
+              timeframe === "30min"
+                ? "bg-cyan-900/60 text-cyan-300 border-cyan-700"
+                : "text-gray-500 border-gray-800 hover:text-gray-300 hover:border-gray-600"
+            }`}
+          >
+            <Activity size={12} />
+            30分钟 · 实时
+          </button>
+          <button
+            onClick={() => handleTimeframeChange("daily")}
+            className={`flex items-center gap-1.5 px-4 py-1.5 text-xs rounded border transition-colors ${
+              timeframe === "daily"
+                ? "bg-purple-900/60 text-purple-300 border-purple-700"
+                : "text-gray-500 border-gray-800 hover:text-gray-300 hover:border-gray-600"
+            }`}
+          >
+            <CalendarDays size={12} />
+            日K · 复盘
+          </button>
+          {timeframe === "daily" && (
+            <span className="ml-2 text-[10px] text-gray-600">日K数据每次运行脚本时同步更新，无自动推送</span>
+          )}
+        </div>
+
         {/* 实盘/模拟数据状态横幅 */}
         <DataSourceBanner source={dataSource} updatedAt={remoteUpdatedAt} />
 
@@ -145,7 +183,8 @@ export default function FuturesDashboard() {
           onToggleAutoRefresh={() => setAutoRefresh((v) => !v)}
           onManualRefresh={handleManualRefresh}
           isLoading={isLoading}
-          nextRefreshIn={autoRefresh ? formatCountdown(nextRefreshIn) : null}
+          nextRefreshIn={autoRefresh && timeframe === "30min" ? formatCountdown(nextRefreshIn) : null}
+          timeframe={timeframe}
         />
 
         {/* 筛选工具栏 */}

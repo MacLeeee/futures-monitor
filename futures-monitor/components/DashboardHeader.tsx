@@ -17,6 +17,7 @@ interface DashboardHeaderProps {
   onManualRefresh: () => void;
   isLoading: boolean;
   nextRefreshIn: string | null;
+  timeframe?: "30min" | "daily";
 }
 
 export default function DashboardHeader({
@@ -29,6 +30,7 @@ export default function DashboardHeader({
   onManualRefresh,
   isLoading,
   nextRefreshIn,
+  timeframe = "30min",
 }: DashboardHeaderProps) {
   // 初始值为 null，避免 SSR 与客户端水合时的时间不一致（Hydration mismatch）
   const [now, setNow] = useState<Date | null>(null);
@@ -113,7 +115,7 @@ export default function DashboardHeader({
             <h1 className="text-lg font-bold text-white tracking-tight">
               期货品种监控
               <span className="ml-2 text-xs font-normal text-gray-500 tracking-widest">
-                FUTURES MONITOR · 30MIN
+                FUTURES MONITOR · {timeframe === "daily" ? "DAILY" : "30MIN"}
               </span>
             </h1>
           </div>

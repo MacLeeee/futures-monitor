@@ -13,6 +13,7 @@ on:
     branches: [main]
     paths-ignore:
       - "futures-monitor/public/data.json"
+      - "futures-monitor/public/data_daily.json"
 
 permissions:
   contents: write
@@ -55,14 +56,14 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID:   ${{ secrets.TELEGRAM_CHAT_ID }}
 
-      # data.json 有变化才提交；pull --rebase 防止并发 push 冲突导致 workflow 崩溃
-      - name: Commit data.json
+      # data.json / data_daily.json 有变化才提交；pull --rebase 防止并发 push 冲突
+      - name: Commit data
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add futures-monitor/public/data.json
+          git add futures-monitor/public/data.json futures-monitor/public/data_daily.json
           if git diff --quiet && git diff --staged --quiet; then
-            echo "[SKIP] data.json 无变化，跳过 commit"
+            echo "[SKIP] 数据无变化，跳过 commit"
             exit 0
           fi
           git commit -m "chore: update futures data"

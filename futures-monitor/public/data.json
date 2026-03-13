@@ -1,280 +1,37 @@
 {
   "source": "github-actions",
-  "updatedAt": "2026-03-13T04:30:55.000Z",
-  "gapCheckInfo": null,
-  "gapAlerts": [],
+  "updatedAt": "2026-03-13T05:01:04.000Z",
+  "gapCheckInfo": {
+    "checkedAt": "13:01",
+    "session": "午盘",
+    "count": 2
+  },
+  "gapAlerts": [
+    {
+      "symbol": "豆粕",
+      "category": "油脂",
+      "gapPct": -0.346,
+      "direction": "down",
+      "openPrice": 3165.0,
+      "prevClose": 3176.0,
+      "session": "午盘"
+    },
+    {
+      "symbol": "烧碱",
+      "category": "能化",
+      "gapPct": 0.232,
+      "direction": "up",
+      "openPrice": 2597.0,
+      "prevClose": 2591.0,
+      "session": "午盘"
+    }
+  ],
   "data": [
-    {
-      "symbol": "白银",
-      "category": "贵金属",
-      "timeframe": "30min",
-      "lastUpdate": "12:30:54",
-      "price": 21656.0,
-      "change": 0.01,
-      "ma": {
-        "status": "Downward",
-        "cumulative": 4,
-        "ma20": 21832.1,
-        "ma60": 22186.38,
-        "slope20Pct": -0.0602,
-        "slopeType": "declining"
-      },
-      "macd": {
-        "sign": "negative",
-        "rapidExpanding": true,
-        "expansionRate": 1.34,
-        "cumulative": 2
-      },
-      "volume": {
-        "status": "Surge",
-        "cumulative": 1,
-        "value": 1711,
-        "change": 1706,
-        "changePct": 34120.0
-      },
-      "openInterest": {
-        "value": 211445,
-        "prevValue": 211273,
-        "change": 172,
-        "changePct": 0.08,
-        "status": "Increasing",
-        "cumulative": 2
-      },
-      "dipSignal": null
-    },
-    {
-      "symbol": "铁矿石",
-      "category": "黑色",
-      "timeframe": "30min",
-      "lastUpdate": "12:30:54",
-      "price": 817.0,
-      "change": -0.18,
-      "ma": {
-        "status": "Upward",
-        "cumulative": 29,
-        "ma20": 803.25,
-        "ma60": 789.31,
-        "slope20Pct": 0.5665,
-        "slopeType": "steep"
-      },
-      "macd": {
-        "sign": "positive",
-        "rapidExpanding": false,
-        "expansionRate": -0.98,
-        "cumulative": 20
-      },
-      "volume": {
-        "status": "Shrink",
-        "cumulative": 2,
-        "value": 7137,
-        "change": -10808,
-        "changePct": -60.2
-      },
-      "openInterest": {
-        "value": 476344,
-        "prevValue": 477765,
-        "change": -1421,
-        "changePct": -0.3,
-        "status": "Decreasing",
-        "cumulative": 1
-      },
-      "dipSignal": null
-    },
-    {
-      "symbol": "铝",
-      "category": "有色",
-      "timeframe": "30min",
-      "lastUpdate": "12:30:54",
-      "price": 25310.0,
-      "change": -0.16,
-      "ma": {
-        "status": "Silent",
-        "cumulative": 3,
-        "ma20": 25383.25,
-        "ma60": 25219.67,
-        "slope20Pct": -0.0473,
-        "slopeType": "declining"
-      },
-      "macd": {
-        "sign": "negative",
-        "rapidExpanding": true,
-        "expansionRate": 1.16,
-        "cumulative": 22
-      },
-      "volume": {
-        "status": "Surge",
-        "cumulative": 1,
-        "value": 3599,
-        "change": 3260,
-        "changePct": 961.7
-      },
-      "openInterest": {
-        "value": 308799,
-        "prevValue": 309417,
-        "change": -618,
-        "changePct": -0.2,
-        "status": "Decreasing",
-        "cumulative": 1
-      },
-      "dipSignal": null
-    },
-    {
-      "symbol": "铜",
-      "category": "有色",
-      "timeframe": "30min",
-      "lastUpdate": "12:30:54",
-      "price": 100460.0,
-      "change": -0.05,
-      "ma": {
-        "status": "Downward",
-        "cumulative": 12,
-        "ma20": 100789.0,
-        "ma60": 101164.33,
-        "slope20Pct": -0.0971,
-        "slopeType": "declining"
-      },
-      "macd": {
-        "sign": "negative",
-        "rapidExpanding": true,
-        "expansionRate": 1.65,
-        "cumulative": 3
-      },
-      "volume": {
-        "status": "Surge",
-        "cumulative": 3,
-        "value": 1139,
-        "change": 781,
-        "changePct": 218.2
-      },
-      "openInterest": {
-        "value": 188298,
-        "prevValue": 188322,
-        "change": -24,
-        "changePct": -0.01,
-        "status": "Decreasing",
-        "cumulative": 2
-      },
-      "dipSignal": null
-    },
-    {
-      "symbol": "黄金",
-      "category": "贵金属",
-      "timeframe": "30min",
-      "lastUpdate": "12:30:54",
-      "price": 1141.42,
-      "change": -0.01,
-      "ma": {
-        "status": "Downward",
-        "cumulative": 22,
-        "ma20": 1146.09,
-        "ma60": 1152.68,
-        "slope20Pct": -0.1088,
-        "slopeType": "declining"
-      },
-      "macd": {
-        "sign": "negative",
-        "rapidExpanding": false,
-        "expansionRate": -0.39,
-        "cumulative": 44
-      },
-      "volume": {
-        "status": "Shrink",
-        "cumulative": 3,
-        "value": 394,
-        "change": -1289,
-        "changePct": -76.6
-      },
-      "openInterest": {
-        "value": 141802,
-        "prevValue": 141888,
-        "change": -86,
-        "changePct": -0.06,
-        "status": "Decreasing",
-        "cumulative": 5
-      },
-      "dipSignal": null
-    },
-    {
-      "symbol": "锡",
-      "category": "有色",
-      "timeframe": "30min",
-      "lastUpdate": "12:30:54",
-      "price": 385480.0,
-      "change": 0.09,
-      "ma": {
-        "status": "Downward",
-        "cumulative": 4,
-        "ma20": 388360.5,
-        "ma60": 392927.67,
-        "slope20Pct": -0.2162,
-        "slopeType": "declining"
-      },
-      "macd": {
-        "sign": "negative",
-        "rapidExpanding": false,
-        "expansionRate": 0.22,
-        "cumulative": 3
-      },
-      "volume": {
-        "status": "Shrink",
-        "cumulative": 3,
-        "value": 426,
-        "change": -6012,
-        "changePct": -93.4
-      },
-      "openInterest": {
-        "value": 34643,
-        "prevValue": 34963,
-        "change": -320,
-        "changePct": -0.92,
-        "status": "Decreasing",
-        "cumulative": 3
-      },
-      "dipSignal": null
-    },
-    {
-      "symbol": "镍",
-      "category": "有色",
-      "timeframe": "30min",
-      "lastUpdate": "12:30:54",
-      "price": 138030.0,
-      "change": -0.27,
-      "ma": {
-        "status": "Downward",
-        "cumulative": 1,
-        "ma20": 138397.5,
-        "ma60": 138032.5,
-        "slope20Pct": -0.039,
-        "slopeType": "declining"
-      },
-      "macd": {
-        "sign": "negative",
-        "rapidExpanding": true,
-        "expansionRate": 2.77,
-        "cumulative": 3
-      },
-      "volume": {
-        "status": "Shrink",
-        "cumulative": 4,
-        "value": 2190,
-        "change": -11145,
-        "changePct": -83.6
-      },
-      "openInterest": {
-        "value": 214329,
-        "prevValue": 214797,
-        "change": -468,
-        "changePct": -0.22,
-        "status": "Decreasing",
-        "cumulative": 2
-      },
-      "dipSignal": null
-    },
     {
       "symbol": "碳酸锂",
       "category": "有色",
       "timeframe": "30min",
-      "lastUpdate": "12:30:54",
+      "lastUpdate": "13:01:03",
       "price": 157840.0,
       "change": -0.43,
       "ma": {
@@ -309,40 +66,268 @@
       "dipSignal": null
     },
     {
-      "symbol": "螺纹钢",
+      "symbol": "黄金",
+      "category": "贵金属",
+      "timeframe": "30min",
+      "lastUpdate": "13:01:03",
+      "price": 1141.42,
+      "change": -0.01,
+      "ma": {
+        "status": "Downward",
+        "cumulative": 22,
+        "ma20": 1146.09,
+        "ma60": 1152.68,
+        "slope20Pct": -0.1088,
+        "slopeType": "declining"
+      },
+      "macd": {
+        "sign": "negative",
+        "rapidExpanding": false,
+        "expansionRate": -0.39,
+        "cumulative": 44
+      },
+      "volume": {
+        "status": "Shrink",
+        "cumulative": 3,
+        "value": 394,
+        "change": -1289,
+        "changePct": -76.6
+      },
+      "openInterest": {
+        "value": 141802,
+        "prevValue": 141888,
+        "change": -86,
+        "changePct": -0.06,
+        "status": "Decreasing",
+        "cumulative": 5
+      },
+      "dipSignal": null
+    },
+    {
+      "symbol": "铁矿石",
       "category": "黑色",
       "timeframe": "30min",
-      "lastUpdate": "12:30:54",
-      "price": 3144.0,
-      "change": -0.03,
+      "lastUpdate": "13:01:03",
+      "price": 817.0,
+      "change": -0.18,
       "ma": {
         "status": "Upward",
-        "cumulative": 28,
-        "ma20": 3132.0,
-        "ma60": 3116.17,
-        "slope20Pct": 0.1263,
-        "slopeType": "gentle"
+        "cumulative": 29,
+        "ma20": 803.25,
+        "ma60": 789.31,
+        "slope20Pct": 0.5665,
+        "slopeType": "steep"
       },
       "macd": {
         "sign": "positive",
         "rapidExpanding": false,
-        "expansionRate": -0.69,
-        "cumulative": 9
+        "expansionRate": -0.98,
+        "cumulative": 20
+      },
+      "volume": {
+        "status": "Shrink",
+        "cumulative": 2,
+        "value": 7137,
+        "change": -10808,
+        "changePct": -60.2
+      },
+      "openInterest": {
+        "value": 476344,
+        "prevValue": 477765,
+        "change": -1421,
+        "changePct": -0.3,
+        "status": "Decreasing",
+        "cumulative": 1
+      },
+      "dipSignal": null
+    },
+    {
+      "symbol": "镍",
+      "category": "有色",
+      "timeframe": "30min",
+      "lastUpdate": "13:01:03",
+      "price": 138030.0,
+      "change": -0.27,
+      "ma": {
+        "status": "Downward",
+        "cumulative": 1,
+        "ma20": 138397.5,
+        "ma60": 138032.5,
+        "slope20Pct": -0.039,
+        "slopeType": "declining"
+      },
+      "macd": {
+        "sign": "negative",
+        "rapidExpanding": true,
+        "expansionRate": 2.77,
+        "cumulative": 3
+      },
+      "volume": {
+        "status": "Shrink",
+        "cumulative": 4,
+        "value": 2190,
+        "change": -11145,
+        "changePct": -83.6
+      },
+      "openInterest": {
+        "value": 214329,
+        "prevValue": 214797,
+        "change": -468,
+        "changePct": -0.22,
+        "status": "Decreasing",
+        "cumulative": 2
+      },
+      "dipSignal": null
+    },
+    {
+      "symbol": "白银",
+      "category": "贵金属",
+      "timeframe": "30min",
+      "lastUpdate": "13:01:03",
+      "price": 21656.0,
+      "change": 0.01,
+      "ma": {
+        "status": "Downward",
+        "cumulative": 4,
+        "ma20": 21832.1,
+        "ma60": 22186.38,
+        "slope20Pct": -0.0602,
+        "slopeType": "declining"
+      },
+      "macd": {
+        "sign": "negative",
+        "rapidExpanding": true,
+        "expansionRate": 1.34,
+        "cumulative": 2
       },
       "volume": {
         "status": "Surge",
-        "cumulative": 2,
-        "value": 6471,
-        "change": 794,
-        "changePct": 14.0
+        "cumulative": 1,
+        "value": 1711,
+        "change": 1706,
+        "changePct": 34120.0
       },
       "openInterest": {
-        "value": 1641521,
-        "prevValue": 1646736,
-        "change": -5215,
-        "changePct": -0.32,
+        "value": 211445,
+        "prevValue": 211273,
+        "change": 172,
+        "changePct": 0.08,
+        "status": "Increasing",
+        "cumulative": 2
+      },
+      "dipSignal": null
+    },
+    {
+      "symbol": "铜",
+      "category": "有色",
+      "timeframe": "30min",
+      "lastUpdate": "13:01:03",
+      "price": 100460.0,
+      "change": -0.05,
+      "ma": {
+        "status": "Downward",
+        "cumulative": 12,
+        "ma20": 100789.0,
+        "ma60": 101164.33,
+        "slope20Pct": -0.0971,
+        "slopeType": "declining"
+      },
+      "macd": {
+        "sign": "negative",
+        "rapidExpanding": true,
+        "expansionRate": 1.65,
+        "cumulative": 3
+      },
+      "volume": {
+        "status": "Surge",
+        "cumulative": 3,
+        "value": 1139,
+        "change": 781,
+        "changePct": 218.2
+      },
+      "openInterest": {
+        "value": 188298,
+        "prevValue": 188322,
+        "change": -24,
+        "changePct": -0.01,
+        "status": "Decreasing",
+        "cumulative": 2
+      },
+      "dipSignal": null
+    },
+    {
+      "symbol": "锡",
+      "category": "有色",
+      "timeframe": "30min",
+      "lastUpdate": "13:01:03",
+      "price": 385480.0,
+      "change": 0.09,
+      "ma": {
+        "status": "Downward",
+        "cumulative": 4,
+        "ma20": 388360.5,
+        "ma60": 392927.67,
+        "slope20Pct": -0.2162,
+        "slopeType": "declining"
+      },
+      "macd": {
+        "sign": "negative",
+        "rapidExpanding": false,
+        "expansionRate": 0.22,
+        "cumulative": 3
+      },
+      "volume": {
+        "status": "Shrink",
+        "cumulative": 3,
+        "value": 426,
+        "change": -6012,
+        "changePct": -93.4
+      },
+      "openInterest": {
+        "value": 34643,
+        "prevValue": 34963,
+        "change": -320,
+        "changePct": -0.92,
         "status": "Decreasing",
         "cumulative": 3
+      },
+      "dipSignal": null
+    },
+    {
+      "symbol": "铝",
+      "category": "有色",
+      "timeframe": "30min",
+      "lastUpdate": "13:01:03",
+      "price": 25310.0,
+      "change": -0.16,
+      "ma": {
+        "status": "Silent",
+        "cumulative": 3,
+        "ma20": 25383.25,
+        "ma60": 25219.67,
+        "slope20Pct": -0.0473,
+        "slopeType": "declining"
+      },
+      "macd": {
+        "sign": "negative",
+        "rapidExpanding": true,
+        "expansionRate": 1.16,
+        "cumulative": 22
+      },
+      "volume": {
+        "status": "Surge",
+        "cumulative": 1,
+        "value": 3599,
+        "change": 3260,
+        "changePct": 961.7
+      },
+      "openInterest": {
+        "value": 308799,
+        "prevValue": 309417,
+        "change": -618,
+        "changePct": -0.2,
+        "status": "Decreasing",
+        "cumulative": 1
       },
       "dipSignal": null
     },
@@ -350,7 +335,7 @@
       "symbol": "焦煤",
       "category": "黑色",
       "timeframe": "30min",
-      "lastUpdate": "12:30:55",
+      "lastUpdate": "13:01:03",
       "price": 1188.0,
       "change": -0.29,
       "ma": {
@@ -388,7 +373,7 @@
       "symbol": "锰硅",
       "category": "黑色",
       "timeframe": "30min",
-      "lastUpdate": "12:30:55",
+      "lastUpdate": "13:01:03",
       "price": 6220.0,
       "change": -0.38,
       "ma": {
@@ -423,124 +408,10 @@
       "dipSignal": null
     },
     {
-      "symbol": "棉花",
-      "category": "农产品",
-      "timeframe": "30min",
-      "lastUpdate": "12:30:55",
-      "price": 15670.0,
-      "change": 0.03,
-      "ma": {
-        "status": "Upward",
-        "cumulative": 12,
-        "ma20": 15573.75,
-        "ma60": 15460.33,
-        "slope20Pct": 0.1334,
-        "slopeType": "gentle"
-      },
-      "macd": {
-        "sign": "positive",
-        "rapidExpanding": false,
-        "expansionRate": -0.1,
-        "cumulative": 4
-      },
-      "volume": {
-        "status": "Shrink",
-        "cumulative": 2,
-        "value": 7671,
-        "change": -18470,
-        "changePct": -70.7
-      },
-      "openInterest": {
-        "value": 757524,
-        "prevValue": 757777,
-        "change": -253,
-        "changePct": -0.03,
-        "status": "Decreasing",
-        "cumulative": 2
-      },
-      "dipSignal": null
-    },
-    {
-      "symbol": "玉米",
-      "category": "农产品",
-      "timeframe": "30min",
-      "lastUpdate": "12:30:55",
-      "price": 2396.0,
-      "change": 0.04,
-      "ma": {
-        "status": "Upward",
-        "cumulative": 2,
-        "ma20": 2394.35,
-        "ma60": 2393.25,
-        "slope20Pct": -0.0042,
-        "slopeType": "declining"
-      },
-      "macd": {
-        "sign": "negative",
-        "rapidExpanding": false,
-        "expansionRate": -1.17,
-        "cumulative": 9
-      },
-      "volume": {
-        "status": "Shrink",
-        "cumulative": 1,
-        "value": 2203,
-        "change": -1838,
-        "changePct": -45.5
-      },
-      "openInterest": {
-        "value": 1410061,
-        "prevValue": 1411954,
-        "change": -1893,
-        "changePct": -0.13,
-        "status": "Decreasing",
-        "cumulative": 1
-      },
-      "dipSignal": null
-    },
-    {
-      "symbol": "白糖",
-      "category": "农产品",
-      "timeframe": "30min",
-      "lastUpdate": "12:30:55",
-      "price": 5476.0,
-      "change": 0.09,
-      "ma": {
-        "status": "Upward",
-        "cumulative": 8,
-        "ma20": 5442.1,
-        "ma60": 5427.95,
-        "slope20Pct": 0.1251,
-        "slopeType": "gentle"
-      },
-      "macd": {
-        "sign": "positive",
-        "rapidExpanding": false,
-        "expansionRate": -0.08,
-        "cumulative": 7
-      },
-      "volume": {
-        "status": "Shrink",
-        "cumulative": 2,
-        "value": 2298,
-        "change": -16097,
-        "changePct": -87.5
-      },
-      "openInterest": {
-        "value": 422655,
-        "prevValue": 423859,
-        "change": -1204,
-        "changePct": -0.28,
-        "status": "Decreasing",
-        "cumulative": 1
-      },
-      "dipSignal": null
-    },
-    {
       "symbol": "硅铁",
       "category": "黑色",
       "timeframe": "30min",
-      "lastUpdate": "12:30:55",
+      "lastUpdate": "13:01:03",
       "price": 5944.0,
       "change": -0.37,
       "ma": {
@@ -575,48 +446,10 @@
       "dipSignal": null
     },
     {
-      "symbol": "豆油",
-      "category": "油脂",
-      "timeframe": "30min",
-      "lastUpdate": "12:30:55",
-      "price": 8754.0,
-      "change": -0.14,
-      "ma": {
-        "status": "Upward",
-        "cumulative": 25,
-        "ma20": 8674.3,
-        "ma60": 8604.4,
-        "slope20Pct": 0.2728,
-        "slopeType": "steep"
-      },
-      "macd": {
-        "sign": "positive",
-        "rapidExpanding": false,
-        "expansionRate": -0.58,
-        "cumulative": 25
-      },
-      "volume": {
-        "status": "Surge",
-        "cumulative": 2,
-        "value": 3072,
-        "change": 629,
-        "changePct": 25.7
-      },
-      "openInterest": {
-        "value": 640384,
-        "prevValue": 641436,
-        "change": -1052,
-        "changePct": -0.16,
-        "status": "Decreasing",
-        "cumulative": 1
-      },
-      "dipSignal": null
-    },
-    {
       "symbol": "生猪",
       "category": "农产品",
       "timeframe": "30min",
-      "lastUpdate": "12:30:55",
+      "lastUpdate": "13:01:04",
       "price": 11170.0,
       "change": 0.0,
       "ma": {
@@ -651,10 +484,162 @@
       "dipSignal": null
     },
     {
+      "symbol": "玉米",
+      "category": "农产品",
+      "timeframe": "30min",
+      "lastUpdate": "13:01:04",
+      "price": 2396.0,
+      "change": 0.04,
+      "ma": {
+        "status": "Upward",
+        "cumulative": 2,
+        "ma20": 2394.35,
+        "ma60": 2393.25,
+        "slope20Pct": -0.0042,
+        "slopeType": "declining"
+      },
+      "macd": {
+        "sign": "negative",
+        "rapidExpanding": false,
+        "expansionRate": -1.17,
+        "cumulative": 9
+      },
+      "volume": {
+        "status": "Shrink",
+        "cumulative": 1,
+        "value": 2203,
+        "change": -1838,
+        "changePct": -45.5
+      },
+      "openInterest": {
+        "value": 1410061,
+        "prevValue": 1411954,
+        "change": -1893,
+        "changePct": -0.13,
+        "status": "Decreasing",
+        "cumulative": 1
+      },
+      "dipSignal": null
+    },
+    {
+      "symbol": "螺纹钢",
+      "category": "黑色",
+      "timeframe": "30min",
+      "lastUpdate": "13:01:04",
+      "price": 3144.0,
+      "change": -0.03,
+      "ma": {
+        "status": "Upward",
+        "cumulative": 28,
+        "ma20": 3132.0,
+        "ma60": 3116.17,
+        "slope20Pct": 0.1263,
+        "slopeType": "gentle"
+      },
+      "macd": {
+        "sign": "positive",
+        "rapidExpanding": false,
+        "expansionRate": -0.69,
+        "cumulative": 9
+      },
+      "volume": {
+        "status": "Surge",
+        "cumulative": 2,
+        "value": 6471,
+        "change": 794,
+        "changePct": 14.0
+      },
+      "openInterest": {
+        "value": 1641521,
+        "prevValue": 1646736,
+        "change": -5215,
+        "changePct": -0.32,
+        "status": "Decreasing",
+        "cumulative": 3
+      },
+      "dipSignal": null
+    },
+    {
+      "symbol": "棉花",
+      "category": "农产品",
+      "timeframe": "30min",
+      "lastUpdate": "13:01:04",
+      "price": 15670.0,
+      "change": 0.03,
+      "ma": {
+        "status": "Upward",
+        "cumulative": 12,
+        "ma20": 15573.75,
+        "ma60": 15460.33,
+        "slope20Pct": 0.1334,
+        "slopeType": "gentle"
+      },
+      "macd": {
+        "sign": "positive",
+        "rapidExpanding": false,
+        "expansionRate": -0.1,
+        "cumulative": 4
+      },
+      "volume": {
+        "status": "Shrink",
+        "cumulative": 2,
+        "value": 7671,
+        "change": -18470,
+        "changePct": -70.7
+      },
+      "openInterest": {
+        "value": 757524,
+        "prevValue": 757777,
+        "change": -253,
+        "changePct": -0.03,
+        "status": "Decreasing",
+        "cumulative": 2
+      },
+      "dipSignal": null
+    },
+    {
+      "symbol": "豆油",
+      "category": "油脂",
+      "timeframe": "30min",
+      "lastUpdate": "13:01:04",
+      "price": 8754.0,
+      "change": -0.14,
+      "ma": {
+        "status": "Upward",
+        "cumulative": 25,
+        "ma20": 8674.3,
+        "ma60": 8604.4,
+        "slope20Pct": 0.2728,
+        "slopeType": "steep"
+      },
+      "macd": {
+        "sign": "positive",
+        "rapidExpanding": false,
+        "expansionRate": -0.58,
+        "cumulative": 25
+      },
+      "volume": {
+        "status": "Surge",
+        "cumulative": 2,
+        "value": 3072,
+        "change": 629,
+        "changePct": 25.7
+      },
+      "openInterest": {
+        "value": 640384,
+        "prevValue": 641436,
+        "change": -1052,
+        "changePct": -0.16,
+        "status": "Decreasing",
+        "cumulative": 1
+      },
+      "dipSignal": null
+    },
+    {
       "symbol": "菜油",
       "category": "油脂",
       "timeframe": "30min",
-      "lastUpdate": "12:30:55",
+      "lastUpdate": "13:01:04",
       "price": 9943.0,
       "change": 0.03,
       "ma": {
@@ -689,10 +674,48 @@
       "dipSignal": null
     },
     {
+      "symbol": "白糖",
+      "category": "农产品",
+      "timeframe": "30min",
+      "lastUpdate": "13:01:04",
+      "price": 5476.0,
+      "change": 0.09,
+      "ma": {
+        "status": "Upward",
+        "cumulative": 8,
+        "ma20": 5442.1,
+        "ma60": 5427.95,
+        "slope20Pct": 0.1251,
+        "slopeType": "gentle"
+      },
+      "macd": {
+        "sign": "positive",
+        "rapidExpanding": false,
+        "expansionRate": -0.08,
+        "cumulative": 7
+      },
+      "volume": {
+        "status": "Shrink",
+        "cumulative": 2,
+        "value": 2298,
+        "change": -16097,
+        "changePct": -87.5
+      },
+      "openInterest": {
+        "value": 422655,
+        "prevValue": 423859,
+        "change": -1204,
+        "changePct": -0.28,
+        "status": "Decreasing",
+        "cumulative": 1
+      },
+      "dipSignal": null
+    },
+    {
       "symbol": "棕榈油",
       "category": "油脂",
       "timeframe": "30min",
-      "lastUpdate": "12:30:55",
+      "lastUpdate": "13:01:04",
       "price": 9838.0,
       "change": -0.24,
       "ma": {
@@ -730,7 +753,7 @@
       "symbol": "豆粕",
       "category": "油脂",
       "timeframe": "30min",
-      "lastUpdate": "12:30:55",
+      "lastUpdate": "13:01:04",
       "price": 3194.0,
       "change": 0.57,
       "ma": {
@@ -768,7 +791,7 @@
       "symbol": "菜粕",
       "category": "油脂",
       "timeframe": "30min",
-      "lastUpdate": "12:30:55",
+      "lastUpdate": "13:01:04",
       "price": 2628.0,
       "change": 0.34,
       "ma": {
@@ -806,7 +829,7 @@
       "symbol": "原油",
       "category": "能化",
       "timeframe": "30min",
-      "lastUpdate": "12:30:55",
+      "lastUpdate": "13:01:04",
       "price": 764.2,
       "change": -0.65,
       "ma": {
@@ -844,7 +867,7 @@
       "symbol": "燃油",
       "category": "能化",
       "timeframe": "30min",
-      "lastUpdate": "12:30:55",
+      "lastUpdate": "13:01:04",
       "price": 4770.0,
       "change": -0.36,
       "ma": {
@@ -879,48 +902,10 @@
       "dipSignal": null
     },
     {
-      "symbol": "烧碱",
-      "category": "能化",
-      "timeframe": "30min",
-      "lastUpdate": "12:30:55",
-      "price": 2616.0,
-      "change": 0.96,
-      "ma": {
-        "status": "Upward",
-        "cumulative": 4,
-        "ma20": 2549.25,
-        "ma60": 2440.92,
-        "slope20Pct": 0.7012,
-        "slopeType": "steep"
-      },
-      "macd": {
-        "sign": "positive",
-        "rapidExpanding": false,
-        "expansionRate": -1.47,
-        "cumulative": 1
-      },
-      "volume": {
-        "status": "Shrink",
-        "cumulative": 2,
-        "value": 6104,
-        "change": -33678,
-        "changePct": -84.7
-      },
-      "openInterest": {
-        "value": 128516,
-        "prevValue": 123889,
-        "change": 4627,
-        "changePct": 3.73,
-        "status": "Increasing",
-        "cumulative": 5
-      },
-      "dipSignal": null
-    },
-    {
       "symbol": "苯乙烯",
       "category": "能化",
       "timeframe": "30min",
-      "lastUpdate": "12:30:55",
+      "lastUpdate": "13:01:04",
       "price": 9997.0,
       "change": -0.27,
       "ma": {
@@ -955,10 +940,162 @@
       "dipSignal": null
     },
     {
+      "symbol": "橡胶",
+      "category": "能化",
+      "timeframe": "30min",
+      "lastUpdate": "13:01:04",
+      "price": 16870.0,
+      "change": -0.3,
+      "ma": {
+        "status": "Downward",
+        "cumulative": 3,
+        "ma20": 17103.5,
+        "ma60": 17036.08,
+        "slope20Pct": -0.2086,
+        "slopeType": "declining"
+      },
+      "macd": {
+        "sign": "negative",
+        "rapidExpanding": true,
+        "expansionRate": 2.17,
+        "cumulative": 14
+      },
+      "volume": {
+        "status": "Shrink",
+        "cumulative": 1,
+        "value": 8164,
+        "change": -27308,
+        "changePct": -77.0
+      },
+      "openInterest": {
+        "value": 141433,
+        "prevValue": 143007,
+        "change": -1574,
+        "changePct": -1.1,
+        "status": "Decreasing",
+        "cumulative": 1
+      },
+      "dipSignal": null
+    },
+    {
+      "symbol": "玻璃",
+      "category": "建材",
+      "timeframe": "30min",
+      "lastUpdate": "13:01:04",
+      "price": 1137.0,
+      "change": 0.09,
+      "ma": {
+        "status": "Upward",
+        "cumulative": 29,
+        "ma20": 1128.45,
+        "ma60": 1106.8,
+        "slope20Pct": 0.329,
+        "slopeType": "steep"
+      },
+      "macd": {
+        "sign": "negative",
+        "rapidExpanding": false,
+        "expansionRate": -0.65,
+        "cumulative": 1
+      },
+      "volume": {
+        "status": "Shrink",
+        "cumulative": 2,
+        "value": 5537,
+        "change": -80146,
+        "changePct": -93.5
+      },
+      "openInterest": {
+        "value": 1007761,
+        "prevValue": 1007119,
+        "change": 642,
+        "changePct": 0.06,
+        "status": "Increasing",
+        "cumulative": 1
+      },
+      "dipSignal": null
+    },
+    {
+      "symbol": "烧碱",
+      "category": "能化",
+      "timeframe": "30min",
+      "lastUpdate": "13:01:04",
+      "price": 2616.0,
+      "change": 0.96,
+      "ma": {
+        "status": "Upward",
+        "cumulative": 4,
+        "ma20": 2549.25,
+        "ma60": 2440.92,
+        "slope20Pct": 0.7012,
+        "slopeType": "steep"
+      },
+      "macd": {
+        "sign": "positive",
+        "rapidExpanding": false,
+        "expansionRate": -1.47,
+        "cumulative": 1
+      },
+      "volume": {
+        "status": "Shrink",
+        "cumulative": 2,
+        "value": 6104,
+        "change": -33678,
+        "changePct": -84.7
+      },
+      "openInterest": {
+        "value": 128516,
+        "prevValue": 123889,
+        "change": 4627,
+        "changePct": 3.73,
+        "status": "Increasing",
+        "cumulative": 5
+      },
+      "dipSignal": null
+    },
+    {
+      "symbol": "纯碱",
+      "category": "建材",
+      "timeframe": "30min",
+      "lastUpdate": "13:01:04",
+      "price": 1285.0,
+      "change": 0.16,
+      "ma": {
+        "status": "Upward",
+        "cumulative": 9,
+        "ma20": 1274.95,
+        "ma60": 1262.85,
+        "slope20Pct": 0.2911,
+        "slopeType": "steep"
+      },
+      "macd": {
+        "sign": "positive",
+        "rapidExpanding": false,
+        "expansionRate": -0.05,
+        "cumulative": 8
+      },
+      "volume": {
+        "status": "Surge",
+        "cumulative": 2,
+        "value": 11994,
+        "change": 10767,
+        "changePct": 877.5
+      },
+      "openInterest": {
+        "value": 972710,
+        "prevValue": 971180,
+        "change": 1530,
+        "changePct": 0.16,
+        "status": "Increasing",
+        "cumulative": 3
+      },
+      "dipSignal": null
+    },
+    {
       "symbol": "PVC",
       "category": "能化",
       "timeframe": "30min",
-      "lastUpdate": "12:30:55",
+      "lastUpdate": "13:01:04",
       "price": 5764.0,
       "change": -0.07,
       "ma": {
@@ -998,154 +1135,40 @@
       }
     },
     {
-      "symbol": "橡胶",
-      "category": "能化",
+      "symbol": "中证1000",
+      "category": "股指",
       "timeframe": "30min",
-      "lastUpdate": "12:30:55",
-      "price": 16870.0,
-      "change": -0.3,
+      "lastUpdate": "13:01:04",
+      "price": 8013.8,
+      "change": 0.06,
       "ma": {
         "status": "Downward",
-        "cumulative": 3,
-        "ma20": 17103.5,
-        "ma60": 17036.08,
-        "slope20Pct": -0.2086,
+        "cumulative": 5,
+        "ma20": 8227.55,
+        "ma60": 8187.05,
+        "slope20Pct": -0.5232,
         "slopeType": "declining"
       },
       "macd": {
         "sign": "negative",
-        "rapidExpanding": true,
-        "expansionRate": 2.17,
-        "cumulative": 14
+        "rapidExpanding": false,
+        "expansionRate": -0.07,
+        "cumulative": 13
       },
       "volume": {
         "status": "Shrink",
         "cumulative": 1,
-        "value": 8164,
-        "change": -27308,
-        "changePct": -77.0
+        "value": 24,
+        "change": -1343,
+        "changePct": -98.2
       },
       "openInterest": {
-        "value": 141433,
-        "prevValue": 143007,
-        "change": -1574,
-        "changePct": -1.1,
-        "status": "Decreasing",
-        "cumulative": 1
-      },
-      "dipSignal": null
-    },
-    {
-      "symbol": "玻璃",
-      "category": "建材",
-      "timeframe": "30min",
-      "lastUpdate": "12:30:55",
-      "price": 1137.0,
-      "change": 0.09,
-      "ma": {
-        "status": "Upward",
-        "cumulative": 29,
-        "ma20": 1128.45,
-        "ma60": 1106.8,
-        "slope20Pct": 0.329,
-        "slopeType": "steep"
-      },
-      "macd": {
-        "sign": "negative",
-        "rapidExpanding": false,
-        "expansionRate": -0.65,
-        "cumulative": 1
-      },
-      "volume": {
-        "status": "Shrink",
-        "cumulative": 2,
-        "value": 5537,
-        "change": -80146,
-        "changePct": -93.5
-      },
-      "openInterest": {
-        "value": 1007761,
-        "prevValue": 1007119,
-        "change": 642,
+        "value": 128887,
+        "prevValue": 128805,
+        "change": 82,
         "changePct": 0.06,
         "status": "Increasing",
-        "cumulative": 1
-      },
-      "dipSignal": null
-    },
-    {
-      "symbol": "纯碱",
-      "category": "建材",
-      "timeframe": "30min",
-      "lastUpdate": "12:30:55",
-      "price": 1285.0,
-      "change": 0.16,
-      "ma": {
-        "status": "Upward",
-        "cumulative": 9,
-        "ma20": 1274.95,
-        "ma60": 1262.85,
-        "slope20Pct": 0.2911,
-        "slopeType": "steep"
-      },
-      "macd": {
-        "sign": "positive",
-        "rapidExpanding": false,
-        "expansionRate": -0.05,
-        "cumulative": 8
-      },
-      "volume": {
-        "status": "Surge",
-        "cumulative": 2,
-        "value": 11994,
-        "change": 10767,
-        "changePct": 877.5
-      },
-      "openInterest": {
-        "value": 972710,
-        "prevValue": 971180,
-        "change": 1530,
-        "changePct": 0.16,
-        "status": "Increasing",
-        "cumulative": 3
-      },
-      "dipSignal": null
-    },
-    {
-      "symbol": "中证1000",
-      "category": "股指",
-      "timeframe": "30min",
-      "lastUpdate": "12:30:55",
-      "price": 8009.0,
-      "change": -0.49,
-      "ma": {
-        "status": "Downward",
-        "cumulative": 4,
-        "ma20": 8243.05,
-        "ma60": 8189.75,
-        "slope20Pct": -0.485,
-        "slopeType": "declining"
-      },
-      "macd": {
-        "sign": "negative",
-        "rapidExpanding": false,
-        "expansionRate": 0.68,
-        "cumulative": 12
-      },
-      "volume": {
-        "status": "Surge",
-        "cumulative": 2,
-        "value": 1367,
-        "change": 1352,
-        "changePct": 9013.3
-      },
-      "openInterest": {
-        "value": 128805,
-        "prevValue": 128192,
-        "change": 613,
-        "changePct": 0.48,
-        "status": "Increasing",
-        "cumulative": 1
+        "cumulative": 2
       },
       "dipSignal": null
     }

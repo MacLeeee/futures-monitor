@@ -30,16 +30,33 @@ run_once() {
     FORCE_FETCH=1 python3 "$SCRIPT"
 
     cd "$REPO_DIR"
-    # 同时暂存 data.json 和 data_daily.json（日K数据）
+
+    # ── Git 健康检查：清理上次失败残留，确保在 main 分支（非 detached HEAD）──
+    git rebase --abort 2>/dev/null || true
+    git merge  --abort 2>/dev/null || true
+    # 若处于 detached HEAD，切回 main
+    git symbolic-ref HEAD &>/dev/null || git checkout main 2>/dev/null || true
+
+    # 同时暂存 data.json 和 data_daily.json
     git add "$DATA_DIR/data.json" "$DATA_DIR/data_daily.json" 2>/dev/null || true
     if git diff --staged --quiet; then
         log "✓ 数据无变化，跳过 commit"
-    else
-        git commit -m "chore: update futures data (local $(date '+%H:%M'))"
-        git pull --rebase origin main
-        git push
-        log "✓ 数据已推送到 GitHub"
+        return 0
     fi
+
+    git commit -m "chore: update futures data (local $(date '+%H:%M'))"
+
+    # 拉取远端最新后推送；冲突时保留本地数据文件（本地数据最新）
+    git fetch origin main
+    git merge origin/main --no-edit -X ours 2>/dev/null || {
+        log "⚠️  merge 冲突，强制保留本地数据文件"
+        git checkout HEAD -- "$DATA_DIR/data.json" "$DATA_DIR/data_daily.json"
+        git add "$DATA_DIR/data.json" "$DATA_DIR/data_daily.json"
+        GIT_EDITOR=true git merge --continue 2>/dev/null || git merge --abort 2>/dev/null || true
+    }
+
+    git push origin main
+    log "✓ 数据已推送到 GitHub"
 }
 
 # ── 主逻辑 ───────────────────────────────────────────────

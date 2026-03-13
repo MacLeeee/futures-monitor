@@ -56,7 +56,7 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID:   ${{ secrets.TELEGRAM_CHAT_ID }}
 
-      # data.json / data_daily.json 有变化才提交；pull --rebase 防止并发 push 冲突
+      # data.json / data_daily.json 有变化才提交；用 merge -X ours 替代 rebase，避免数据文件冲突卡死
       - name: Commit data
         run: |
           git config --local user.email "action@github.com"
@@ -67,5 +67,6 @@ jobs:
             exit 0
           fi
           git commit -m "chore: update futures data"
-          git pull --rebase origin main
-          git push
+          git fetch origin main
+          git merge origin/main --no-edit -X ours
+          git push origin main

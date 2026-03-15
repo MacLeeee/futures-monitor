@@ -169,6 +169,7 @@ function buildFuturesStatus(
       cumulative: oiResult.cumulative,
     },
     dipSignal,
+    strategySignal: null,   // mock 不生成回踩策略信号（需真实日K数据）
   };
 }
 

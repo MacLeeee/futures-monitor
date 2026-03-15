@@ -17,6 +17,16 @@ export interface DipSignal {
   slopeType: MaSlopeType;
 }
 
+// 回踩策略信号（strategy.py 逻辑对应）
+export interface StrategySignal {
+  type: "long" | "short";   // 做多回踩 / 做空反抽
+  bounceAt: "MA20" | "MA60"; // 回踩/反抽的目标均线
+  distPct: number;           // 距均线的 % 距离
+  ma20: number;              // 当前 30min MA20 值
+  ma60: number;              // 当前 30min MA60 值
+  dailyMa20: number | null;  // 日线 MA20 过滤值
+}
+
 export interface FuturesStatus {
   symbol: string;         // 品种名称，如 "苯乙烯"
   category: string;       // 板块分类
@@ -32,7 +42,8 @@ export interface FuturesStatus {
     slope20Pct: number;        // MA20 斜率（3根K线内累计%变化）
     slopeType: MaSlopeType;    // steep=急速上行(≥45°) gentle=缓慢 declining=下行
   };
-  dipSignal: DipSignal | null; // 抄底信号，null=无
+  dipSignal: DipSignal | null;          // 抄底信号，null=无
+  strategySignal: StrategySignal | null; // 回踩策略信号，null=无
   macd: {
     sign: MacdSign;           // diff-dea 正负：positive=金叉区 / negative=死叉区
     rapidExpanding: boolean;  // |diff-dea| 是否快速走扩（当前变化速率 > 近10期均值）

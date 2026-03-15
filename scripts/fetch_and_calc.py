@@ -218,7 +218,8 @@ def calc_ma(df: pd.DataFrame) -> dict:
     }
 
 # 抄底阈值：收盘价距支撑均线最大距离（%）
-_DIP_TOL = 0.5
+_DIP_TOL    = 0.5
+_BOUNCE_TOL = 0.5   # 回踩策略均线距离阈值（%）
 
 def calc_dip_signal(close: float, ma: dict, macd: dict) -> dict | None:
     """
@@ -242,6 +243,85 @@ def calc_dip_signal(close: float, ma: dict, macd: dict) -> dict | None:
             return {"type": "MA60", "support": round(ma60, 2),
                     "distPct": round(dist, 3), "slopeType": slope_type}
     return None
+
+def calc_strategy_signal(
+    close: float,
+    ma: dict,
+    macd: dict,
+    volume: dict,
+    daily_ma20: float | None,
+) -> dict | None:
+    """
+    回踩策略信号（与 strategy.py 逻辑对应）。
+    做多: close > 日MA20 & 30min多头排列 & 回踩均线 & MACD金叉扩口 & 放量
+    做空: close < 日MA20 & 30min空头排列 & 反抽均线 & MACD死叉扩口 & 放量
+    """
+    ma20 = ma.get("ma20")
+    ma60 = ma.get("ma60")
+    slope_type = ma.get("slopeType", "flat")
+
+    if not ma20 or not ma60 or ma20 <= 0 or ma60 <= 0:
+        return None
+
+    dist_ma20 = abs(close - ma20) / ma20 * 100
+    dist_ma60 = abs(close - ma60) / ma60 * 100
+
+    # 均线排列判断
+    bull_aligned = (ma20 > ma60) and slope_type in ("steep", "gentle")
+    bear_aligned = (ma20 < ma60) and slope_type == "declining"
+
+    # 回踩/反抽均线（价格贴近均线 ±0.5%）
+    bounce_ma20_long  = bull_aligned and dist_ma20 <= _BOUNCE_TOL and close >= ma20 * (1 - _BOUNCE_TOL / 100)
+    bounce_ma60_long  = (ma20 > ma60)  and dist_ma60 <= _BOUNCE_TOL and close >= ma60 * (1 - _BOUNCE_TOL / 100)
+    bounce_ma20_short = bear_aligned and dist_ma20 <= _BOUNCE_TOL and close <= ma20 * (1 + _BOUNCE_TOL / 100)
+    bounce_ma60_short = (ma20 < ma60)  and dist_ma60 <= _BOUNCE_TOL and close <= ma60 * (1 + _BOUNCE_TOL / 100)
+
+    # MACD 动能爆发方向
+    macd_surge_long  = (macd.get("sign") == "positive") and macd.get("rapidExpanding", False)
+    macd_surge_short = (macd.get("sign") == "negative") and macd.get("rapidExpanding", False)
+
+    # 放量确认
+    volume_confirm = volume.get("status") == "Surge"
+
+    # 日线 MA20 过滤（无数据时不过滤）
+    above_daily = (daily_ma20 is None) or (close > daily_ma20)
+    below_daily = (daily_ma20 is None) or (close < daily_ma20)
+
+    long_signal = (
+        above_daily
+        and bull_aligned
+        and (bounce_ma20_long or bounce_ma60_long)
+        and macd_surge_long
+        and volume_confirm
+    )
+    short_signal = (
+        below_daily
+        and bear_aligned
+        and (bounce_ma20_short or bounce_ma60_short)
+        and macd_surge_short
+        and volume_confirm
+    )
+
+    if not long_signal and not short_signal:
+        return None
+
+    direction = "long" if long_signal else "short"
+    if direction == "long":
+        bounce_at = "MA20" if bounce_ma20_long else "MA60"
+        dist_pct  = dist_ma20 if bounce_at == "MA20" else dist_ma60
+    else:
+        bounce_at = "MA20" if bounce_ma20_short else "MA60"
+        dist_pct  = dist_ma20 if bounce_at == "MA20" else dist_ma60
+
+    return {
+        "type":      direction,              # "long" | "short"
+        "bounceAt":  bounce_at,              # "MA20" | "MA60"
+        "distPct":   round(dist_pct, 3),
+        "ma20":      round(ma20, 2),
+        "ma60":      round(ma60, 2),
+        "dailyMa20": round(daily_ma20, 2) if daily_ma20 else None,
+    }
+
 
 def calc_macd(df: pd.DataFrame) -> dict:
     c = df["close"]
@@ -326,29 +406,31 @@ def calc_oi(df: pd.DataFrame) -> dict:
             "change": int(change), "changePct": pct, "status": cur, "cumulative": cnt}
 
 # ── 单品种处理 ────────────────────────────────────────────────
-def process_symbol(args: tuple) -> dict | None:
+def process_symbol(args: tuple, daily_ma20: float | None = None) -> dict | None:
     symbol, category, code = args
     try:
         df = fetch_klines(code)
         last, prev = float(df["close"].iloc[-1]), float(df["close"].iloc[-2])
         change = round((last - prev) / prev * 100, 2) if prev else 0.0
         # 用时间间隔法检测跨时段跳空（比 iloc[-1].open 更可靠）
-        gap_info = find_session_gap(df)  # (gap_pct, open_price, prev_close) or None
+        gap_info  = find_session_gap(df)  # (gap_pct, open_price, prev_close) or None
         ma_data   = calc_ma(df)
         macd_data = calc_macd(df)
+        vol_data  = calc_volume(df)
         return {
-            "symbol":     symbol,
-            "category":   category,
-            "timeframe":  "30min",
-            "lastUpdate": datetime.now().strftime("%H:%M:%S"),
-            "price":      round(last, 2),
-            "change":     change,
-            "_gapInfo":   gap_info,       # 临时字段，输出前剥离
-            "ma":         ma_data,
-            "macd":       macd_data,
-            "volume":     calc_volume(df),
-            "openInterest": calc_oi(df),
-            "dipSignal":  calc_dip_signal(round(last, 2), ma_data, macd_data),
+            "symbol":         symbol,
+            "category":       category,
+            "timeframe":      "30min",
+            "lastUpdate":     datetime.now().strftime("%H:%M:%S"),
+            "price":          round(last, 2),
+            "change":         change,
+            "_gapInfo":       gap_info,       # 临时字段，输出前剥离
+            "ma":             ma_data,
+            "macd":           macd_data,
+            "volume":         vol_data,
+            "openInterest":   calc_oi(df),
+            "dipSignal":      calc_dip_signal(round(last, 2), ma_data, macd_data),
+            "strategySignal": calc_strategy_signal(round(last, 2), ma_data, macd_data, vol_data, daily_ma20),
         }
     except Exception as e:
         print(f"  [SKIP] {symbol}({code}): {e}", file=sys.stderr)
@@ -557,6 +639,31 @@ def build_dip_message(data: list[dict], bj_time: str) -> str | None:
     return "\n".join(lines)
 
 
+def build_strategy_message(data: list[dict], bj_time: str) -> str | None:
+    """构建回踩策略信号推送文本。"""
+    longs  = [d for d in data if d.get("strategySignal") and d["strategySignal"]["type"] == "long"]
+    shorts = [d for d in data if d.get("strategySignal") and d["strategySignal"]["type"] == "short"]
+    if not longs and not shorts:
+        return None
+
+    def fmt_strat(d: dict) -> str:
+        sig = d["strategySignal"]
+        chg = f"+{d['change']:.2f}%" if d["change"] >= 0 else f"{d['change']:.2f}%"
+        dma = f"日MA20={sig['dailyMa20']}" if sig.get("dailyMa20") else "日MA20=N/A"
+        return (f"  {d['symbol']}({d['category']}) {chg}"
+                f"  回踩{sig['bounceAt']}: {sig['distPct']:.3f}%  {dma}"
+                f"  MACD×{d['macd']['cumulative']}")
+
+    lines = [f"<b>📐 回踩策略信号 {bj_time}</b>"]
+    if longs:
+        lines.append("\n🟢 <b>做多回踩</b>（30m多头排列·回踩均线·MACD金叉扩口·放量·日MA20上方）")
+        lines.extend(fmt_strat(d) for d in longs)
+    if shorts:
+        lines.append("\n🔴 <b>做空反抽</b>（30m空头排列·反抽均线·MACD死叉扩口·放量·日MA20下方）")
+        lines.extend(fmt_strat(d) for d in shorts)
+    return "\n".join(lines)
+
+
 # ── 主流程 ────────────────────────────────────────────────────
 def main():
     # 非交易时段不抓取、不写文件、不提交，避免空刷；手动触发时可设 FORCE_FETCH=1 强制执行
@@ -564,12 +671,29 @@ def main():
         print("[SKIP] 非交易时段或非交易日，跳过抓取（不写入、不提交）")
         sys.exit(0)
 
+    # ── Step 1: 先抓日K，获取日线 MA20（用于策略过滤）──
+    print("[DAILY] 开始抓取日K数据（用于日MA20过滤）...")
+    daily_results_pre: list[dict] = []
+    with ThreadPoolExecutor(max_workers=6) as pool:
+        futs = {pool.submit(process_symbol_daily, s): s for s in SYMBOLS}
+        for fut in as_completed(futs):
+            r = fut.result()
+            if r: daily_results_pre.append(r)
+    # symbol → 日线MA20值
+    daily_ma20_map: dict[str, float | None] = {
+        r["symbol"]: r["ma"].get("ma20") for r in daily_results_pre
+    }
+
+    # ── Step 2: 抓30min数据，传入日MA20 ──
     print(f"[{datetime.utcnow().isoformat()}Z] Fetching {len(SYMBOLS)} symbols ...")
 
     results = []
     # 最多 8 线程并发，兼顾速度与新浪限流
     with ThreadPoolExecutor(max_workers=8) as pool:
-        futures = {pool.submit(process_symbol, s): s for s in SYMBOLS}
+        futures = {
+            pool.submit(process_symbol, s, daily_ma20_map.get(s[0])): s
+            for s in SYMBOLS
+        }
         for fut in as_completed(futures):
             r = fut.result()
             if r: results.append(r)
@@ -641,14 +765,8 @@ def main():
     OUTPUT.write_text(json.dumps(output, ensure_ascii=False, indent=2), "utf-8")
     print(f"✓ {len(results)}/{len(SYMBOLS)} symbols → {OUTPUT}")
 
-    # ── 日K数据（复盘用，每次同步更新，不推送 Telegram）──
-    print(f"[DAILY] 开始抓取日K数据 ...")
-    daily_results = []
-    with ThreadPoolExecutor(max_workers=6) as pool:
-        futs = {pool.submit(process_symbol_daily, s): s for s in SYMBOLS}
-        for fut in as_completed(futs):
-            r = fut.result()
-            if r: daily_results.append(r)
+    # ── 日K数据（已在 Step 1 完成，直接写文件）──
+    daily_results = daily_results_pre
     if daily_results:
         daily_output = {
             "source":    "local-runner",
@@ -674,6 +792,9 @@ def main():
         dip_msg = build_dip_message(merged, bj_time)
         if dip_msg:
             messages.append(dip_msg)
+        strat_msg = build_strategy_message(merged, bj_time)
+        if strat_msg:
+            messages.append(strat_msg)
         if messages:
             tg_send(tg_token, tg_chat_id, "\n\n".join(messages))
         else:

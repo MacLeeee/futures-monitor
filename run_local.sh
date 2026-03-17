@@ -20,7 +20,7 @@ INTERVAL=1800   # 30 分钟（秒）
 : "${TELEGRAM_CHAT_ID:=6414409185}"
 # Bot 2（Hajimibot @jimiikunbot）
 : "${TELEGRAM_BOT_TOKEN_2:=8704990040:AAGO0DpIpqstzz0p1HvqB1T0cRFn7jnTjTk}"
-: "${TELEGRAM_CHAT_ID_2:=6414409185}"
+: "${TELEGRAM_CHAT_ID_2:=8760058696}"
 export TELEGRAM_BOT_TOKEN TELEGRAM_CHAT_ID TELEGRAM_BOT_TOKEN_2 TELEGRAM_CHAT_ID_2
 
 # ── 内部函数 ─────────────────────────────────────────────

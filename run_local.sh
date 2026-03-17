@@ -15,10 +15,13 @@ DATA_DIR="$REPO_DIR/futures-monitor/public"
 INTERVAL=1800   # 30 分钟（秒）
 
 # ── Telegram（可选）──────────────────────────────────────
-# 在此填入你的 Token 和 Chat ID，或在终端中预先 export
+# Bot 1（原有）
 : "${TELEGRAM_BOT_TOKEN:=8052508202:AAGoOBWn-V1yXuaZAz9Q5-533pq-j4jJ5jI}"
 : "${TELEGRAM_CHAT_ID:=6414409185}"
-export TELEGRAM_BOT_TOKEN TELEGRAM_CHAT_ID
+# Bot 2（Hajimibot @jimiikunbot）
+: "${TELEGRAM_BOT_TOKEN_2:=8704990040:AAGO0DpIpqstzz0p1HvqB1T0cRFn7jnTjTk}"
+: "${TELEGRAM_CHAT_ID_2:=6414409185}"
+export TELEGRAM_BOT_TOKEN TELEGRAM_CHAT_ID TELEGRAM_BOT_TOKEN_2 TELEGRAM_CHAT_ID_2
 
 # ── 内部函数 ─────────────────────────────────────────────
 log() { echo "[$(date '+%H:%M:%S')] $*"; }

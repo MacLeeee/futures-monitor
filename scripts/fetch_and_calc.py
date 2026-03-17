@@ -464,7 +464,7 @@ def process_symbol_daily(args: tuple) -> dict | None:
 
 # ── Telegram 推送 ─────────────────────────────────────────────
 
-def tg_send(token: str, chat_id: str, text: str) -> None:
+def tg_send(token: str, chat_id: str, text: str, label: str = "") -> None:
     """调用 Telegram Bot API 发送消息，失败不崩溃。"""
     try:
         url = f"https://api.telegram.org/bot{token}/sendMessage"
@@ -476,9 +476,30 @@ def tg_send(token: str, chat_id: str, text: str) -> None:
         req = urllib.request.Request(url, data=payload, method="POST")
         with urllib.request.urlopen(req, timeout=10):
             pass
-        print(f"[TG] 推送成功 ({len(text)} chars)")
+        tag = f"[{label}] " if label else ""
+        print(f"[TG] {tag}推送成功 ({len(text)} chars)")
     except Exception as e:
-        print(f"[TG] 推送失败: {e}", file=sys.stderr)
+        tag = f"[{label}] " if label else ""
+        print(f"[TG] {tag}推送失败: {e}", file=sys.stderr)
+
+
+def tg_send_all(text: str) -> None:
+    """向所有配置的 Telegram Bot 发送同一条消息。"""
+    bots = [
+        (os.environ.get("TELEGRAM_BOT_TOKEN",   ""),
+         os.environ.get("TELEGRAM_CHAT_ID",     ""),
+         "Bot1"),
+        (os.environ.get("TELEGRAM_BOT_TOKEN_2", ""),
+         os.environ.get("TELEGRAM_CHAT_ID_2",   ""),
+         "Bot2"),
+    ]
+    sent = 0
+    for token, chat_id, label in bots:
+        if token and chat_id:
+            tg_send(token, chat_id, text, label)
+            sent += 1
+    if sent == 0:
+        print("[TG] 未配置任何 Bot Token，跳过推送")
 
 
 def build_gap_message(gaps: list[dict], update_time: str) -> str:
@@ -779,26 +800,23 @@ def main():
         print("[DAILY] 无日K数据写入", file=sys.stderr)
 
     # ── Telegram 推送（仅30min信号，日K不推）──
-    tg_token   = os.environ.get("TELEGRAM_BOT_TOKEN", "")
-    tg_chat_id = os.environ.get("TELEGRAM_CHAT_ID", "")
-    if tg_token and tg_chat_id:
-        bj_time = datetime.now(ZoneInfo("Asia/Shanghai")).strftime("%m-%d %H:%M")
-        messages = []
-        if gap_alerts:
-            messages.append(build_gap_message(gap_alerts, bj_time))
-        sig_msg = build_signal_message(merged, bj_time)
-        if sig_msg:
-            messages.append(sig_msg)
-        dip_msg = build_dip_message(merged, bj_time)
-        if dip_msg:
-            messages.append(dip_msg)
-        strat_msg = build_strategy_message(merged, bj_time)
-        if strat_msg:
-            messages.append(strat_msg)
-        if messages:
-            tg_send(tg_token, tg_chat_id, "\n\n".join(messages))
-        else:
-            print("[TG] 无跳空/突破/抄底信号，不推送")
+    bj_time = datetime.now(ZoneInfo("Asia/Shanghai")).strftime("%m-%d %H:%M")
+    messages = []
+    if gap_alerts:
+        messages.append(build_gap_message(gap_alerts, bj_time))
+    sig_msg = build_signal_message(merged, bj_time)
+    if sig_msg:
+        messages.append(sig_msg)
+    dip_msg = build_dip_message(merged, bj_time)
+    if dip_msg:
+        messages.append(dip_msg)
+    strat_msg = build_strategy_message(merged, bj_time)
+    if strat_msg:
+        messages.append(strat_msg)
+    if messages:
+        tg_send_all("\n\n".join(messages))
+    else:
+        print("[TG] 无跳空/突破/抄底/策略信号，不推送")
 
 if __name__ == "__main__":
     main()

@@ -539,65 +539,91 @@ def tg_send_all(text: str) -> None:
 
 
 def build_breakout_message(data: list[dict], bj_time: str) -> str | None:
-    """突破信号推送：30min MA排列 + 15min MACD扩口 + 15min放量 [+增仓]"""
+    """
+    突破信号推送格式：
+    ─────────────────────────────────
+    📊 突破信号 03-24 10:00
+    ─────────────────────────────────
+    🔴 做多：黄金 +0.8%  铜 +0.5%
+    🟢 做空：原油 -1.2%
+    📈 均线新突破：白银↗  棉花↘
+    ─────────────────────────────────
+    """
     longs  = [d for d in data if d.get("breakoutSignal") and d["breakoutSignal"]["type"] == "long"]
     shorts = [d for d in data if d.get("breakoutSignal") and d["breakoutSignal"]["type"] == "short"]
-    # 均线第一根变化（无需其余条件满足，单独提示）
     ma_first_up = [d for d in data if d["ma"]["status"] == "Upward"   and d["ma"]["cumulative"] == 1]
     ma_first_dn = [d for d in data if d["ma"]["status"] == "Downward" and d["ma"]["cumulative"] == 1]
 
     if not any([longs, shorts, ma_first_up, ma_first_dn]):
         return None
 
-    def fmt(d: dict) -> str:
-        sig = d["breakoutSignal"]
+    def fmt_item(d: dict, arrow: str) -> str:
+        sig = d.get("breakoutSignal") or {}
         chg = f"+{d['change']:.2f}%" if d["change"] >= 0 else f"{d['change']:.2f}%"
-        oi  = "✓增仓" if sig.get("oiConfirmed") else "—持仓"
-        return (f"  {d['symbol']}({d['category']}) {chg}"
-                f"  MA×{sig['maCumulative']}  MACD×{d['macd']['cumulative']}  {oi}")
+        oi  = " +OI" if sig.get("oiConfirmed") else ""
+        return f"  {arrow}{d['symbol']} {chg}  MA×{d['ma']['cumulative']} 15mMACD×{d['macd']['cumulative']}{oi}"
 
-    lines = [f"<b>🚀 突破信号 {bj_time}</b>  <i>30m均线方向·15m触发</i>"]
+    sep = "─" * 24
+    lines = [f"<b>📊 突破信号</b>  {bj_time}",  sep]
+
     if longs:
-        lines.append("\n🟢 <b>做多突破</b>（30m上行 · 15m金叉扩口 · 15m放量）")
-        lines.extend(fmt(d) for d in longs)
+        lines.append("🔴 <b>做多</b>（30m上行 · 15m金叉扩口 · 放量）")
+        lines.extend(fmt_item(d, "▲") for d in longs)
     if shorts:
-        lines.append("\n🔴 <b>做空突破</b>（30m下行 · 15m死叉扩口 · 15m放量）")
-        lines.extend(fmt(d) for d in shorts)
-    if ma_first_up:
-        lines.append("\n📈 <b>30m均线首根上行</b>（新突破）")
+        if longs: lines.append("")
+        lines.append("🟢 <b>做空</b>（30m下行 · 15m死叉扩口 · 放量）")
+        lines.extend(fmt_item(d, "▼") for d in shorts)
+
+    if ma_first_up or ma_first_dn:
+        lines.append("")
+        lines.append("📈 <b>均线首根变化</b>（新方向）")
         for d in ma_first_up:
-            chg = f"+{d['change']:.2f}%" if d["change"] >= 0 else f"{d['change']:.2f}%"
-            lines.append(f"  ↗ {d['symbol']}({d['category']}) {chg}")
-    if ma_first_dn:
-        lines.append("\n📉 <b>30m均线首根下行</b>（新跌破）")
+            chg = f"+{d['change']:.2f}%"
+            lines.append(f"  ↗ {d['symbol']} {chg} 上行第1根")
         for d in ma_first_dn:
-            chg = f"+{d['change']:.2f}%" if d["change"] >= 0 else f"{d['change']:.2f}%"
-            lines.append(f"  ↘ {d['symbol']}({d['category']}) {chg}")
+            chg = f"{d['change']:.2f}%"
+            lines.append(f"  ↘ {d['symbol']} {chg} 下行第1根")
+
+    lines.append(sep)
     return "\n".join(lines)
 
 
 def build_pullback_message(data: list[dict], bj_time: str) -> str | None:
-    """回踩信号推送：30min MA60锚定方向 + 价格回踩MA20/MA60 + 15min MACD缩窄 + 15min放量"""
+    """
+    回踩信号推送格式：
+    ─────────────────────────────────
+    🎯 回踩信号 03-24 10:00
+    ─────────────────────────────────
+    🔵 做多回踩：黄金 回踩MA20 距0.23%
+    🟠 做空反抽：原油 反抽MA60 距0.18%
+    ─────────────────────────────────
+    """
     longs  = [d for d in data if d.get("pullbackSignal") and d["pullbackSignal"]["type"] == "long"]
     shorts = [d for d in data if d.get("pullbackSignal") and d["pullbackSignal"]["type"] == "short"]
     if not longs and not shorts:
         return None
 
-    def fmt(d: dict) -> str:
+    def fmt_item(d: dict, action: str) -> str:
         sig = d["pullbackSignal"]
         chg = f"+{d['change']:.2f}%" if d["change"] >= 0 else f"{d['change']:.2f}%"
         slp = f"{d['ma']['slope20Pct']:+.3f}%"
-        return (f"  {d['symbol']}({d['category']}) {chg}"
-                f"  回踩{sig['target']}{sig['support']}  距{sig['distPct']:.3f}%"
-                f"  斜率{slp}  15m×{d['macd']['cumulative']}")
+        return (f"  {d['symbol']} {chg}"
+                f"  {action}{sig['target']}={sig['support']}"
+                f"  距{sig['distPct']:.3f}%"
+                f"  斜率{slp}")
 
-    lines = [f"<b>🎯 回踩信号 {bj_time}</b>  <i>30m方向·15m触发</i>"]
+    sep = "─" * 24
+    lines = [f"<b>🎯 回踩信号</b>  {bj_time}", sep]
+
     if longs:
-        lines.append("\n🔵 <b>做多回踩</b>（30m MA60上方·15m死叉缩窄·15m放量）")
-        lines.extend(fmt(d) for d in longs)
+        lines.append("🔵 <b>做多回踩</b>（30m MA60上方 · 价格贴近支撑 · 15m死叉缩窄 · 放量）")
+        lines.extend(fmt_item(d, "↩") for d in longs)
     if shorts:
-        lines.append("\n🟠 <b>做空反抽</b>（30m MA60下方·15m金叉缩窄·15m放量）")
-        lines.extend(fmt(d) for d in shorts)
+        if longs: lines.append("")
+        lines.append("🟠 <b>做空反抽</b>（30m MA60下方 · 价格贴近阻力 · 15m金叉缩窄 · 放量）")
+        lines.extend(fmt_item(d, "↪") for d in shorts)
+
+    lines.append(sep)
     return "\n".join(lines)
 
 

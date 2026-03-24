@@ -3,8 +3,8 @@
   "updatedAt": "2026-03-24T02:24:47.000Z",
   "data": [
     {
-      "symbol": "铜",
-      "category": "有色",
+      "symbol": "黄金",
+      "category": "贵金属",
       "timeframe": "30min",
       "triggerTf": "15m",
       "lastUpdate": "02:24:12",
@@ -203,7 +203,7 @@
       "pullbackSignal": null
     },
     {
-      "symbol": "碳酸锂",
+      "symbol": "镍",
       "category": "有色",
       "timeframe": "30min",
       "triggerTf": "15m",
@@ -219,7 +219,7 @@
         "slopeType": "steep"
       },
       "macd": {
-        "sign": "positive",
+        "sign": "negative",
         "rapidExpanding": false,
         "expansionRate": -0.79,
         "cumulative": 6
@@ -680,7 +680,15 @@
         "cumulative": 3
       },
       "breakoutSignal": null,
-      "pullbackSignal": null
+      "pullbackSignal": {
+        "type": "short",
+        "target": "MA20",
+        "support": 9778.5,
+        "distPct": 0.23,
+        "slopeType": "declining",
+        "ma20": 9778.5,
+        "ma60": 9795.0
+      }
     },
     {
       "symbol": "菜油",
@@ -965,7 +973,7 @@
         "change": -896,
         "changePct": -0.42,
         "status": "Decreasing",
-        "cumulative": 2
+        "cumulative": 1
       },
       "breakoutSignal": null,
       "pullbackSignal": null

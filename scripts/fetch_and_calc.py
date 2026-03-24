@@ -21,7 +21,7 @@ import sys
 import urllib.request
 import urllib.parse
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime, time
+from datetime import datetime, time, UTC
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -418,37 +418,50 @@ def calc_oi(df: pd.DataFrame) -> dict:
             "change": int(change), "changePct": pct, "status": cur, "cumulative": cnt}
 
 # ── 单品种处理（双周期）─────────────────────────────────────
-def process_symbol(args: tuple, daily_ma20: float | None = None) -> dict | None:
+import time as _time_module
+
+def process_symbol(args: tuple) -> dict | None:
     """
     30min K线 → MA方向（均线排列）
     15min K线 → MACD / 成交量 / 持仓量（触发层）
+    若 15min 获取失败，自动降级到 30min 数据，确保系统可用。
     """
     symbol, category, code = args
     try:
         df_30m = fetch_klines(code)
-        df_15m = fetch_klines_15m(code)
+        # 短暂间隔，避免对同一品种连续请求触发新浪限流
+        _time_module.sleep(0.8)
+        try:
+            df_15m = fetch_klines_15m(code)
+            tf_label = "15m"
+        except Exception as e15:
+            # 15min 不可用时降级：MACD/量/OI 使用 30min 数据
+            print(f"  [WARN-15m] {symbol}({code}): {e15}，降级用30min", file=sys.stderr)
+            df_15m = df_30m
+            tf_label = "30m↓"
 
         last = float(df_30m["close"].iloc[-1])
         prev = float(df_30m["close"].iloc[-2])
         change = round((last - prev) / prev * 100, 2) if prev else 0.0
 
-        ma_30m    = calc_ma(df_30m)         # 方向层：30min MA
-        macd_15m  = calc_macd(df_15m)       # 触发层：15min MACD
-        vol_15m   = calc_volume(df_15m)     # 触发层：15min 成交量
-        oi_15m    = calc_oi(df_15m)         # 触发层：15min 持仓量
+        ma_30m   = calc_ma(df_30m)
+        macd_15m = calc_macd(df_15m)
+        vol_15m  = calc_volume(df_15m)
+        oi_15m   = calc_oi(df_15m)
 
         close = round(last, 2)
         return {
             "symbol":          symbol,
             "category":        category,
             "timeframe":       "30min",
+            "triggerTf":       tf_label,       # 实际触发周期（15m 或降级 30m↓）
             "lastUpdate":      datetime.now().strftime("%H:%M:%S"),
             "price":           close,
             "change":          change,
-            "ma":              ma_30m,           # 30min 均线方向
-            "macd":            macd_15m,         # 15min MACD（表格展示+信号触发）
-            "volume":          vol_15m,          # 15min 成交量
-            "openInterest":    oi_15m,           # 15min 持仓量
+            "ma":              ma_30m,
+            "macd":            macd_15m,
+            "volume":          vol_15m,
+            "openInterest":    oi_15m,
             "breakoutSignal":  calc_breakout_signal(ma_30m, macd_15m, vol_15m, oi_15m),
             "pullbackSignal":  calc_pullback_signal(close, ma_30m, macd_15m, vol_15m),
         }
@@ -746,18 +759,21 @@ def main():
         sys.exit(0)
 
     # ── Step 1: 并发抓取 30min+15min 数据 ──
-    print(f"[{datetime.utcnow().isoformat()}Z] Fetching {len(SYMBOLS)} symbols (30min+15min)...")
+    # 每个 symbol 内顺序发出 30min→15min 两次请求（间隔 0.8s），
+    # 4 个 worker 并发，整体约 4 个品种同时请求，不易触发新浪限流
+    print(f"[{datetime.now(UTC).isoformat()}Z] Fetching {len(SYMBOLS)} symbols (30min+15min)...")
     results = []
-    with ThreadPoolExecutor(max_workers=6) as pool:
+    with ThreadPoolExecutor(max_workers=4) as pool:
         futures = {pool.submit(process_symbol, s): s for s in SYMBOLS}
         for fut in as_completed(futures):
             r = fut.result()
             if r: results.append(r)
 
-    # ── Step 2: 抓取日K（复盘用）──
+    # ── Step 2: 抓取日K（复盘用，稍作等待让 API 冷却）──
     print("[DAILY] 开始抓取日K数据...")
+    _time_module.sleep(2)
     daily_results_pre: list[dict] = []
-    with ThreadPoolExecutor(max_workers=6) as pool:
+    with ThreadPoolExecutor(max_workers=4) as pool:
         futs = {pool.submit(process_symbol_daily, s): s for s in SYMBOLS}
         for fut in as_completed(futs):
             r = fut.result()
@@ -781,7 +797,7 @@ def main():
 
     output = {
         "source":    "github-actions",
-        "updatedAt": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.000Z"),
+        "updatedAt": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%S.000Z"),
         "data":      merged,
     }
     OUTPUT.write_text(json.dumps(output, ensure_ascii=False, indent=2), "utf-8")
@@ -792,7 +808,7 @@ def main():
     if daily_results:
         daily_output = {
             "source":    "local-runner",
-            "updatedAt": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.000Z"),
+            "updatedAt": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%S.000Z"),
             "data":      daily_results,
         }
         OUTPUT_DAILY.write_text(json.dumps(daily_output, ensure_ascii=False, indent=2), "utf-8")

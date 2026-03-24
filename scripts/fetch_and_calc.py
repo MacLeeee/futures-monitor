@@ -33,13 +33,6 @@ TRADING_WINDOWS = [
     (time(20, 50), time(23, 40)),
 ]
 
-# 三个开盘时间窗口（各90分钟，覆盖 GitHub cron 最大延迟）
-OPEN_WINDOWS: list[tuple[time, time, str]] = [
-    (time(8, 45),  time(10, 15), "早盘"),
-    (time(13, 00), time(14, 30), "午盘"),
-    (time(20, 45), time(22, 15), "夜盘"),
-]
-
 def is_trading_time() -> bool:
     tz = ZoneInfo("Asia/Shanghai")
     now_bj = datetime.now(tz)
@@ -50,44 +43,6 @@ def is_trading_time() -> bool:
         if s <= t <= e:
             return True
     return False
-
-def get_open_session() -> str | None:
-    """返回当前开盘时间窗口名称，不在窗口内返回 None。"""
-    tz = ZoneInfo("Asia/Shanghai")
-    now_bj = datetime.now(tz)
-    if now_bj.weekday() >= 5:
-        return None
-    t = now_bj.time()
-    for start, end, name in OPEN_WINDOWS:
-        if start <= t <= end:
-            return name
-    return None
-
-def find_session_gap(df: pd.DataFrame) -> tuple[float, float, float] | None:
-    """
-    扫描最近4对相邻K线，找到跨越交易时段的断层（间隔>60分钟）。
-    返回 (gap_pct, new_session_open, prev_session_close) 或 None。
-    这比直接用 df.iloc[-1].open 更可靠——避免因 AKShare 延迟未返回新K线时误比较。
-    """
-    n = len(df)
-    if n < 3:
-        return None
-    for lag in range(1, min(5, n)):
-        idx_new = n - lag
-        idx_old = n - lag - 1
-        try:
-            t_new = pd.to_datetime(df["time"].iloc[idx_new])
-            t_old = pd.to_datetime(df["time"].iloc[idx_old])
-            gap_min = (t_new - t_old).total_seconds() / 60
-            if gap_min >= 60:
-                op = float(df["open"].iloc[idx_new])
-                pc = float(df["close"].iloc[idx_old])
-                if pc > 0:
-                    gap_pct = round((op - pc) / pc * 100, 3)
-                    return gap_pct, round(op, 2), round(pc, 2)
-        except Exception:
-            continue
-    return None
 
 ROOT         = Path(__file__).parent.parent
 OUTPUT       = ROOT / "futures-monitor" / "public" / "data.json"
@@ -412,8 +367,6 @@ def process_symbol(args: tuple, daily_ma20: float | None = None) -> dict | None:
         df = fetch_klines(code)
         last, prev = float(df["close"].iloc[-1]), float(df["close"].iloc[-2])
         change = round((last - prev) / prev * 100, 2) if prev else 0.0
-        # 用时间间隔法检测跨时段跳空（比 iloc[-1].open 更可靠）
-        gap_info  = find_session_gap(df)  # (gap_pct, open_price, prev_close) or None
         ma_data   = calc_ma(df)
         macd_data = calc_macd(df)
         vol_data  = calc_volume(df)
@@ -424,7 +377,6 @@ def process_symbol(args: tuple, daily_ma20: float | None = None) -> dict | None:
             "lastUpdate":     datetime.now().strftime("%H:%M:%S"),
             "price":          round(last, 2),
             "change":         change,
-            "_gapInfo":       gap_info,       # 临时字段，输出前剥离
             "ma":             ma_data,
             "macd":           macd_data,
             "volume":         vol_data,
@@ -500,29 +452,6 @@ def tg_send_all(text: str) -> None:
             sent += 1
     if sent == 0:
         print("[TG] 未配置任何 Bot Token，跳过推送")
-
-
-def build_gap_message(gaps: list[dict], update_time: str) -> str:
-    lines = [f"<b>🚨 开盘跳空预警 {update_time} {gaps[0]['session']}</b>"]
-    up   = [g for g in gaps if g["direction"] == "up"]
-    down = [g for g in gaps if g["direction"] == "down"]
-    if up:
-        lines.append("\n🔴 <b>跳涨</b>")
-        for g in up:
-            lines.append(
-                f"  ↑ {g['symbol']}({g['category']})"
-                f"  +{g['gapPct']:.2f}%"
-                f"  开{g['openPrice']} / 前收{g['prevClose']}"
-            )
-    if down:
-        lines.append("\n🟢 <b>跳跌</b>")
-        for g in down:
-            lines.append(
-                f"  ↓ {g['symbol']}({g['category']})"
-                f"  {g['gapPct']:.2f}%"
-                f"  开{g['openPrice']} / 前收{g['prevClose']}"
-            )
-    return "\n".join(lines)
 
 
 def build_signal_message(data: list[dict], update_time: str) -> str | None:
@@ -740,49 +669,6 @@ def main():
         "updatedAt": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.000Z"),
         "data":      merged,
     }
-    # ── 开盘跳空检测 ──
-    session = get_open_session()
-    gap_alerts: list[dict] = []
-    GAP_THRESHOLD = 0.2  # 跳空阈值 %
-    tz_bj = ZoneInfo("Asia/Shanghai")
-    bj_now = datetime.now(tz_bj)
-
-    for d in merged:
-        gap_info = d.pop("_gapInfo", None)  # (gap_pct, open_price, prev_close) or None
-        if session and gap_info:
-            gap_pct, open_price, prev_close = gap_info
-            if abs(gap_pct) >= GAP_THRESHOLD:
-                gap_alerts.append({
-                    "symbol":    d["symbol"],
-                    "category":  d["category"],
-                    "gapPct":    gap_pct,
-                    "direction": "up" if gap_pct > 0 else "down",
-                    "openPrice": open_price,
-                    "prevClose": prev_close,
-                    "session":   session,
-                })
-
-    gap_alerts.sort(key=lambda x: abs(x["gapPct"]), reverse=True)
-
-    # 跳空扫描确认信息（不论有无跳空，只要在开盘窗口内就记录）
-    gap_check_info: dict | None = None
-    if session:
-        gap_check_info = {
-            "checkedAt": bj_now.strftime("%H:%M"),
-            "session":   session,
-            "count":     len(gap_alerts),
-        }
-        print(f"[GAP] {session} 跳空扫描完成：{len(gap_alerts)} 个品种跳空幅度≥{GAP_THRESHOLD}%")
-    else:
-        print("[GAP] 非开盘窗口，跳过跳空检测")
-
-    output = {
-        "source":       "github-actions",
-        "updatedAt":    datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.000Z"),
-        "gapCheckInfo": gap_check_info,
-        "gapAlerts":    gap_alerts,
-        "data":         merged,
-    }
     OUTPUT.write_text(json.dumps(output, ensure_ascii=False, indent=2), "utf-8")
     print(f"✓ {len(results)}/{len(SYMBOLS)} symbols → {OUTPUT}")
 
@@ -802,8 +688,6 @@ def main():
     # ── Telegram 推送（仅30min信号，日K不推）──
     bj_time = datetime.now(ZoneInfo("Asia/Shanghai")).strftime("%m-%d %H:%M")
     messages = []
-    if gap_alerts:
-        messages.append(build_gap_message(gap_alerts, bj_time))
     sig_msg = build_signal_message(merged, bj_time)
     if sig_msg:
         messages.append(sig_msg)
@@ -816,7 +700,7 @@ def main():
     if messages:
         tg_send_all("\n\n".join(messages))
     else:
-        print("[TG] 无跳空/突破/抄底/策略信号，不推送")
+        print("[TG] 无突破/抄底/策略信号，不推送")
 
 if __name__ == "__main__":
     main()

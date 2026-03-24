@@ -67,24 +67,6 @@ export interface FuturesStatus {
   };
 }
 
-// 开盘跳空预警
-export interface GapAlert {
-  symbol: string;
-  category: string;
-  gapPct: number;        // 正=跳涨，负=跳跌
-  direction: "up" | "down";
-  openPrice: number;     // 当前开盘价（最新K线开盘）
-  prevClose: number;     // 上一根K线收盘价
-  session: string;       // "早盘" | "午盘" | "夜盘"
-}
-
-// 跳空扫描确认信息（不论有无跳空，在开盘窗口内就记录）
-export interface GapCheckInfo {
-  checkedAt: string;     // 北京时间 "HH:MM"
-  session: string;       // "早盘" | "午盘" | "夜盘"
-  count: number;         // 检测到的跳空品种数
-}
-
 // 板块分组，用于表格分组渲染
 export interface CategoryGroup {
   name: string;

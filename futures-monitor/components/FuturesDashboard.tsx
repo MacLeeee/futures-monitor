@@ -5,7 +5,7 @@
 // ============================================================
 
 import React, { useState, useEffect, useCallback } from "react";
-import { FuturesStatus, GapAlert, GapCheckInfo } from "@/lib/types";
+import { FuturesStatus } from "@/lib/types";
 import DashboardHeader from "./DashboardHeader";
 import FuturesTable from "./FuturesTable";
 import FilterBar from "./FilterBar";
@@ -48,8 +48,6 @@ export default function FuturesDashboard() {
   const [timeframe, setTimeframe] = useState<Timeframe>("30min");
   const [data, setData] = useState<FuturesStatus[]>([]);
   const [filteredData, setFilteredData] = useState<FuturesStatus[]>([]);
-  const [gapAlerts, setGapAlerts] = useState<GapAlert[]>([]);
-  const [gapCheckInfo, setGapCheckInfo] = useState<GapCheckInfo | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastRefresh, setLastRefresh] = useState(new Date());
@@ -72,9 +70,6 @@ export default function FuturesDashboard() {
       setData(normalizeMacd(json.data ?? []));
       setDataSource(json.source as DataSource);
       if (json.updatedAt) setRemoteUpdatedAt(json.updatedAt);
-      // 日K 无跳空检测
-      setGapAlerts(tf === "30min" ? (json.gapAlerts ?? []) as GapAlert[] : []);
-      setGapCheckInfo(tf === "30min" ? (json.gapCheckInfo ?? null) as GapCheckInfo | null : null);
     } catch (err) {
       console.error("[Dashboard] 数据加载失败:", err);
     } finally {
@@ -177,8 +172,6 @@ export default function FuturesDashboard() {
         {/* 头部：概览统计 + 刷新控制 */}
         <DashboardHeader
           data={data}
-          gapAlerts={gapAlerts}
-          gapCheckInfo={gapCheckInfo}
           lastRefresh={lastRefresh}
           autoRefresh={autoRefresh}
           onToggleAutoRefresh={() => setAutoRefresh((v) => !v)}

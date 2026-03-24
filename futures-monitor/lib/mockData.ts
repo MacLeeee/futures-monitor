@@ -128,17 +128,6 @@ function buildFuturesStatus(
 
   const price = Math.round(latestClose * 100) / 100;
 
-  // 抄底信号（mock）：MACD 死叉粘合 + 收盘贴近支撑均线
-  let dipSignal: FuturesStatus["dipSignal"] = null;
-  const macdNeg = macdResult.sign === "negative" && !macdResult.rapidExpanding;
-  if (macdNeg && maResult.slopeType === "steep" && maResult.ma20) {
-    const dist = Math.abs(price - maResult.ma20) / maResult.ma20 * 100;
-    if (dist <= 0.5) dipSignal = { type: "MA20", support: maResult.ma20, distPct: parseFloat(dist.toFixed(3)), slopeType: "steep" };
-  } else if (macdNeg && maResult.slopeType === "gentle" && maResult.ma60) {
-    const dist = Math.abs(price - maResult.ma60) / maResult.ma60 * 100;
-    if (dist <= 0.5) dipSignal = { type: "MA60", support: maResult.ma60, distPct: parseFloat(dist.toFixed(3)), slopeType: "gentle" };
-  }
-
   return {
     symbol,
     category,
@@ -147,6 +136,7 @@ function buildFuturesStatus(
     price,
     change: Math.round(change * 100) / 100,
     ma: maResult,
+    // mock 中 macd/volume/oi 字段模拟 15min 数据（结构相同）
     macd: {
       sign:           macdResult.sign,
       rapidExpanding: macdResult.rapidExpanding,
@@ -168,8 +158,8 @@ function buildFuturesStatus(
       status: oiResult.status,
       cumulative: oiResult.cumulative,
     },
-    dipSignal,
-    strategySignal: null,   // mock 不生成回踩策略信号（需真实日K数据）
+    breakoutSignal: null,  // mock 不预生成信号
+    pullbackSignal: null,
   };
 }
 

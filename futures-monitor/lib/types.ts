@@ -10,21 +10,24 @@ export type MacdSign = "positive" | "negative";
 
 export type MaSlopeType = "steep" | "gentle" | "declining" | "flat";
 
-export interface DipSignal {
-  type: "MA20" | "MA60";   // 支撑均线
-  support: number;          // 支撑位价格
-  distPct: number;          // 距支撑位的 % 距离（≤0.5%）
-  slopeType: MaSlopeType;
+// 突破信号：30min MA排列 + 15min MACD扩口 + 15min放量 [+增仓宽松]
+export interface BreakoutSignal {
+  type: "long" | "short";
+  maCumulative: number;      // 30min MA 方向持续 K 数
+  macdSign: "positive" | "negative";
+  expansionRate: number;     // 15min MACD 走扩倍率
+  oiConfirmed: boolean;      // 15min 持仓量是否增仓（宽松条件）
 }
 
-// 回踩策略信号（strategy.py 逻辑对应）
-export interface StrategySignal {
+// 回踩信号：30min MA60 锚定方向 + 价格回踩均线 ±0.5% + 15min MACD缩窄 + 15min放量
+export interface PullbackSignal {
   type: "long" | "short";   // 做多回踩 / 做空反抽
-  bounceAt: "MA20" | "MA60"; // 回踩/反抽的目标均线
+  target: "MA20" | "MA60";  // 回踩/反抽的目标均线
+  support: number;           // 目标均线当前值
   distPct: number;           // 距均线的 % 距离
-  ma20: number;              // 当前 30min MA20 值
-  ma60: number;              // 当前 30min MA60 值
-  dailyMa20: number | null;  // 日线 MA20 过滤值
+  slopeType: MaSlopeType;    // 30min MA20 斜率类型
+  ma20: number;              // 30min MA20 当前值
+  ma60: number;              // 30min MA60 当前值
 }
 
 export interface FuturesStatus {
@@ -42,8 +45,8 @@ export interface FuturesStatus {
     slope20Pct: number;        // MA20 斜率（3根K线内累计%变化）
     slopeType: MaSlopeType;    // steep=急速上行(≥45°) gentle=缓慢 declining=下行
   };
-  dipSignal: DipSignal | null;          // 抄底信号，null=无
-  strategySignal: StrategySignal | null; // 回踩策略信号，null=无
+  breakoutSignal: BreakoutSignal | null;  // 突破信号（30m方向+15m触发）
+  pullbackSignal: PullbackSignal | null;  // 回踩信号（30m MA60锚定+15m触发）
   macd: {
     sign: MacdSign;           // diff-dea 正负：positive=金叉区 / negative=死叉区
     rapidExpanding: boolean;  // |diff-dea| 是否快速走扩（当前变化速率 > 近10期均值）

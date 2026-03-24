@@ -11,7 +11,6 @@ import FuturesTable from "./FuturesTable";
 import FilterBar from "./FilterBar";
 import SignalPanel from "./SignalPanel";
 import DipBuyPanel from "./DipBuyPanel";
-import StrategyPanel from "./StrategyPanel";
 import { AlertCircle, WifiOff, Database, Activity, CalendarDays } from "lucide-react";
 
 // 30 分钟自动刷新；日K 不自动刷新（每日复盘即可）
@@ -197,8 +196,6 @@ export default function FuturesDashboard() {
         {/* 抄底信号面板 */}
         <DipBuyPanel data={data} />
 
-        {/* 回踩策略信号面板 */}
-        <StrategyPanel data={data} />
 
         {/* 主数据表格 */}
         {isLoading && data.length === 0 ? (

@@ -243,8 +243,8 @@
       "pullbackSignal": null
     },
     {
-      "symbol": "锡",
-      "category": "有色",
+      "symbol": "铁矿石",
+      "category": "黑色",
       "timeframe": "30min",
       "triggerTf": "15m",
       "lastUpdate": "21:35:38",
@@ -279,7 +279,13 @@
         "status": "Increasing",
         "cumulative": 3
       },
-      "breakoutSignal": null,
+      "breakoutSignal": {
+        "type": "long",
+        "maCumulative": 8,
+        "macdSign": "positive",
+        "expansionRate": 1.8,
+        "oiConfirmed": true
+      },
       "pullbackSignal": null
     },
     {
@@ -363,7 +369,7 @@
       "pullbackSignal": null
     },
     {
-      "symbol": "焦煤",
+      "symbol": "螺纹钢",
       "category": "黑色",
       "timeframe": "30min",
       "triggerTf": "15m",
@@ -379,7 +385,7 @@
         "slopeType": "declining"
       },
       "macd": {
-        "sign": "negative",
+        "sign": "positive",
         "rapidExpanding": false,
         "expansionRate": -1.35,
         "cumulative": 32
@@ -559,7 +565,6 @@
         "status": "Increasing",
         "cumulative": 1
       },
-      "breakoutSignal": null,
       "pullbackSignal": null
     },
     {
@@ -600,7 +605,15 @@
         "cumulative": 1
       },
       "breakoutSignal": null,
-      "pullbackSignal": null
+      "pullbackSignal": {
+        "type": "long",
+        "target": "MA60",
+        "support": 5423.73,
+        "distPct": 0.337,
+        "slopeType": "declining",
+        "ma20": 5450.3,
+        "ma60": 5423.73
+      }
     },
     {
       "symbol": "白糖",
@@ -796,6 +809,126 @@
         "prevValue": 1705724,
         "change": -1473,
         "changePct": -0.09,
+        "status": "Decreasing",
+        "cumulative": 1
+      },
+      "breakoutSignal": null,
+      "pullbackSignal": null
+    },
+    {
+      "symbol": "菜油",
+      "category": "油脂",
+      "timeframe": "30min",
+      "triggerTf": "15m",
+      "lastUpdate": "13:22:51",
+      "price": 9826.0,
+      "change": 0.13,
+      "ma": {
+        "status": "Downward",
+        "cumulative": 7,
+        "ma20": 9856.75,
+        "ma60": 9849.23,
+        "slope20Pct": -0.0517,
+        "slopeType": "declining"
+      },
+      "macd": {
+        "sign": "negative",
+        "rapidExpanding": false,
+        "expansionRate": -0.99,
+        "cumulative": 4
+      },
+      "volume": {
+        "status": "Shrink",
+        "cumulative": 5,
+        "value": 12,
+        "change": -5,
+        "changePct": -29.4
+      },
+      "openInterest": {
+        "value": 225545,
+        "prevValue": 225397,
+        "change": 148,
+        "changePct": 0.07,
+        "status": "Increasing",
+        "cumulative": 1
+      },
+      "breakoutSignal": null,
+      "pullbackSignal": null
+    },
+    {
+      "symbol": "棕榈油",
+      "category": "油脂",
+      "timeframe": "30min",
+      "triggerTf": "15m",
+      "lastUpdate": "13:22:52",
+      "price": 9654.0,
+      "change": 0.1,
+      "ma": {
+        "status": "Downward",
+        "cumulative": 13,
+        "ma20": 9765.9,
+        "ma60": 9770.97,
+        "slope20Pct": -0.0982,
+        "slopeType": "declining"
+      },
+      "macd": {
+        "sign": "negative",
+        "rapidExpanding": false,
+        "expansionRate": -0.12,
+        "cumulative": 5
+      },
+      "volume": {
+        "status": "Surge",
+        "cumulative": 1,
+        "value": 75,
+        "change": 56,
+        "changePct": 294.7
+      },
+      "openInterest": {
+        "value": 292615,
+        "prevValue": 292825,
+        "change": -210,
+        "changePct": -0.07,
+        "status": "Decreasing",
+        "cumulative": 1
+      },
+      "breakoutSignal": null,
+      "pullbackSignal": null
+    },
+    {
+      "symbol": "豆粕",
+      "category": "油脂",
+      "timeframe": "30min",
+      "triggerTf": "15m",
+      "lastUpdate": "13:22:52",
+      "price": 2954.0,
+      "change": -0.24,
+      "ma": {
+        "status": "Downward",
+        "cumulative": 27,
+        "ma20": 2987.6,
+        "ma60": 3021.73,
+        "slope20Pct": -0.2354,
+        "slopeType": "declining"
+      },
+      "macd": {
+        "sign": "negative",
+        "rapidExpanding": false,
+        "expansionRate": 0.72,
+        "cumulative": 7
+      },
+      "volume": {
+        "status": "Shrink",
+        "cumulative": 5,
+        "value": 18,
+        "change": -86,
+        "changePct": -82.7
+      },
+      "openInterest": {
+        "value": 1704691,
+        "prevValue": 1705670,
+        "change": -979,
+        "changePct": -0.06,
         "status": "Decreasing",
         "cumulative": 1
       },

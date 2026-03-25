@@ -130,7 +130,17 @@ function PullbackCard({ d, sig, isLong }: { d: FuturesStatus; sig: PullbackSigna
           </span>
         </div>
         <span className={`text-[10px] px-1.5 py-0.5 rounded border font-bold ${badge}`}>
-          {isLong ? "↩" : "↪"} {isLong ? "做多" : "做空"} {sig.target}
+          {isLong ? "↩" : "↪"} {isLong ? "做多回踩" : "做空反抽"} {sig.target}
+        </span>
+        {/* 方向标记：做多回踩显示价格是否仍在均线上方 */}
+        <span className={`text-[10px] px-1 rounded ${
+          isLong
+            ? sig.aboveMa ? "text-teal-400" : "text-yellow-500"
+            : sig.aboveMa ? "text-yellow-500" : "text-orange-400"
+        }`}>
+          {isLong
+            ? (sig.aboveMa ? "↗贴近" : "↘微穿")
+            : (sig.aboveMa ? "↗微突" : "↙贴近")}
         </span>
       </div>
 

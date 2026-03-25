@@ -19,12 +19,13 @@ export interface BreakoutSignal {
   oiConfirmed: boolean;      // 15min 持仓量是否增仓（宽松条件）
 }
 
-// 回踩信号：30min MA60 锚定方向 + 价格回踩均线 ±0.5% + 15min MACD缩窄 + 15min放量
+// 回踩信号：30min MA60 锚定方向 + 价格从正确方向回踩均线 + 15min MACD缩窄 + 15min放量
 export interface PullbackSignal {
-  type: "long" | "short";   // 做多回踩 / 做空反抽
+  type: "long" | "short";   // 做多回踩（从上方） / 做空反抽（从下方）
   target: "MA20" | "MA60";  // 回踩/反抽的目标均线
   support: number;           // 目标均线当前值
-  distPct: number;           // 距均线的 % 距离
+  distPct: number;           // 距均线的 % 距离（绝对值）
+  aboveMa: boolean;          // 做多: true=价格仍在均线上方; 做空: true=已轻微突破
   slopeType: MaSlopeType;    // 30min MA20 斜率类型
   ma20: number;              // 30min MA20 当前值
   ma60: number;              // 30min MA60 当前值

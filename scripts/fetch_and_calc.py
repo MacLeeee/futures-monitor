@@ -280,29 +280,37 @@ def calc_pullback_signal(
     if not vol_ok:
         return None
 
+    # 回踩方向精确判断阈值：允许收盘价在均线下方的最大容忍幅度
+    # 做多回踩：价格从上方回落贴近均线，close ≥ support * (1 - 0.15%)
+    #   即只允许极小幅度跌穿（收盘wick），防止把"从下方逼近"也误判为回踩
+    # 做空反抽：价格从下方反弹贴近阻力，close ≤ resist  * (1 + 0.15%)，同理
+    _APPROACH_TOL = 0.15  # 方向容忍：允许穿越均线的最大 %
+
     if bullish:
         # 多头回踩：MACD 15min 死叉 + 缩窄（粘合）→ 买入
         macd_ok = (macd_15m.get("sign") == "negative"
                    and not macd_15m.get("rapidExpanding", True))
         if not macd_ok:
             return None
-        # 支撑选择
-        if slope_type in ("steep",):
-            if dist_ma20 > _BOUNCE_TOL:
-                return None
-            target, dist_pct, support_val = "MA20", dist_ma20, ma20
+        # 支撑均线选择
+        if slope_type == "steep":
+            target, support_val = "MA20", ma20
         else:  # gentle / flat / declining → 用 MA60
-            if dist_ma60 > _BOUNCE_TOL:
-                return None
-            target, dist_pct, support_val = "MA60", dist_ma60, ma60
-        # 价格须从上方贴近（不能跌穿太多）
-        if close < support_val * (1 - _BOUNCE_TOL / 100):
+            target, support_val = "MA60", ma60
+
+        dist_pct = (close - support_val) / support_val * 100   # 正=上方，负=下方
+
+        # 价格必须从上方贴近：close ∈ [support*(1-0.15%), support*(1+0.5%)]
+        # 上方 0.5% 以内说明正在回踩；下方 0.15% 是允许wick轻微跌穿
+        if not (support_val * (1 - _APPROACH_TOL / 100) <= close <= support_val * (1 + _BOUNCE_TOL / 100)):
             return None
+
         return {
             "type":       "long",
             "target":     target,
             "support":    round(support_val, 2),
-            "distPct":    round(dist_pct, 3),
+            "distPct":    round(abs(dist_pct), 3),   # 展示用，取绝对值
+            "aboveMa":    dist_pct >= 0,             # True=价格仍在均线上方
             "slopeType":  slope_type,
             "ma20":       round(ma20, 2),
             "ma60":       round(ma60, 2),
@@ -313,22 +321,25 @@ def calc_pullback_signal(
                    and not macd_15m.get("rapidExpanding", True))
         if not macd_ok:
             return None
-        # 阻力选择
+        # 阻力均线选择
         if slope_type == "declining":
-            if dist_ma20 > _BOUNCE_TOL:
-                return None
-            target, dist_pct, resist_val = "MA20", dist_ma20, ma20
+            target, resist_val = "MA20", ma20
         else:
-            if dist_ma60 > _BOUNCE_TOL:
-                return None
-            target, dist_pct, resist_val = "MA60", dist_ma60, ma60
-        if close > resist_val * (1 + _BOUNCE_TOL / 100):
+            target, resist_val = "MA60", ma60
+
+        dist_pct = (resist_val - close) / resist_val * 100   # 正=下方，负=上方
+
+        # 价格必须从下方贴近：close ∈ [resist*(1-0.5%), resist*(1+0.15%)]
+        # 下方 0.5% 以内说明正在反抽；上方 0.15% 是允许wick轻微突破
+        if not (resist_val * (1 - _BOUNCE_TOL / 100) <= close <= resist_val * (1 + _APPROACH_TOL / 100)):
             return None
+
         return {
             "type":       "short",
             "target":     target,
             "support":    round(resist_val, 2),
-            "distPct":    round(dist_pct, 3),
+            "distPct":    round(abs(dist_pct), 3),
+            "aboveMa":    dist_pct <= 0,             # True=价格已经突破均线上方（轻微）
             "slopeType":  slope_type,
             "ma20":       round(ma20, 2),
             "ma60":       round(ma60, 2),

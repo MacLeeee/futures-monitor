@@ -135,7 +135,7 @@ function buildFuturesStatus(
     lastUpdate: `${hh}:${mm}:${ss}`,
     price,
     change: Math.round(change * 100) / 100,
-    ma: maResult,
+    ma: { ...maResult, slope60Pct: maResult.slope20Pct * 0.6 },  // mock: MA60斜率约为MA20的60%
     // mock 中 macd/volume/oi 字段模拟 15min 数据（结构相同）
     macd: {
       sign:           macdResult.sign,
@@ -144,11 +144,13 @@ function buildFuturesStatus(
       cumulative:     macdResult.cumulative,
     },
     volume: {
-      status:     volResult.status,
-      cumulative: volResult.cumulative,
-      value:      Math.round(volResult.value),
-      change:     Math.round(volResult.change),
-      changePct:  volResult.changePct,
+      status:      volResult.status,
+      cumulative:  volResult.cumulative,
+      value:       Math.round(volResult.value),
+      change:      Math.round(volResult.change),
+      changePct:   volResult.changePct,
+      aboveVolMa:  volResult.status === "Surge",  // mock: 放量时视为高于均量
+      volMa:       Math.round(volResult.value * 0.8),
     },
     openInterest: {
       value: Math.round(oiResult.value),

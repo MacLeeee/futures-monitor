@@ -41,7 +41,7 @@ const COLUMNS = [
   { key: "price",        label: "价格/涨跌", width: "w-28", align: "text-right" },
   { key: "ma",           label: "均线方向 30m (MA20/60)", width: "w-44", align: "text-left" },
   { key: "macd",         label: "MACD 15m (12,26,9)",    width: "w-44", align: "text-left" },
-  { key: "volume",       label: "成交量 15m",  width: "w-36", align: "text-left" },
+  { key: "volume",       label: "成交量 15m (>MA10)",  width: "w-40", align: "text-left" },
   { key: "openInterest", label: "持仓量 15m",  width: "w-40", align: "text-left" },
   { key: "lastUpdate",   label: "更新",    width: "w-20", align: "text-right" },
 ];

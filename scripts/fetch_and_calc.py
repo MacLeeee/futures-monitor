@@ -176,20 +176,26 @@ def calc_ma(df: pd.DataFrame) -> dict:
     ma20_cur = float(ma20s.iloc[-1]) if not pd.isna(ma20s.iloc[-1]) else None
     ma60_cur = float(ma60s.iloc[-1]) if not pd.isna(ma60s.iloc[-1]) else None
 
-    # MA20斜率：用倒数第4根K线（3根前）作基准，计算3根内的累计%变化
+    # MA20 斜率：用倒数第4根（3根前）作基准，计算3根内的累计%变化
     slope20_pct = 0.0
     slope_type  = "flat"
     if ma20_cur and n >= 5:
         old_val = float(ma20s.iloc[-4]) if not pd.isna(ma20s.iloc[-4]) else None
         if old_val and old_val > 0:
             slope20_pct = round((ma20_cur - old_val) / old_val * 100, 4)
-            # 0.2% / 3根K线 ≈ 视觉上 45° 参考线
             if slope20_pct > 0.2:
-                slope_type = "steep"      # 急速上行（≥45°）
+                slope_type = "steep"
             elif slope20_pct >= 0:
-                slope_type = "gentle"     # 缓慢上行（<45°）
+                slope_type = "gentle"
             else:
-                slope_type = "declining"  # 下行
+                slope_type = "declining"
+
+    # MA60 斜率：同样用3根窗口，判断长均线方向
+    slope60_pct = 0.0
+    if ma60_cur and n >= 5:
+        old60 = float(ma60s.iloc[-4]) if not pd.isna(ma60s.iloc[-4]) else None
+        if old60 and old60 > 0:
+            slope60_pct = round((ma60_cur - old60) / old60 * 100, 4)
 
     return {
         "status":     cur,
@@ -197,6 +203,7 @@ def calc_ma(df: pd.DataFrame) -> dict:
         "ma20":       round(ma20_cur, 2) if ma20_cur else None,
         "ma60":       round(ma60_cur, 2) if ma60_cur else None,
         "slope20Pct": slope20_pct,
+        "slope60Pct": slope60_pct,
         "slopeType":  slope_type,
     }
 
@@ -210,30 +217,48 @@ def calc_breakout_signal(
 ) -> dict | None:
     """
     突破信号（多周期）：
-      30min MA 排列方向 + 15min MACD 扩口 + 15min 放量 + 15min 增仓（宽松）
-    做多: 30min Upward + 15min 金叉扩口 + 15min 放量
-    做空: 30min Downward + 15min 死叉扩口 + 15min 放量
-    持仓量为宽松条件（满足加分，不满足不否决）
+      30min MA 排列方向 + MA20/MA60 斜率同向为正/负
+      + 15min MACD 扩口 + 15min 量 > 量MA10 + 增仓（宽松）
+
+    斜率双重过滤：
+      做多：slope20Pct > 0 且 slope60Pct > 0（两条均线都在走高，趋势明确）
+      做空：slope20Pct < 0 且 slope60Pct < 0（两条均线都在走低，趋势明确）
     """
-    ma_status = ma_30m.get("status")
+    ma_status  = ma_30m.get("status")
+    slope20    = ma_30m.get("slope20Pct", 0.0)
+    slope60    = ma_30m.get("slope60Pct", 0.0)
+
     if ma_status not in ("Upward", "Downward"):
         return None
 
     is_long = (ma_status == "Upward")
-    macd_ok  = (macd_15m.get("sign") == ("positive" if is_long else "negative")
-                and macd_15m.get("rapidExpanding", False))
-    vol_ok   = vol_15m.get("status") == "Surge"
+
+    # 斜率双重确认：两条均线方向一致
+    if is_long:
+        slope_ok = slope20 > 0 and slope60 > 0
+    else:
+        slope_ok = slope20 < 0 and slope60 < 0
+
+    if not slope_ok:
+        return None
+
+    macd_ok = (macd_15m.get("sign") == ("positive" if is_long else "negative")
+               and macd_15m.get("rapidExpanding", False))
+    # 成交量：环比放量 且 高于近10根均量（双重确认，防假突破）
+    vol_ok  = vol_15m.get("status") == "Surge" and vol_15m.get("aboveVolMa", False)
 
     if not (macd_ok and vol_ok):
         return None
 
     oi_ok = oi_15m.get("status") == "Increasing"
     return {
-        "type":        "long" if is_long else "short",
-        "maCumulative": ma_30m.get("cumulative", 1),
-        "macdSign":    macd_15m.get("sign"),
+        "type":          "long" if is_long else "short",
+        "maCumulative":  ma_30m.get("cumulative", 1),
+        "macdSign":      macd_15m.get("sign"),
         "expansionRate": macd_15m.get("expansionRate", 1.0),
-        "oiConfirmed": oi_ok,
+        "oiConfirmed":   oi_ok,
+        "slope20":       slope20,
+        "slope60":       slope60,
     }
 
 
@@ -268,6 +293,9 @@ def calc_pullback_signal(
     dist_ma20 = abs(close - ma20) / ma20 * 100
     dist_ma60 = abs(close - ma60) / ma60 * 100
 
+    slope20 = ma_30m.get("slope20Pct", 0.0)
+    slope60 = ma_30m.get("slope60Pct", 0.0)
+
     # 方向由 30min MA60 锚定
     bullish = close > ma60   # 多头方向（价格在 MA60 上方）
     bearish = close < ma60   # 空头方向（价格在 MA60 下方）
@@ -275,8 +303,16 @@ def calc_pullback_signal(
     if not bullish and not bearish:
         return None
 
-    # 放量
-    vol_ok = vol_15m.get("status") == "Surge"
+    # 斜率双重过滤：防止震荡期误触发
+    # 做多回踩：MA20 和 MA60 斜率都 > 0（趋势明确向上）
+    # 做空反抽：MA20 和 MA60 斜率都 < 0（趋势明确向下）
+    if bullish and not (slope20 > 0 and slope60 > 0):
+        return None
+    if bearish and not (slope20 < 0 and slope60 < 0):
+        return None
+
+    # 成交量：环比放量 且 高于近10根均量（双重确认，防假支撑/假阻力）
+    vol_ok = vol_15m.get("status") == "Surge" and vol_15m.get("aboveVolMa", False)
     if not vol_ok:
         return None
 
@@ -390,7 +426,8 @@ def calc_volume(df: pd.DataFrame) -> dict:
     v = df["volume"]
     n = len(df)
     if n < 2:
-        return {"status": "Shrink", "cumulative": 0, "value": 0, "change": 0, "changePct": 0.0}
+        return {"status": "Shrink", "cumulative": 0, "value": 0,
+                "change": 0, "changePct": 0.0, "aboveVolMa": False, "volMa": 0}
 
     def st(i): return "Surge" if i >= 1 and v.iloc[i] > v.iloc[i - 1] else "Shrink"
     cur = st(n - 1)
@@ -400,8 +437,24 @@ def calc_volume(df: pd.DataFrame) -> dict:
     for i in range(n - 2, 0, -1):
         if st(i) == cur: cnt += 1
         else: break
-    return {"status": cur, "cumulative": cnt,
-            "value": int(v.iloc[-1]), "change": int(change), "changePct": pct}
+
+    # 量MA10：当前成交量是否高于近10根均量（剔除最新一根自身，用[-11:-1]计算均值）
+    vol_ma_window = 10
+    if n > vol_ma_window:
+        vol_ma = float(v.iloc[-(vol_ma_window + 1):-1].mean())
+    else:
+        vol_ma = float(v.iloc[:-1].mean()) if n > 1 else float(v.iloc[-1])
+    above_vol_ma = float(v.iloc[-1]) > vol_ma if vol_ma > 0 else False
+
+    return {
+        "status":      cur,
+        "cumulative":  cnt,
+        "value":       int(v.iloc[-1]),
+        "change":      int(change),
+        "changePct":   pct,
+        "aboveVolMa":  above_vol_ma,   # 当前量 > 近10根均量
+        "volMa":       round(vol_ma, 0),
+    }
 
 def calc_oi(df: pd.DataFrame) -> dict:
     empty = {"value": 0, "prevValue": 0, "change": 0, "changePct": 0.0,

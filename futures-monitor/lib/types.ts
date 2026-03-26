@@ -10,13 +10,15 @@ export type MacdSign = "positive" | "negative";
 
 export type MaSlopeType = "steep" | "gentle" | "declining" | "flat";
 
-// 突破信号：30min MA排列 + 15min MACD扩口 + 15min放量 [+增仓宽松]
+// 突破信号：30min MA排列 + MA20/MA60斜率同向 + 15min MACD扩口 + 15min量>均量 + 增仓(宽松)
 export interface BreakoutSignal {
   type: "long" | "short";
   maCumulative: number;      // 30min MA 方向持续 K 数
   macdSign: "positive" | "negative";
   expansionRate: number;     // 15min MACD 走扩倍率
   oiConfirmed: boolean;      // 15min 持仓量是否增仓（宽松条件）
+  slope20: number;           // 触发时 MA20 斜率（%/3K）
+  slope60: number;           // 触发时 MA60 斜率（%/3K）
 }
 
 // 回踩信号：30min MA60 锚定方向 + 价格从正确方向回踩均线 + 15min MACD缩窄 + 15min放量
@@ -40,10 +42,11 @@ export interface FuturesStatus {
   change: number;         // 涨跌幅 %
   ma: {
     status: MaStatus;
-    cumulative: number;   // 连续持续 K 线数
+    cumulative: number;        // 连续持续 K 线数
     ma20: number | null;       // 当前 MA20 值
     ma60: number | null;       // 当前 MA60 值
     slope20Pct: number;        // MA20 斜率（3根K线内累计%变化）
+    slope60Pct: number;        // MA60 斜率（3根K线内累计%变化）
     slopeType: MaSlopeType;    // steep=急速上行(≥45°) gentle=缓慢 declining=下行
   };
   breakoutSignal: BreakoutSignal | null;  // 突破信号（30m方向+15m触发）
@@ -60,6 +63,8 @@ export interface FuturesStatus {
     value: number;        // 当前成交量
     change: number;       // 环比变化量 = value - prevValue
     changePct: number;    // 环比变化幅度（%）
+    aboveVolMa: boolean;  // 当前量 > 近10根均量（量MA10确认）
+    volMa: number;        // 近10根均量
   };
   openInterest: {
     value: number;        // 当前持仓量（手）

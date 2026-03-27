@@ -82,7 +82,7 @@ export default function SignalPanel({ data }: SignalPanelProps) {
           </div>
         </div>
         <div className="flex items-center gap-2 text-gray-500">
-          <span className="text-[10px]">30m均线方向 · 15m MACD扩口 · 15m放量 · 增仓（宽松）</span>
+          <span className="text-[10px]">30m均线斜率同向 · 15m MACD扩口 · 15m放量&gt;均量</span>
           {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
         </div>
       </button>
@@ -114,10 +114,10 @@ export default function SignalPanel({ data }: SignalPanelProps) {
           )}
 
           <div className="flex flex-wrap gap-x-4 gap-y-1 pt-1 border-t border-gray-800/40 text-[10px] text-gray-600">
-            <span><span className="text-blue-400">MA 30m</span> = 方向层（均线排列）</span>
-            <span><span className="text-amber-400">MACD 15m</span> = 触发层（金/死叉扩口）</span>
-            <span><span className="text-orange-400">V 15m</span> = 放量确认</span>
-            <span className="ml-auto"><span className="text-purple-400">OI 15m</span> = 增仓（宽松，满足加分）</span>
+            <span><span className="text-blue-400">MA 30m</span> = 方向层（斜率同向上/下）</span>
+            <span><span className="text-amber-400">MACD 15m</span> = 触发层（金/死叉快速扩口）</span>
+            <span><span className="text-orange-400">V 15m</span> = 放量且高于均量（双确认）</span>
+            <span className="ml-auto text-gray-700"><span className="text-purple-400">+OI</span> = 增仓（或有加分项，不影响触发）</span>
           </div>
         </div>
       )}

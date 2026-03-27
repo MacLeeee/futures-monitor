@@ -221,13 +221,12 @@ def calc_breakout_signal(
     oi_15m: dict,
 ) -> dict | None:
     """
-    突破信号（多周期）：
-      30min MA 排列方向 + MA20/MA60 斜率同向为正/负
-      + 15min MACD 扩口 + 15min 量 > 量MA10 + 增仓（宽松）
+    突破信号（多周期）- 三个必选条件：
+      1. 30min MA 排列方向 + MA20/MA60 斜率同向（趋势明确，非震荡）
+      2. 15min MACD 方向正确且快速扩口
+      3. 15min 成交量：环比放量 + （当前或前一根）高于均量
 
-    斜率双重过滤：
-      做多：slope20Pct > 0 且 slope60Pct > 0（两条均线都在走高，趋势明确）
-      做空：slope20Pct < 0 且 slope60Pct < 0（两条均线都在走低，趋势明确）
+    增仓（OI）为或有加分项：触发后额外标注 "+OI"，不影响信号触发。
     """
     ma_status  = ma_30m.get("status")
     slope20    = ma_30m.get("slope20Pct", 0.0)

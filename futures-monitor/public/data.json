@@ -135,7 +135,7 @@
       "pullbackSignal": null
     },
     {
-      "symbol": "黄金",
+      "symbol": "白银",
       "category": "贵金属",
       "timeframe": "30min",
       "triggerTf": "15m",
@@ -152,7 +152,7 @@
         "slopeType": "gentle"
       },
       "macd": {
-        "sign": "positive",
+        "sign": "negative",
         "rapidExpanding": false,
         "expansionRate": -2.93,
         "cumulative": 16
@@ -877,7 +877,7 @@
         "change": 607,
         "changePct": 0.04,
         "status": "Increasing",
-        "cumulative": 1
+        "cumulative": 2
       },
       "breakoutSignal": null,
       "pullbackSignal": null
@@ -893,16 +893,16 @@
       "ma": {
         "status": "Downward",
         "cumulative": 16,
-        "ma20": 2328.5,
-        "ma60": 2360.95,
-        "slope20Pct": -0.2549,
-        "slope60Pct": -0.2394,
+        "ma20": 2328.45,
+        "ma60": 2360.93,
+        "slope20Pct": -0.257,
+        "slope60Pct": -0.2401,
         "slopeType": "declining"
       },
       "macd": {
         "sign": "positive",
         "rapidExpanding": false,
-        "expansionRate": 0.09,
+        "expansionRate": -0.21,
         "cumulative": 14
       },
       "volume": {
@@ -1010,6 +1010,50 @@
         "changePct": -0.74,
         "status": "Decreasing",
         "cumulative": 4
+      },
+      "breakoutSignal": null,
+      "pullbackSignal": null
+    },
+    {
+      "symbol": "原油",
+      "category": "能化",
+      "timeframe": "30min",
+      "triggerTf": "15m",
+      "lastUpdate": "13:27:49",
+      "price": 757.7,
+      "change": 2.28,
+      "ma": {
+        "status": "Upward",
+        "cumulative": 2,
+        "ma20": 741.09,
+        "ma60": 734.23,
+        "slope20Pct": 0.1906,
+        "slope60Pct": -0.0932,
+        "slopeType": "gentle"
+      },
+      "macd": {
+        "sign": "positive",
+        "rapidExpanding": true,
+        "expansionRate": 2.42,
+        "cumulative": 3
+      },
+      "volume": {
+        "status": "Surge",
+        "cumulative": 1,
+        "value": 24,
+        "change": 8,
+        "changePct": 50.0,
+        "aboveVolMa": false,
+        "prevAboveVolMa": false,
+        "volMa": 200.0
+      },
+      "openInterest": {
+        "value": 51246,
+        "prevValue": 51511,
+        "change": -265,
+        "changePct": -0.51,
+        "status": "Decreasing",
+        "cumulative": 2
       },
       "breakoutSignal": null,
       "pullbackSignal": null

@@ -10,15 +10,14 @@ export type MacdSign = "positive" | "negative";
 
 export type MaSlopeType = "steep" | "gentle" | "declining" | "flat";
 
-// 突破信号：30min MA排列 + MA20/MA60斜率同向 + 15min MACD扩口 + 15min量>均量 + 增仓(宽松)
+// 突破信号：30min MA排列（价格在MA20/MA60上/下方）+ 15min MACD扩口 + 15min量>均量
+// 增仓(OI)为或有加分项
 export interface BreakoutSignal {
   type: "long" | "short";
-  maCumulative: number;      // 30min MA 方向持续 K 数
+  maCumulative: number;      // 30min MA 排列方向持续 K 数
   macdSign: "positive" | "negative";
   expansionRate: number;     // 15min MACD 走扩倍率
-  oiConfirmed: boolean;      // 15min 持仓量是否增仓（宽松条件）
-  slope20: number;           // 触发时 MA20 斜率（%/3K）
-  slope60: number;           // 触发时 MA60 斜率（%/3K）
+  oiConfirmed: boolean;      // 15min 持仓量增仓（或有加分项）
 }
 
 // 回踩信号：30min MA60 锚定方向 + 价格从正确方向回踩均线 + 15min MACD缩窄 + 15min放量

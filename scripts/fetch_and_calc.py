@@ -221,35 +221,23 @@ def calc_breakout_signal(
     oi_15m: dict,
 ) -> dict | None:
     """
-    突破信号（多周期）- 三个必选条件：
-      1. 30min MA 排列方向 + MA20/MA60 斜率同向（趋势明确，非震荡）
-      2. 15min MACD 方向正确且快速扩口
-      3. 15min 成交量：环比放量 + （当前或前一根）高于均量
+    突破信号（多周期）- 三个必选条件（缺一不触发）：
+      1. 30min MA 排列方向：收盘价在 MA20 和 MA60 上方（Upward）/ 下方（Downward）
+         ★ 不要求均线斜率，早期突破时均线往往还未跟上价格
+      2. 15min MACD 方向正确且快速扩口（金叉区做多，死叉区做空）
+      3. 15min 成交量：环比放量 + （当前或前一根）高于近10根均量
 
     增仓（OI）为或有加分项：触发后额外标注 "+OI"，不影响信号触发。
     """
-    ma_status  = ma_30m.get("status")
-    slope20    = ma_30m.get("slope20Pct", 0.0)
-    slope60    = ma_30m.get("slope60Pct", 0.0)
-
+    ma_status = ma_30m.get("status")
     if ma_status not in ("Upward", "Downward"):
         return None
 
     is_long = (ma_status == "Upward")
 
-    # 斜率双重确认：两条均线方向一致
-    if is_long:
-        slope_ok = slope20 > 0 and slope60 > 0
-    else:
-        slope_ok = slope20 < 0 and slope60 < 0
-
-    if not slope_ok:
-        return None
-
     macd_ok = (macd_15m.get("sign") == ("positive" if is_long else "negative")
                and macd_15m.get("rapidExpanding", False))
     # 成交量：环比放量 + （当前量 OR 前一根量）高于均量
-    # 使用 OR 避免未完结K线量偏低导致误过滤
     vol_above = vol_15m.get("aboveVolMa", False) or vol_15m.get("prevAboveVolMa", False)
     vol_ok    = vol_15m.get("status") == "Surge" and vol_above
 
@@ -263,8 +251,6 @@ def calc_breakout_signal(
         "macdSign":      macd_15m.get("sign"),
         "expansionRate": macd_15m.get("expansionRate", 1.0),
         "oiConfirmed":   oi_ok,
-        "slope20":       slope20,
-        "slope60":       slope60,
     }
 
 

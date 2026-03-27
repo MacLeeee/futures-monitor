@@ -249,8 +249,10 @@ def calc_breakout_signal(
 
     macd_ok = (macd_15m.get("sign") == ("positive" if is_long else "negative")
                and macd_15m.get("rapidExpanding", False))
-    # 成交量：环比放量 且 高于近10根均量（双重确认，防假突破）
-    vol_ok  = vol_15m.get("status") == "Surge" and vol_15m.get("aboveVolMa", False)
+    # 成交量：环比放量 + （当前量 OR 前一根量）高于均量
+    # 使用 OR 避免未完结K线量偏低导致误过滤
+    vol_above = vol_15m.get("aboveVolMa", False) or vol_15m.get("prevAboveVolMa", False)
+    vol_ok    = vol_15m.get("status") == "Surge" and vol_above
 
     if not (macd_ok and vol_ok):
         return None
@@ -316,8 +318,9 @@ def calc_pullback_signal(
     if bearish and not (slope20 < 0 and slope60 < 0):
         return None
 
-    # 成交量：环比放量 且 高于近10根均量（双重确认，防假支撑/假阻力）
-    vol_ok = vol_15m.get("status") == "Surge" and vol_15m.get("aboveVolMa", False)
+    # 成交量：环比放量 + （当前量 OR 前一根量）高于均量
+    vol_above = vol_15m.get("aboveVolMa", False) or vol_15m.get("prevAboveVolMa", False)
+    vol_ok    = vol_15m.get("status") == "Surge" and vol_above
     if not vol_ok:
         return None
 
@@ -443,22 +446,32 @@ def calc_volume(df: pd.DataFrame) -> dict:
         if st(i) == cur: cnt += 1
         else: break
 
-    # 量MA10：当前成交量是否高于近10根均量（剔除最新一根自身，用[-11:-1]计算均值）
+    # 量MA10：以倒数第2~11根（排除当前可能未完结K线）计算均量
+    # 用 prev（上一根已完结K线）对比均量，更能反映真实量能水平
     vol_ma_window = 10
-    if n > vol_ma_window:
-        vol_ma = float(v.iloc[-(vol_ma_window + 1):-1].mean())
+    if n > vol_ma_window + 1:
+        vol_ma = float(v.iloc[-(vol_ma_window + 2):-2].mean())   # 排除最新两根，取稳定均值
+    elif n > 2:
+        vol_ma = float(v.iloc[:-2].mean())
     else:
-        vol_ma = float(v.iloc[:-1].mean()) if n > 1 else float(v.iloc[-1])
-    above_vol_ma = float(v.iloc[-1]) > vol_ma if vol_ma > 0 else False
+        vol_ma = float(v.iloc[-1])
+
+    cur_vol  = float(v.iloc[-1])
+    prev_vol = float(v.iloc[-2]) if n >= 2 else cur_vol
+
+    # 当前量（可能未完结）或前一根已完结K线，任一高于均量即视为量能充足
+    above_vol_ma      = cur_vol  > vol_ma if vol_ma > 0 else False
+    prev_above_vol_ma = prev_vol > vol_ma if vol_ma > 0 else False
 
     return {
-        "status":      cur,
-        "cumulative":  cnt,
-        "value":       int(v.iloc[-1]),
-        "change":      int(change),
-        "changePct":   pct,
-        "aboveVolMa":  above_vol_ma,   # 当前量 > 近10根均量
-        "volMa":       round(vol_ma, 0),
+        "status":          cur,
+        "cumulative":      cnt,
+        "value":           int(cur_vol),
+        "change":          int(change),
+        "changePct":       pct,
+        "aboveVolMa":      above_vol_ma,       # 当前量 > 均量（可能含未完结K线）
+        "prevAboveVolMa":  prev_above_vol_ma,  # 前一根完结量 > 均量（更可靠）
+        "volMa":           round(vol_ma, 0),
     }
 
 def calc_oi(df: pd.DataFrame) -> dict:

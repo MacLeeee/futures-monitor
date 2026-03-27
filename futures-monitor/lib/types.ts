@@ -63,8 +63,9 @@ export interface FuturesStatus {
     value: number;        // 当前成交量
     change: number;       // 环比变化量 = value - prevValue
     changePct: number;    // 环比变化幅度（%）
-    aboveVolMa: boolean;  // 当前量 > 近10根均量（量MA10确认）
-    volMa: number;        // 近10根均量
+    aboveVolMa: boolean;      // 当前量 > 均量（可能含未完结K线）
+    prevAboveVolMa: boolean;  // 前一根完结量 > 均量（更可靠）
+    volMa: number;            // 近10根均量
   };
   openInterest: {
     value: number;        // 当前持仓量（手）

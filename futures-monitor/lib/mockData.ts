@@ -149,8 +149,9 @@ function buildFuturesStatus(
       value:       Math.round(volResult.value),
       change:      Math.round(volResult.change),
       changePct:   volResult.changePct,
-      aboveVolMa:  volResult.status === "Surge",  // mock: 放量时视为高于均量
-      volMa:       Math.round(volResult.value * 0.8),
+      aboveVolMa:      volResult.status === "Surge",
+      prevAboveVolMa:  volResult.status === "Surge",
+      volMa:           Math.round(volResult.value * 0.8),
     },
     openInterest: {
       value: Math.round(oiResult.value),

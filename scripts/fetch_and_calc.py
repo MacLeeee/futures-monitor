@@ -923,5 +923,53 @@ def main():
     else:
         print("[TG] 无突破/回踩信号，不推送")
 
+    # ── Git Push（仅本地/服务器运行时；GitHub Actions 由 workflow 自行处理）──
+    if not os.environ.get("GITHUB_ACTIONS"):
+        _git_push()
+
+
+def _git_push():
+    """将更新后的 data.json / data_daily.json 推送到 GitHub，供 Cloudflare Pages 部署。"""
+    import subprocess
+
+    repo_root = Path(__file__).resolve().parent.parent
+
+    def run(cmd: list[str]) -> tuple[int, str]:
+        r = subprocess.run(cmd, cwd=repo_root, capture_output=True, text=True)
+        out = (r.stdout + r.stderr).strip()
+        return r.returncode, out
+
+    data_files = [
+        "futures-monitor/public/data.json",
+        "futures-monitor/public/data_daily.json",
+    ]
+
+    code, out = run(["git", "add"] + data_files)
+    if code != 0:
+        print(f"[GIT] git add 失败: {out}", file=sys.stderr)
+        return
+
+    code, out = run(["git", "diff", "--staged", "--quiet"])
+    if code == 0:
+        print("[GIT] 数据无变化，跳过 commit/push")
+        return
+
+    code, out = run(["git", "commit", "-m", "chore: update futures data [auto]"])
+    if code != 0:
+        print(f"[GIT] git commit 失败: {out}", file=sys.stderr)
+        return
+    print(f"[GIT] commit: {out}")
+
+    # fetch + merge -X ours 防止远端有其他提交导致 push 被拒
+    run(["git", "fetch", "origin", "main"])
+    run(["git", "merge", "origin/main", "--no-edit", "-X", "ours"])
+
+    code, out = run(["git", "push", "origin", "main"])
+    if code != 0:
+        print(f"[GIT] git push 失败: {out}", file=sys.stderr)
+    else:
+        print(f"[GIT] push 成功 → GitHub / Cloudflare Pages")
+
+
 if __name__ == "__main__":
     main()

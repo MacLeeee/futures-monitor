@@ -47,9 +47,11 @@ jobs:
       - name: Install Python dependencies
         run: pip install -r requirements.txt --quiet
 
-      # 抓取行情 + 计算指标 → 写入 data.json → Telegram 推送
-      # FORCE_FETCH=1 仅在手动勾选 force=true 时生效，keepalive 自动触发不绕过交易时间
+      # ── 仅 workflow_dispatch（手动触发）才抓行情数据 ──────────────
+      # push 触发时跳过数据抓取，避免与 run_local.sh 产生竞争覆盖
+      # （Cloudflare Pages 监听 GitHub 仓库，会自动部署最新前端代码）
       - name: Fetch & calculate
+        if: github.event_name == 'workflow_dispatch'
         run: python scripts/fetch_and_calc.py
         env:
           FORCE_FETCH: ${{ inputs.force == true && '1' || '0' }}
@@ -58,8 +60,8 @@ jobs:
           TELEGRAM_BOT_TOKEN_2: ${{ secrets.TELEGRAM_BOT_TOKEN_2 }}
           TELEGRAM_CHAT_ID_2:   ${{ secrets.TELEGRAM_CHAT_ID_2 }}
 
-      # data.json / data_daily.json 有变化才提交；用 merge -X ours 替代 rebase，避免数据文件冲突卡死
       - name: Commit data
+        if: github.event_name == 'workflow_dispatch'
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"

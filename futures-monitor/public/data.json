@@ -1,93 +1,55 @@
 {
   "source": "github-actions",
-  "updatedAt": "2026-03-31T01:30:45.000Z",
+  "updatedAt": "2026-03-31T01:45:43.000Z",
   "data": [
-    {
-      "symbol": "铜",
-      "category": "有色",
-      "timeframe": "30min",
-      "triggerTf": "15m",
-      "lastUpdate": "21:30:09",
-      "price": 95720.0,
-      "change": 0.39,
-      "ma": {
-        "status": "Upward",
-        "cumulative": 1,
-        "ma20": 95489.5,
-        "ma60": 95561.67,
-        "slope20Pct": -0.0183,
-        "slope60Pct": 0.0009,
-        "slopeType": "declining"
-      },
-      "macd": {
-        "sign": "positive",
-        "rapidExpanding": true,
-        "expansionRate": 2.66,
-        "cumulative": 1
-      },
-      "volume": {
-        "status": "Shrink",
-        "cumulative": 1,
-        "value": 4713,
-        "change": -680,
-        "changePct": -12.6,
-        "aboveVolMa": true,
-        "prevAboveVolMa": true,
-        "volMa": 970.0
-      },
-      "openInterest": {
-        "value": 182984,
-        "prevValue": 182510,
-        "change": 474,
-        "changePct": 0.26,
-        "status": "Increasing",
-        "cumulative": 1
-      },
-      "breakoutSignal": null,
-      "pullbackSignal": null
-    },
     {
       "symbol": "白银",
       "category": "贵金属",
       "timeframe": "30min",
       "triggerTf": "15m",
-      "lastUpdate": "21:30:10",
-      "price": 18077.0,
-      "change": 2.25,
+      "lastUpdate": "21:45:07",
+      "price": 18491.0,
+      "change": 1.57,
       "ma": {
         "status": "Upward",
-        "cumulative": 1,
-        "ma20": 17728.7,
-        "ma60": 17531.05,
-        "slope20Pct": 0.0793,
-        "slope60Pct": -0.065,
-        "slopeType": "gentle"
+        "cumulative": 2,
+        "ma20": 17790.75,
+        "ma60": 17540.38,
+        "slope20Pct": 0.4483,
+        "slope60Pct": 0.0261,
+        "slopeType": "steep"
       },
       "macd": {
         "sign": "positive",
-        "rapidExpanding": false,
-        "expansionRate": -0.59,
-        "cumulative": 1
+        "rapidExpanding": true,
+        "expansionRate": 8.46,
+        "cumulative": 2
       },
       "volume": {
         "status": "Surge",
-        "cumulative": 2,
-        "value": 52035,
-        "change": 37105,
-        "changePct": 248.5,
+        "cumulative": 3,
+        "value": 66527,
+        "change": 10219,
+        "changePct": 18.1,
         "aboveVolMa": true,
         "prevAboveVolMa": true,
-        "volMa": 9017.0
+        "volMa": 8785.0
       },
       "openInterest": {
-        "value": 245796,
-        "prevValue": 242303,
-        "change": 3493,
-        "changePct": 1.44,
+        "value": 248799,
+        "prevValue": 245925,
+        "change": 2874,
+        "changePct": 1.17,
         "status": "Increasing",
-        "cumulative": 2
+        "cumulative": 3
       },
-      "breakoutSignal": null,
+      "breakoutSignal": {
+        "type": "long",
+        "maCumulative": 2,
+        "macdSign": "positive",
+        "expansionRate": 8.46,
+        "oiConfirmed": true
+      },
       "pullbackSignal": null
     },
     {
@@ -95,39 +57,83 @@
       "category": "有色",
       "timeframe": "30min",
       "triggerTf": "15m",
-      "lastUpdate": "21:30:10",
-      "price": 24790.0,
-      "change": 0.18,
+      "lastUpdate": "21:45:07",
+      "price": 24845.0,
+      "change": 0.12,
       "ma": {
         "status": "Upward",
-        "cumulative": 32,
-        "ma20": 24612.0,
-        "ma60": 24108.0,
-        "slope20Pct": 0.452,
-        "slope60Pct": 0.1724,
+        "cumulative": 33,
+        "ma20": 24651.0,
+        "ma60": 24125.75,
+        "slope20Pct": 0.4452,
+        "slope60Pct": 0.1935,
         "slopeType": "steep"
       },
       "macd": {
         "sign": "negative",
         "rapidExpanding": false,
-        "expansionRate": -1.29,
-        "cumulative": 21
+        "expansionRate": -1.23,
+        "cumulative": 22
       },
       "volume": {
-        "status": "Surge",
-        "cumulative": 3,
-        "value": 4086,
-        "change": 779,
-        "changePct": 23.6,
+        "status": "Shrink",
+        "cumulative": 2,
+        "value": 484,
+        "change": -753,
+        "changePct": -60.9,
         "aboveVolMa": true,
         "prevAboveVolMa": true,
-        "volMa": 28.0
+        "volMa": 355.0
       },
       "openInterest": {
-        "value": 268153,
-        "prevValue": 268632,
-        "change": -479,
-        "changePct": -0.18,
+        "value": 268121,
+        "prevValue": 268322,
+        "change": -201,
+        "changePct": -0.07,
+        "status": "Decreasing",
+        "cumulative": 2
+      },
+      "breakoutSignal": null,
+      "pullbackSignal": null
+    },
+    {
+      "symbol": "铜",
+      "category": "有色",
+      "timeframe": "30min",
+      "triggerTf": "15m",
+      "lastUpdate": "21:45:08",
+      "price": 95930.0,
+      "change": 0.29,
+      "ma": {
+        "status": "Upward",
+        "cumulative": 2,
+        "ma20": 95508.0,
+        "ma60": 95565.33,
+        "slope20Pct": 0.0115,
+        "slope60Pct": 0.0066,
+        "slopeType": "gentle"
+      },
+      "macd": {
+        "sign": "positive",
+        "rapidExpanding": true,
+        "expansionRate": 4.06,
+        "cumulative": 2
+      },
+      "volume": {
+        "status": "Shrink",
+        "cumulative": 1,
+        "value": 36,
+        "change": -6252,
+        "changePct": -99.4,
+        "aboveVolMa": false,
+        "prevAboveVolMa": true,
+        "volMa": 1359.0
+      },
+      "openInterest": {
+        "value": 182847,
+        "prevValue": 182976,
+        "change": -129,
+        "changePct": -0.07,
         "status": "Decreasing",
         "cumulative": 1
       },
@@ -139,41 +145,41 @@
       "category": "贵金属",
       "timeframe": "30min",
       "triggerTf": "15m",
-      "lastUpdate": "21:30:10",
-      "price": 1026.42,
-      "change": 1.48,
+      "lastUpdate": "21:45:08",
+      "price": 1030.78,
+      "change": 0.54,
       "ma": {
         "status": "Upward",
-        "cumulative": 1,
-        "ma20": 1013.55,
-        "ma60": 1003.99,
-        "slope20Pct": 0.1205,
-        "slope60Pct": -0.0067,
-        "slopeType": "gentle"
+        "cumulative": 2,
+        "ma20": 1015.16,
+        "ma60": 1004.19,
+        "slope20Pct": 0.24,
+        "slope60Pct": 0.0239,
+        "slopeType": "steep"
       },
       "macd": {
         "sign": "positive",
-        "rapidExpanding": false,
-        "expansionRate": -2.38,
-        "cumulative": 1
+        "rapidExpanding": true,
+        "expansionRate": 2.52,
+        "cumulative": 2
       },
       "volume": {
-        "status": "Surge",
-        "cumulative": 4,
-        "value": 1084,
-        "change": 906,
-        "changePct": 509.0,
-        "aboveVolMa": true,
+        "status": "Shrink",
+        "cumulative": 1,
+        "value": 20,
+        "change": -6449,
+        "changePct": -99.7,
+        "aboveVolMa": false,
         "prevAboveVolMa": true,
-        "volMa": 14.0
+        "volMa": 30.0
       },
       "openInterest": {
-        "value": 182425,
-        "prevValue": 182258,
-        "change": 167,
-        "changePct": 0.09,
-        "status": "Increasing",
-        "cumulative": 2
+        "value": 181715,
+        "prevValue": 182351,
+        "change": -636,
+        "changePct": -0.35,
+        "status": "Decreasing",
+        "cumulative": 1
       },
       "breakoutSignal": null,
       "pullbackSignal": null
@@ -183,49 +189,43 @@
       "category": "有色",
       "timeframe": "30min",
       "triggerTf": "15m",
-      "lastUpdate": "21:30:13",
-      "price": 135920.0,
-      "change": -0.26,
+      "lastUpdate": "21:45:10",
+      "price": 135610.0,
+      "change": 0.13,
       "ma": {
         "status": "Downward",
-        "cumulative": 1,
-        "ma20": 136194.5,
-        "ma60": 136427.67,
-        "slope20Pct": 0.0206,
-        "slope60Pct": 0.0352,
-        "slopeType": "gentle"
+        "cumulative": 2,
+        "ma20": 136166.0,
+        "ma60": 136398.83,
+        "slope20Pct": -0.0195,
+        "slope60Pct": 0.0023,
+        "slopeType": "declining"
       },
       "macd": {
         "sign": "negative",
         "rapidExpanding": true,
-        "expansionRate": 1.6,
-        "cumulative": 15
+        "expansionRate": 1.07,
+        "cumulative": 16
       },
       "volume": {
-        "status": "Surge",
-        "cumulative": 4,
-        "value": 339,
-        "change": 200,
-        "changePct": 143.9,
+        "status": "Shrink",
+        "cumulative": 1,
+        "value": 74,
+        "change": -8464,
+        "changePct": -99.1,
         "aboveVolMa": true,
         "prevAboveVolMa": true,
-        "volMa": 18.0
+        "volMa": 30.0
       },
       "openInterest": {
-        "value": 173030,
-        "prevValue": 173203,
-        "change": -173,
-        "changePct": -0.1,
+        "value": 171809,
+        "prevValue": 172837,
+        "change": -1028,
+        "changePct": -0.59,
         "status": "Decreasing",
-        "cumulative": 5
+        "cumulative": 6
       },
-      "breakoutSignal": {
-        "type": "short",
-        "maCumulative": 1,
-        "macdSign": "negative",
-        "expansionRate": 1.6,
-        "oiConfirmed": false
-      },
+      "breakoutSignal": null,
       "pullbackSignal": null
     },
     {
@@ -233,41 +233,41 @@
       "category": "黑色",
       "timeframe": "30min",
       "triggerTf": "15m",
-      "lastUpdate": "21:30:13",
-      "price": 814.0,
-      "change": -0.18,
+      "lastUpdate": "21:45:10",
+      "price": 811.5,
+      "change": 0.0,
       "ma": {
         "status": "Downward",
-        "cumulative": 1,
-        "ma20": 814.65,
-        "ma60": 815.8,
-        "slope20Pct": 0.0583,
-        "slope60Pct": -0.0143,
+        "cumulative": 2,
+        "ma20": 814.48,
+        "ma60": 815.61,
+        "slope20Pct": 0.0061,
+        "slope60Pct": -0.0347,
         "slopeType": "gentle"
       },
       "macd": {
         "sign": "negative",
-        "rapidExpanding": false,
-        "expansionRate": -1.38,
-        "cumulative": 1
+        "rapidExpanding": true,
+        "expansionRate": 3.11,
+        "cumulative": 2
       },
       "volume": {
-        "status": "Surge",
-        "cumulative": 3,
-        "value": 1044,
-        "change": 1004,
-        "changePct": 2510.0,
+        "status": "Shrink",
+        "cumulative": 1,
+        "value": 123,
+        "change": -7243,
+        "changePct": -98.3,
         "aboveVolMa": false,
-        "prevAboveVolMa": false,
-        "volMa": 4414.0
+        "prevAboveVolMa": true,
+        "volMa": 4093.0
       },
       "openInterest": {
-        "value": 369664,
-        "prevValue": 369801,
-        "change": -137,
-        "changePct": -0.04,
+        "value": 367705,
+        "prevValue": 368071,
+        "change": -366,
+        "changePct": -0.1,
         "status": "Decreasing",
-        "cumulative": 1
+        "cumulative": 2
       },
       "breakoutSignal": null,
       "pullbackSignal": null
@@ -277,41 +277,41 @@
       "category": "有色",
       "timeframe": "30min",
       "triggerTf": "15m",
-      "lastUpdate": "21:30:13",
-      "price": 372040.0,
-      "change": 0.93,
+      "lastUpdate": "21:45:10",
+      "price": 372200.0,
+      "change": 0.12,
       "ma": {
         "status": "Upward",
-        "cumulative": 33,
-        "ma20": 367355.0,
-        "ma60": 359014.0,
-        "slope20Pct": 0.2304,
-        "slope60Pct": 0.19,
+        "cumulative": 34,
+        "ma20": 367769.5,
+        "ma60": 359345.33,
+        "slope20Pct": 0.2731,
+        "slope60Pct": 0.2342,
         "slopeType": "steep"
       },
       "macd": {
         "sign": "negative",
         "rapidExpanding": false,
-        "expansionRate": -5.55,
-        "cumulative": 15
+        "expansionRate": -2.6,
+        "cumulative": 16
       },
       "volume": {
-        "status": "Surge",
-        "cumulative": 4,
-        "value": 1704,
-        "change": 1098,
-        "changePct": 181.2,
+        "status": "Shrink",
+        "cumulative": 1,
+        "value": 364,
+        "change": -2567,
+        "changePct": -87.6,
         "aboveVolMa": true,
         "prevAboveVolMa": true,
-        "volMa": 23.0
+        "volMa": 81.0
       },
       "openInterest": {
-        "value": 41398,
-        "prevValue": 40836,
-        "change": 562,
-        "changePct": 1.38,
+        "value": 41347,
+        "prevValue": 41318,
+        "change": 29,
+        "changePct": 0.07,
         "status": "Increasing",
-        "cumulative": 2
+        "cumulative": 3
       },
       "breakoutSignal": null,
       "pullbackSignal": null
@@ -321,41 +321,41 @@
       "category": "有色",
       "timeframe": "30min",
       "triggerTf": "15m",
-      "lastUpdate": "21:30:13",
-      "price": 168100.0,
-      "change": -2.05,
+      "lastUpdate": "21:45:10",
+      "price": 165920.0,
+      "change": -0.86,
       "ma": {
-        "status": "Upward",
-        "cumulative": 19,
-        "ma20": 166229.0,
-        "ma60": 156055.0,
-        "slope20Pct": 1.075,
-        "slope60Pct": 0.7545,
+        "status": "Silent",
+        "cumulative": 1,
+        "ma20": 166671.0,
+        "ma60": 156413.33,
+        "slope20Pct": 1.0084,
+        "slope60Pct": 0.7435,
         "slopeType": "steep"
       },
       "macd": {
         "sign": "negative",
         "rapidExpanding": true,
-        "expansionRate": 2.51,
-        "cumulative": 10
+        "expansionRate": 2.63,
+        "cumulative": 11
       },
       "volume": {
         "status": "Shrink",
         "cumulative": 1,
-        "value": 1269,
-        "change": -682,
-        "changePct": -35.0,
-        "aboveVolMa": true,
+        "value": 10,
+        "change": -4519,
+        "changePct": -99.8,
+        "aboveVolMa": false,
         "prevAboveVolMa": true,
-        "volMa": 777.0
+        "volMa": 958.0
       },
       "openInterest": {
-        "value": 237993,
-        "prevValue": 240075,
-        "change": -2082,
-        "changePct": -0.87,
+        "value": 235481,
+        "prevValue": 237338,
+        "change": -1857,
+        "changePct": -0.78,
         "status": "Decreasing",
-        "cumulative": 1
+        "cumulative": 2
       },
       "breakoutSignal": null,
       "pullbackSignal": null
@@ -365,41 +365,85 @@
       "category": "黑色",
       "timeframe": "30min",
       "triggerTf": "15m",
-      "lastUpdate": "21:30:15",
-      "price": 3133.0,
-      "change": -0.29,
+      "lastUpdate": "21:45:13",
+      "price": 3132.0,
+      "change": 0.06,
       "ma": {
         "status": "Downward",
-        "cumulative": 1,
-        "ma20": 3133.7,
-        "ma60": 3133.95,
-        "slope20Pct": 0.0958,
-        "slope60Pct": -0.0096,
+        "cumulative": 2,
+        "ma20": 3134.4,
+        "ma60": 3133.6,
+        "slope20Pct": 0.0814,
+        "slope60Pct": -0.0197,
         "slopeType": "gentle"
       },
       "macd": {
         "sign": "negative",
         "rapidExpanding": true,
-        "expansionRate": 4.02,
-        "cumulative": 5
+        "expansionRate": 1.93,
+        "cumulative": 6
       },
       "volume": {
         "status": "Shrink",
         "cumulative": 1,
-        "value": 502,
-        "change": -16086,
-        "changePct": -97.0,
+        "value": 624,
+        "change": -32482,
+        "changePct": -98.1,
         "aboveVolMa": false,
         "prevAboveVolMa": true,
-        "volMa": 16546.0
+        "volMa": 16841.0
       },
       "openInterest": {
-        "value": 948907,
-        "prevValue": 952040,
-        "change": -3133,
-        "changePct": -0.33,
+        "value": 943296,
+        "prevValue": 947872,
+        "change": -4576,
+        "changePct": -0.48,
         "status": "Decreasing",
-        "cumulative": 13
+        "cumulative": 14
+      },
+      "breakoutSignal": null,
+      "pullbackSignal": null
+    },
+    {
+      "symbol": "焦煤",
+      "category": "黑色",
+      "timeframe": "30min",
+      "triggerTf": "15m",
+      "lastUpdate": "21:45:13",
+      "price": 1166.0,
+      "change": -0.17,
+      "ma": {
+        "status": "Downward",
+        "cumulative": 13,
+        "ma20": 1206.75,
+        "ma60": 1226.88,
+        "slope20Pct": -0.4373,
+        "slope60Pct": -0.3681,
+        "slopeType": "declining"
+      },
+      "macd": {
+        "sign": "negative",
+        "rapidExpanding": true,
+        "expansionRate": 1.27,
+        "cumulative": 20
+      },
+      "volume": {
+        "status": "Shrink",
+        "cumulative": 1,
+        "value": 610,
+        "change": -18547,
+        "changePct": -96.8,
+        "aboveVolMa": false,
+        "prevAboveVolMa": false,
+        "volMa": 28559.0
+      },
+      "openInterest": {
+        "value": 407735,
+        "prevValue": 407124,
+        "change": 611,
+        "changePct": 0.15,
+        "status": "Increasing",
+        "cumulative": 1
       },
       "breakoutSignal": null,
       "pullbackSignal": null
@@ -409,40 +453,40 @@
       "category": "黑色",
       "timeframe": "30min",
       "triggerTf": "15m",
-      "lastUpdate": "21:30:16",
-      "price": 6560.0,
-      "change": -0.43,
+      "lastUpdate": "21:45:13",
+      "price": 6568.0,
+      "change": 0.03,
       "ma": {
         "status": "Upward",
-        "cumulative": 17,
-        "ma20": 6543.6,
-        "ma60": 6489.4,
-        "slope20Pct": 0.3897,
-        "slope60Pct": 0.3128,
+        "cumulative": 18,
+        "ma20": 6550.3,
+        "ma60": 6495.77,
+        "slope20Pct": 0.3508,
+        "slope60Pct": 0.3011,
         "slopeType": "steep"
       },
       "macd": {
         "sign": "negative",
         "rapidExpanding": true,
-        "expansionRate": 3.97,
-        "cumulative": 11
+        "expansionRate": 1.47,
+        "cumulative": 12
       },
       "volume": {
         "status": "Shrink",
         "cumulative": 1,
-        "value": 2680,
-        "change": -104,
-        "changePct": -3.7,
+        "value": 332,
+        "change": -12599,
+        "changePct": -97.4,
         "aboveVolMa": false,
-        "prevAboveVolMa": false,
-        "volMa": 13434.0
+        "prevAboveVolMa": true,
+        "volMa": 12140.0
       },
       "openInterest": {
-        "value": 378283,
-        "prevValue": 377792,
-        "change": 491,
-        "changePct": 0.13,
-        "status": "Increasing",
+        "value": 376155,
+        "prevValue": 376769,
+        "change": -614,
+        "changePct": -0.16,
+        "status": "Decreasing",
         "cumulative": 2
       },
       "breakoutSignal": null,
@@ -453,84 +497,40 @@
       "category": "黑色",
       "timeframe": "30min",
       "triggerTf": "15m",
-      "lastUpdate": "21:30:16",
-      "price": 6006.0,
-      "change": -0.99,
+      "lastUpdate": "21:45:13",
+      "price": 5992.0,
+      "change": -0.17,
       "ma": {
         "status": "Downward",
-        "cumulative": 1,
-        "ma20": 6009.2,
-        "ma60": 6021.97,
-        "slope20Pct": 0.145,
-        "slope60Pct": 0.1763,
+        "cumulative": 2,
+        "ma20": 6008.8,
+        "ma60": 6024.4,
+        "slope20Pct": 0.0833,
+        "slope60Pct": 0.1524,
         "slopeType": "gentle"
       },
       "macd": {
         "sign": "negative",
-        "rapidExpanding": false,
-        "expansionRate": -1.35,
-        "cumulative": 1
+        "rapidExpanding": true,
+        "expansionRate": 5.56,
+        "cumulative": 2
       },
       "volume": {
         "status": "Shrink",
-        "cumulative": 1,
-        "value": 14401,
-        "change": -5668,
-        "changePct": -28.2,
-        "aboveVolMa": true,
-        "prevAboveVolMa": true,
-        "volMa": 6188.0
-      },
-      "openInterest": {
-        "value": 172686,
-        "prevValue": 173442,
-        "change": -756,
-        "changePct": -0.44,
-        "status": "Decreasing",
-        "cumulative": 1
-      },
-      "breakoutSignal": null,
-      "pullbackSignal": null
-    },
-    {
-      "symbol": "焦煤",
-      "category": "黑色",
-      "timeframe": "30min",
-      "triggerTf": "15m",
-      "lastUpdate": "21:30:16",
-      "price": 1168.0,
-      "change": -1.93,
-      "ma": {
-        "status": "Downward",
-        "cumulative": 12,
-        "ma20": 1209.1,
-        "ma60": 1228.67,
-        "slope20Pct": -0.3421,
-        "slope60Pct": -0.311,
-        "slopeType": "declining"
-      },
-      "macd": {
-        "sign": "negative",
-        "rapidExpanding": true,
-        "expansionRate": 2.12,
-        "cumulative": 19
-      },
-      "volume": {
-        "status": "Surge",
         "cumulative": 2,
-        "value": 23105,
-        "change": 20436,
-        "changePct": 765.7,
+        "value": 46,
+        "change": -15210,
+        "changePct": -99.7,
         "aboveVolMa": false,
-        "prevAboveVolMa": false,
-        "volMa": 32002.0
+        "prevAboveVolMa": true,
+        "volMa": 7613.0
       },
       "openInterest": {
-        "value": 408645,
-        "prevValue": 407410,
-        "change": 1235,
-        "changePct": 0.3,
-        "status": "Increasing",
+        "value": 171467,
+        "prevValue": 172644,
+        "change": -1177,
+        "changePct": -0.68,
+        "status": "Decreasing",
         "cumulative": 2
       },
       "breakoutSignal": null,
@@ -541,41 +541,41 @@
       "category": "农产品",
       "timeframe": "30min",
       "triggerTf": "15m",
-      "lastUpdate": "21:30:18",
-      "price": 10015.0,
-      "change": 0.1,
+      "lastUpdate": "21:45:15",
+      "price": 9985.0,
+      "change": -0.3,
       "ma": {
         "status": "Silent",
-        "cumulative": 14,
-        "ma20": 9957.75,
-        "ma60": 10055.67,
-        "slope20Pct": 0.1408,
-        "slope60Pct": -0.1754,
+        "cumulative": 15,
+        "ma20": 9963.0,
+        "ma60": 10050.58,
+        "slope20Pct": 0.1483,
+        "slope60Pct": -0.1556,
         "slopeType": "gentle"
       },
       "macd": {
-        "sign": "positive",
-        "rapidExpanding": false,
-        "expansionRate": -1.08,
-        "cumulative": 28
+        "sign": "negative",
+        "rapidExpanding": true,
+        "expansionRate": 2.37,
+        "cumulative": 1
       },
       "volume": {
-        "status": "Shrink",
+        "status": "Surge",
         "cumulative": 1,
-        "value": 7368,
-        "change": -10491,
-        "changePct": -58.7,
+        "value": 11609,
+        "change": 2621,
+        "changePct": 29.2,
         "aboveVolMa": true,
         "prevAboveVolMa": true,
-        "volMa": 6763.0
+        "volMa": 7494.0
       },
       "openInterest": {
-        "value": 186208,
-        "prevValue": 187645,
-        "change": -1437,
-        "changePct": -0.77,
+        "value": 183476,
+        "prevValue": 185837,
+        "change": -2361,
+        "changePct": -1.27,
         "status": "Decreasing",
-        "cumulative": 7
+        "cumulative": 8
       },
       "breakoutSignal": null,
       "pullbackSignal": null
@@ -585,40 +585,40 @@
       "category": "农产品",
       "timeframe": "30min",
       "triggerTf": "15m",
-      "lastUpdate": "21:30:18",
+      "lastUpdate": "21:45:16",
       "price": 2349.0,
-      "change": 0.13,
+      "change": 0.04,
       "ma": {
         "status": "Downward",
-        "cumulative": 16,
-        "ma20": 2356.35,
-        "ma60": 2370.63,
-        "slope20Pct": -0.1229,
-        "slope60Pct": -0.106,
+        "cumulative": 17,
+        "ma20": 2355.0,
+        "ma60": 2369.8,
+        "slope20Pct": -0.142,
+        "slope60Pct": -0.1082,
         "slopeType": "declining"
       },
       "macd": {
         "sign": "positive",
-        "rapidExpanding": false,
-        "expansionRate": 0.68,
-        "cumulative": 5
+        "rapidExpanding": true,
+        "expansionRate": 1.3,
+        "cumulative": 6
       },
       "volume": {
-        "status": "Shrink",
+        "status": "Surge",
         "cumulative": 1,
-        "value": 15503,
-        "change": -55860,
-        "changePct": -78.3,
+        "value": 20585,
+        "change": 588,
+        "changePct": 2.9,
         "aboveVolMa": false,
-        "prevAboveVolMa": true,
-        "volMa": 19470.0
+        "prevAboveVolMa": false,
+        "volMa": 22395.0
       },
       "openInterest": {
-        "value": 1050226,
-        "prevValue": 1049745,
-        "change": 481,
-        "changePct": 0.05,
-        "status": "Increasing",
+        "value": 1046110,
+        "prevValue": 1048964,
+        "change": -2854,
+        "changePct": -0.27,
+        "status": "Decreasing",
         "cumulative": 2
       },
       "breakoutSignal": null,
@@ -629,41 +629,41 @@
       "category": "农产品",
       "timeframe": "30min",
       "triggerTf": "15m",
-      "lastUpdate": "21:30:18",
-      "price": 15325.0,
-      "change": -0.55,
+      "lastUpdate": "21:45:16",
+      "price": 15330.0,
+      "change": 0.03,
       "ma": {
         "status": "Downward",
-        "cumulative": 1,
-        "ma20": 15392.5,
-        "ma60": 15354.5,
-        "slope20Pct": -0.0032,
-        "slope60Pct": 0.025,
+        "cumulative": 2,
+        "ma20": 15390.0,
+        "ma60": 15355.83,
+        "slope20Pct": -0.0227,
+        "slope60Pct": 0.0244,
         "slopeType": "declining"
       },
       "macd": {
         "sign": "negative",
         "rapidExpanding": true,
-        "expansionRate": 2.95,
-        "cumulative": 1
+        "expansionRate": 1.15,
+        "cumulative": 2
       },
       "volume": {
-        "status": "Surge",
-        "cumulative": 3,
-        "value": 3854,
-        "change": 1810,
-        "changePct": 88.6,
+        "status": "Shrink",
+        "cumulative": 2,
+        "value": 125,
+        "change": -1322,
+        "changePct": -91.4,
         "aboveVolMa": false,
         "prevAboveVolMa": false,
-        "volMa": 6397.0
+        "volMa": 5988.0
       },
       "openInterest": {
-        "value": 508521,
-        "prevValue": 509249,
-        "change": -728,
+        "value": 508411,
+        "prevValue": 509107,
+        "change": -696,
         "changePct": -0.14,
         "status": "Decreasing",
-        "cumulative": 1
+        "cumulative": 2
       },
       "breakoutSignal": null,
       "pullbackSignal": null
@@ -673,41 +673,41 @@
       "category": "农产品",
       "timeframe": "30min",
       "triggerTf": "15m",
-      "lastUpdate": "21:30:19",
-      "price": 5451.0,
-      "change": -0.22,
+      "lastUpdate": "21:45:16",
+      "price": 5440.0,
+      "change": -0.06,
       "ma": {
-        "status": "Silent",
-        "cumulative": 3,
-        "ma20": 5464.45,
-        "ma60": 5448.68,
-        "slope20Pct": 0.0055,
-        "slope60Pct": 0.0174,
-        "slopeType": "gentle"
+        "status": "Downward",
+        "cumulative": 2,
+        "ma20": 5462.9,
+        "ma60": 5448.37,
+        "slope20Pct": -0.0265,
+        "slope60Pct": 0.0028,
+        "slopeType": "declining"
       },
       "macd": {
         "sign": "negative",
-        "rapidExpanding": false,
-        "expansionRate": 0.52,
-        "cumulative": 1
+        "rapidExpanding": true,
+        "expansionRate": 1.49,
+        "cumulative": 2
       },
       "volume": {
         "status": "Surge",
-        "cumulative": 2,
-        "value": 4507,
-        "change": 4089,
-        "changePct": 978.2,
+        "cumulative": 3,
+        "value": 1997,
+        "change": 903,
+        "changePct": 82.5,
         "aboveVolMa": false,
         "prevAboveVolMa": false,
-        "volMa": 5686.0
+        "volMa": 5314.0
       },
       "openInterest": {
-        "value": 327758,
-        "prevValue": 327196,
-        "change": 562,
-        "changePct": 0.17,
+        "value": 329294,
+        "prevValue": 328900,
+        "change": 394,
+        "changePct": 0.12,
         "status": "Increasing",
-        "cumulative": 10
+        "cumulative": 11
       },
       "breakoutSignal": null,
       "pullbackSignal": null
@@ -717,85 +717,41 @@
       "category": "油脂",
       "timeframe": "30min",
       "triggerTf": "15m",
-      "lastUpdate": "21:30:20",
-      "price": 8706.0,
-      "change": -0.55,
+      "lastUpdate": "21:45:18",
+      "price": 8672.0,
+      "change": -0.28,
       "ma": {
-        "status": "Upward",
-        "cumulative": 6,
-        "ma20": 8687.8,
-        "ma60": 8632.37,
-        "slope20Pct": 0.1499,
-        "slope60Pct": 0.0777,
+        "status": "Silent",
+        "cumulative": 1,
+        "ma20": 8686.7,
+        "ma60": 8632.5,
+        "slope20Pct": 0.0749,
+        "slope60Pct": 0.0464,
         "slopeType": "gentle"
       },
       "macd": {
-        "sign": "positive",
+        "sign": "negative",
         "rapidExpanding": false,
-        "expansionRate": -1.75,
-        "cumulative": 11
+        "expansionRate": 0.32,
+        "cumulative": 1
       },
       "volume": {
         "status": "Shrink",
-        "cumulative": 1,
-        "value": 207,
-        "change": -18284,
-        "changePct": -98.9,
+        "cumulative": 2,
+        "value": 28,
+        "change": -15923,
+        "changePct": -99.8,
         "aboveVolMa": false,
         "prevAboveVolMa": true,
-        "volMa": 11883.0
+        "volMa": 12752.0
       },
       "openInterest": {
-        "value": 488614,
-        "prevValue": 490550,
-        "change": -1936,
-        "changePct": -0.39,
+        "value": 485820,
+        "prevValue": 488225,
+        "change": -2405,
+        "changePct": -0.49,
         "status": "Decreasing",
-        "cumulative": 6
-      },
-      "breakoutSignal": null,
-      "pullbackSignal": null
-    },
-    {
-      "symbol": "菜油",
-      "category": "油脂",
-      "timeframe": "30min",
-      "triggerTf": "15m",
-      "lastUpdate": "21:30:21",
-      "price": 9890.0,
-      "change": -0.11,
-      "ma": {
-        "status": "Upward",
-        "cumulative": 6,
-        "ma20": 9852.7,
-        "ma60": 9810.73,
-        "slope20Pct": 0.1179,
-        "slope60Pct": 0.061,
-        "slopeType": "gentle"
-      },
-      "macd": {
-        "sign": "positive",
-        "rapidExpanding": false,
-        "expansionRate": -1.62,
-        "cumulative": 12
-      },
-      "volume": {
-        "status": "Surge",
-        "cumulative": 3,
-        "value": 1013,
-        "change": 331,
-        "changePct": 48.5,
-        "aboveVolMa": false,
-        "prevAboveVolMa": false,
-        "volMa": 7422.0
-      },
-      "openInterest": {
-        "value": 202390,
-        "prevValue": 203149,
-        "change": -759,
-        "changePct": -0.37,
-        "status": "Decreasing",
-        "cumulative": 3
+        "cumulative": 7
       },
       "breakoutSignal": null,
       "pullbackSignal": null
@@ -805,41 +761,41 @@
       "category": "油脂",
       "timeframe": "30min",
       "triggerTf": "15m",
-      "lastUpdate": "21:30:21",
-      "price": 2914.0,
-      "change": -0.21,
+      "lastUpdate": "21:45:19",
+      "price": 2907.0,
+      "change": -0.14,
       "ma": {
         "status": "Downward",
-        "cumulative": 5,
-        "ma20": 2933.6,
-        "ma60": 2943.25,
-        "slope20Pct": -0.0698,
-        "slope60Pct": -0.0996,
+        "cumulative": 6,
+        "ma20": 2931.6,
+        "ma60": 2941.8,
+        "slope20Pct": -0.1346,
+        "slope60Pct": -0.1256,
         "slopeType": "declining"
       },
       "macd": {
         "sign": "negative",
         "rapidExpanding": true,
-        "expansionRate": 2.71,
-        "cumulative": 6
+        "expansionRate": 2.31,
+        "cumulative": 7
       },
       "volume": {
         "status": "Surge",
-        "cumulative": 3,
-        "value": 7019,
-        "change": 2319,
-        "changePct": 49.3,
+        "cumulative": 1,
+        "value": 6071,
+        "change": 5087,
+        "changePct": 517.0,
         "aboveVolMa": false,
         "prevAboveVolMa": false,
-        "volMa": 17830.0
+        "volMa": 16311.0
       },
       "openInterest": {
-        "value": 1431139,
-        "prevValue": 1437833,
-        "change": -6694,
-        "changePct": -0.47,
+        "value": 1423903,
+        "prevValue": 1429828,
+        "change": -5925,
+        "changePct": -0.41,
         "status": "Decreasing",
-        "cumulative": 3
+        "cumulative": 4
       },
       "breakoutSignal": null,
       "pullbackSignal": null
@@ -849,41 +805,85 @@
       "category": "油脂",
       "timeframe": "30min",
       "triggerTf": "15m",
-      "lastUpdate": "21:30:21",
-      "price": 9928.0,
-      "change": -0.76,
+      "lastUpdate": "21:45:19",
+      "price": 9874.0,
+      "change": -0.38,
       "ma": {
         "status": "Upward",
-        "cumulative": 21,
-        "ma20": 9822.4,
-        "ma60": 9679.4,
-        "slope20Pct": 0.4993,
-        "slope60Pct": 0.1752,
+        "cumulative": 22,
+        "ma20": 9829.4,
+        "ma60": 9681.6,
+        "slope20Pct": 0.3768,
+        "slope60Pct": 0.1324,
         "slopeType": "steep"
       },
       "macd": {
         "sign": "negative",
+        "rapidExpanding": true,
+        "expansionRate": 2.1,
+        "cumulative": 2
+      },
+      "volume": {
+        "status": "Surge",
+        "cumulative": 1,
+        "value": 10163,
+        "change": 8060,
+        "changePct": 383.3,
+        "aboveVolMa": false,
+        "prevAboveVolMa": false,
+        "volMa": 19871.0
+      },
+      "openInterest": {
+        "value": 267542,
+        "prevValue": 271467,
+        "change": -3925,
+        "changePct": -1.45,
+        "status": "Decreasing",
+        "cumulative": 7
+      },
+      "breakoutSignal": null,
+      "pullbackSignal": null
+    },
+    {
+      "symbol": "菜油",
+      "category": "油脂",
+      "timeframe": "30min",
+      "triggerTf": "15m",
+      "lastUpdate": "21:45:19",
+      "price": 9864.0,
+      "change": -0.16,
+      "ma": {
+        "status": "Upward",
+        "cumulative": 7,
+        "ma20": 9852.4,
+        "ma60": 9810.35,
+        "slope20Pct": 0.0589,
+        "slope60Pct": 0.0292,
+        "slopeType": "gentle"
+      },
+      "macd": {
+        "sign": "negative",
         "rapidExpanding": false,
-        "expansionRate": -1.46,
+        "expansionRate": -1.17,
         "cumulative": 1
       },
       "volume": {
         "status": "Shrink",
-        "cumulative": 1,
-        "value": 4560,
-        "change": -6617,
-        "changePct": -59.2,
+        "cumulative": 2,
+        "value": 153,
+        "change": -460,
+        "changePct": -75.0,
         "aboveVolMa": false,
         "prevAboveVolMa": false,
-        "volMa": 20318.0
+        "volMa": 6992.0
       },
       "openInterest": {
-        "value": 271859,
-        "prevValue": 275597,
-        "change": -3738,
-        "changePct": -1.36,
+        "value": 201483,
+        "prevValue": 202325,
+        "change": -842,
+        "changePct": -0.42,
         "status": "Decreasing",
-        "cumulative": 6
+        "cumulative": 4
       },
       "breakoutSignal": null,
       "pullbackSignal": null
@@ -893,41 +893,41 @@
       "category": "油脂",
       "timeframe": "30min",
       "triggerTf": "15m",
-      "lastUpdate": "21:30:23",
-      "price": 2297.0,
-      "change": 0.26,
+      "lastUpdate": "21:45:21",
+      "price": 2296.0,
+      "change": 0.17,
       "ma": {
         "status": "Downward",
-        "cumulative": 4,
-        "ma20": 2313.55,
-        "ma60": 2336.07,
-        "slope20Pct": -0.123,
-        "slope60Pct": -0.1802,
+        "cumulative": 5,
+        "ma20": 2311.95,
+        "ma60": 2334.4,
+        "slope20Pct": -0.1641,
+        "slope60Pct": -0.1995,
         "slopeType": "declining"
       },
       "macd": {
         "sign": "negative",
         "rapidExpanding": false,
-        "expansionRate": -0.3,
-        "cumulative": 7
+        "expansionRate": -0.67,
+        "cumulative": 8
       },
       "volume": {
-        "status": "Shrink",
+        "status": "Surge",
         "cumulative": 1,
-        "value": 99,
-        "change": -643,
-        "changePct": -86.7,
+        "value": 139,
+        "change": 82,
+        "changePct": 143.9,
         "aboveVolMa": false,
         "prevAboveVolMa": false,
-        "volMa": 17060.0
+        "volMa": 15763.0
       },
       "openInterest": {
-        "value": 545499,
-        "prevValue": 546329,
-        "change": -830,
-        "changePct": -0.15,
-        "status": "Decreasing",
-        "cumulative": 1
+        "value": 548829,
+        "prevValue": 546764,
+        "change": 2065,
+        "changePct": 0.38,
+        "status": "Increasing",
+        "cumulative": 4
       },
       "breakoutSignal": null,
       "pullbackSignal": null
@@ -937,41 +937,41 @@
       "category": "能化",
       "timeframe": "30min",
       "triggerTf": "15m",
-      "lastUpdate": "21:30:23",
-      "price": 750.2,
-      "change": -1.28,
+      "lastUpdate": "21:45:21",
+      "price": 735.9,
+      "change": -0.82,
       "ma": {
         "status": "Downward",
-        "cumulative": 1,
-        "ma20": 764.26,
-        "ma60": 750.89,
-        "slope20Pct": -0.0595,
-        "slope60Pct": 0.1826,
+        "cumulative": 2,
+        "ma20": 761.54,
+        "ma60": 750.86,
+        "slope20Pct": -0.4171,
+        "slope60Pct": 0.1089,
         "slopeType": "declining"
       },
       "macd": {
         "sign": "negative",
         "rapidExpanding": true,
-        "expansionRate": 3.83,
-        "cumulative": 5
+        "expansionRate": 4.36,
+        "cumulative": 6
       },
       "volume": {
         "status": "Shrink",
-        "cumulative": 1,
-        "value": 74,
-        "change": -8005,
-        "changePct": -99.1,
+        "cumulative": 2,
+        "value": 91,
+        "change": -6011,
+        "changePct": -98.5,
         "aboveVolMa": false,
         "prevAboveVolMa": true,
-        "volMa": 796.0
+        "volMa": 1444.0
       },
       "openInterest": {
-        "value": 49317,
-        "prevValue": 49390,
-        "change": -73,
-        "changePct": -0.15,
+        "value": 48776,
+        "prevValue": 49088,
+        "change": -312,
+        "changePct": -0.64,
         "status": "Decreasing",
-        "cumulative": 12
+        "cumulative": 13
       },
       "breakoutSignal": null,
       "pullbackSignal": null
@@ -981,43 +981,49 @@
       "category": "能化",
       "timeframe": "30min",
       "triggerTf": "15m",
-      "lastUpdate": "21:30:24",
-      "price": 4490.0,
-      "change": -1.86,
+      "lastUpdate": "21:45:21",
+      "price": 4418.0,
+      "change": -1.21,
       "ma": {
-        "status": "Silent",
+        "status": "Downward",
         "cumulative": 2,
-        "ma20": 4581.35,
-        "ma60": 4487.12,
-        "slope20Pct": 0.4605,
-        "slope60Pct": -0.0861,
+        "ma20": 4579.9,
+        "ma60": 4481.58,
+        "slope20Pct": 0.2276,
+        "slope60Pct": -0.2134,
         "slopeType": "steep"
       },
       "macd": {
         "sign": "negative",
         "rapidExpanding": true,
-        "expansionRate": 3.55,
-        "cumulative": 18
+        "expansionRate": 4.13,
+        "cumulative": 19
       },
       "volume": {
         "status": "Surge",
-        "cumulative": 4,
-        "value": 43719,
-        "change": 3511,
-        "changePct": 8.7,
+        "cumulative": 5,
+        "value": 51253,
+        "change": 4587,
+        "changePct": 9.8,
         "aboveVolMa": true,
         "prevAboveVolMa": true,
-        "volMa": 20211.0
+        "volMa": 23062.0
       },
       "openInterest": {
-        "value": 177750,
-        "prevValue": 179203,
-        "change": -1453,
-        "changePct": -0.81,
-        "status": "Decreasing",
+        "value": 179017,
+        "prevValue": 177676,
+        "change": 1341,
+        "changePct": 0.75,
+        "status": "Increasing",
         "cumulative": 1
       },
-      "breakoutSignal": null,
+      "breakoutSignal": {
+        "type": "short",
+        "maCumulative": 2,
+        "macdSign": "negative",
+        "expansionRate": 4.13,
+        "oiConfirmed": true
+      },
       "pullbackSignal": null
     },
     {
@@ -1025,41 +1031,41 @@
       "category": "能化",
       "timeframe": "30min",
       "triggerTf": "15m",
-      "lastUpdate": "21:30:24",
-      "price": 10610.0,
-      "change": -2.09,
+      "lastUpdate": "21:45:22",
+      "price": 10439.0,
+      "change": -0.82,
       "ma": {
         "status": "Silent",
-        "cumulative": 1,
-        "ma20": 10773.15,
-        "ma60": 10369.62,
-        "slope20Pct": 0.3493,
-        "slope60Pct": 0.1929,
-        "slopeType": "steep"
+        "cumulative": 2,
+        "ma20": 10760.8,
+        "ma60": 10368.72,
+        "slope20Pct": 0.0963,
+        "slope60Pct": 0.1043,
+        "slopeType": "gentle"
       },
       "macd": {
         "sign": "negative",
         "rapidExpanding": true,
-        "expansionRate": 2.46,
-        "cumulative": 18
+        "expansionRate": 2.7,
+        "cumulative": 19
       },
       "volume": {
         "status": "Shrink",
-        "cumulative": 1,
-        "value": 46303,
-        "change": -25428,
-        "changePct": -35.4,
+        "cumulative": 2,
+        "value": 64365,
+        "change": -2175,
+        "changePct": -3.3,
         "aboveVolMa": true,
         "prevAboveVolMa": true,
-        "volMa": 25388.0
+        "volMa": 30499.0
       },
       "openInterest": {
-        "value": 235555,
-        "prevValue": 239139,
-        "change": -3584,
-        "changePct": -1.5,
+        "value": 227222,
+        "prevValue": 233810,
+        "change": -6588,
+        "changePct": -2.82,
         "status": "Decreasing",
-        "cumulative": 5
+        "cumulative": 6
       },
       "breakoutSignal": null,
       "pullbackSignal": null
@@ -1069,41 +1075,41 @@
       "category": "能化",
       "timeframe": "30min",
       "triggerTf": "15m",
-      "lastUpdate": "21:30:25",
-      "price": 2336.0,
-      "change": -1.56,
+      "lastUpdate": "21:45:23",
+      "price": 2338.0,
+      "change": 0.3,
       "ma": {
         "status": "Downward",
-        "cumulative": 29,
-        "ma20": 2382.15,
-        "ma60": 2468.92,
-        "slope20Pct": -0.5324,
-        "slope60Pct": -0.3605,
+        "cumulative": 30,
+        "ma20": 2377.15,
+        "ma60": 2465.17,
+        "slope20Pct": -0.5605,
+        "slope60Pct": -0.3993,
         "slopeType": "declining"
       },
       "macd": {
         "sign": "positive",
         "rapidExpanding": false,
-        "expansionRate": -2.56,
-        "cumulative": 10
+        "expansionRate": -0.97,
+        "cumulative": 11
       },
       "volume": {
         "status": "Surge",
-        "cumulative": 1,
-        "value": 1860,
-        "change": 1633,
-        "changePct": 719.4,
+        "cumulative": 2,
+        "value": 1543,
+        "change": 1191,
+        "changePct": 338.4,
         "aboveVolMa": false,
         "prevAboveVolMa": false,
-        "volMa": 8071.0
+        "volMa": 6759.0
       },
       "openInterest": {
-        "value": 85960,
-        "prevValue": 85792,
-        "change": 168,
-        "changePct": 0.2,
-        "status": "Increasing",
-        "cumulative": 2
+        "value": 85608,
+        "prevValue": 86899,
+        "change": -1291,
+        "changePct": -1.49,
+        "status": "Decreasing",
+        "cumulative": 1
       },
       "breakoutSignal": null,
       "pullbackSignal": null
@@ -1113,41 +1119,41 @@
       "category": "能化",
       "timeframe": "30min",
       "triggerTf": "15m",
-      "lastUpdate": "21:30:26",
-      "price": 16545.0,
-      "change": -0.3,
+      "lastUpdate": "21:45:24",
+      "price": 16485.0,
+      "change": -0.33,
       "ma": {
-        "status": "Upward",
-        "cumulative": 9,
-        "ma20": 16526.0,
-        "ma60": 16445.67,
-        "slope20Pct": 0.0439,
-        "slope60Pct": 0.1162,
+        "status": "Silent",
+        "cumulative": 1,
+        "ma20": 16525.25,
+        "ma60": 16451.67,
+        "slope20Pct": 0.0288,
+        "slope60Pct": 0.1166,
         "slopeType": "gentle"
       },
       "macd": {
         "sign": "negative",
         "rapidExpanding": true,
-        "expansionRate": 1.8,
-        "cumulative": 2
+        "expansionRate": 7.77,
+        "cumulative": 3
       },
       "volume": {
         "status": "Surge",
-        "cumulative": 3,
-        "value": 147,
-        "change": 55,
-        "changePct": 59.8,
-        "aboveVolMa": false,
+        "cumulative": 1,
+        "value": 5472,
+        "change": 5422,
+        "changePct": 10844.0,
+        "aboveVolMa": true,
         "prevAboveVolMa": false,
-        "volMa": 2192.0
+        "volMa": 1830.0
       },
       "openInterest": {
-        "value": 109721,
-        "prevValue": 109376,
-        "change": 345,
-        "changePct": 0.32,
-        "status": "Increasing",
-        "cumulative": 2
+        "value": 108597,
+        "prevValue": 109665,
+        "change": -1068,
+        "changePct": -0.97,
+        "status": "Decreasing",
+        "cumulative": 1
       },
       "breakoutSignal": null,
       "pullbackSignal": null
@@ -1157,41 +1163,41 @@
       "category": "能化",
       "timeframe": "30min",
       "triggerTf": "15m",
-      "lastUpdate": "21:30:26",
-      "price": 5460.0,
-      "change": -0.38,
+      "lastUpdate": "21:45:24",
+      "price": 5412.0,
+      "change": -0.53,
       "ma": {
         "status": "Downward",
-        "cumulative": 8,
-        "ma20": 5597.65,
-        "ma60": 5675.52,
-        "slope20Pct": -0.269,
-        "slope60Pct": -0.431,
+        "cumulative": 9,
+        "ma20": 5587.75,
+        "ma60": 5665.2,
+        "slope20Pct": -0.3469,
+        "slope60Pct": -0.4714,
         "slopeType": "declining"
       },
       "macd": {
         "sign": "negative",
         "rapidExpanding": false,
-        "expansionRate": -0.77,
-        "cumulative": 18
+        "expansionRate": 0.18,
+        "cumulative": 19
       },
       "volume": {
         "status": "Shrink",
         "cumulative": 1,
-        "value": 86,
-        "change": -4229,
-        "changePct": -98.0,
+        "value": 1599,
+        "change": -25455,
+        "changePct": -94.1,
         "aboveVolMa": false,
         "prevAboveVolMa": false,
-        "volMa": 58911.0
+        "volMa": 53837.0
       },
       "openInterest": {
-        "value": 747628,
-        "prevValue": 749421,
-        "change": -1793,
-        "changePct": -0.24,
-        "status": "Decreasing",
-        "cumulative": 4
+        "value": 749555,
+        "prevValue": 748930,
+        "change": 625,
+        "changePct": 0.08,
+        "status": "Increasing",
+        "cumulative": 1
       },
       "breakoutSignal": null,
       "pullbackSignal": null
@@ -1201,41 +1207,41 @@
       "category": "能化",
       "timeframe": "30min",
       "triggerTf": "15m",
-      "lastUpdate": "21:30:26",
-      "price": 3289.0,
-      "change": -1.7,
+      "lastUpdate": "21:45:24",
+      "price": 3249.0,
+      "change": -0.37,
       "ma": {
         "status": "Silent",
-        "cumulative": 3,
-        "ma20": 3357.45,
-        "ma60": 3226.62,
-        "slope20Pct": 0.3497,
-        "slope60Pct": 0.2351,
-        "slopeType": "steep"
+        "cumulative": 4,
+        "ma20": 3356.0,
+        "ma60": 3226.35,
+        "slope20Pct": 0.1701,
+        "slope60Pct": 0.1329,
+        "slopeType": "gentle"
       },
       "macd": {
         "sign": "negative",
         "rapidExpanding": true,
-        "expansionRate": 1.66,
-        "cumulative": 18
+        "expansionRate": 1.65,
+        "cumulative": 19
       },
       "volume": {
-        "status": "Surge",
-        "cumulative": 3,
-        "value": 21949,
-        "change": 2409,
-        "changePct": 12.3,
+        "status": "Shrink",
+        "cumulative": 1,
+        "value": 8319,
+        "change": -32279,
+        "changePct": -79.5,
         "aboveVolMa": false,
         "prevAboveVolMa": false,
-        "volMa": 59143.0
+        "volMa": 58771.0
       },
       "openInterest": {
-        "value": 650821,
-        "prevValue": 653213,
-        "change": -2392,
-        "changePct": -0.37,
+        "value": 638765,
+        "prevValue": 648527,
+        "change": -9762,
+        "changePct": -1.51,
         "status": "Decreasing",
-        "cumulative": 6
+        "cumulative": 7
       },
       "breakoutSignal": null,
       "pullbackSignal": null
@@ -1245,85 +1251,41 @@
       "category": "能化",
       "timeframe": "30min",
       "triggerTf": "15m",
-      "lastUpdate": "21:30:28",
-      "price": 9792.0,
-      "change": -1.82,
+      "lastUpdate": "21:45:25",
+      "price": 9690.0,
+      "change": -0.33,
       "ma": {
-        "status": "Silent",
-        "cumulative": 1,
-        "ma20": 9938.0,
-        "ma60": 9735.53,
-        "slope20Pct": 0.2229,
-        "slope60Pct": 0.0654,
-        "slopeType": "steep"
+        "status": "Downward",
+        "cumulative": 2,
+        "ma20": 9923.1,
+        "ma60": 9730.6,
+        "slope20Pct": -0.0433,
+        "slope60Pct": -0.0188,
+        "slopeType": "declining"
       },
       "macd": {
         "sign": "negative",
         "rapidExpanding": true,
-        "expansionRate": 1.46,
-        "cumulative": 2
+        "expansionRate": 1.86,
+        "cumulative": 3
       },
       "volume": {
         "status": "Shrink",
-        "cumulative": 1,
-        "value": 4430,
-        "change": -6344,
-        "changePct": -58.9,
+        "cumulative": 2,
+        "value": 1633,
+        "change": -1171,
+        "changePct": -41.8,
         "aboveVolMa": false,
         "prevAboveVolMa": false,
-        "volMa": 13760.0
+        "volMa": 13334.0
       },
       "openInterest": {
-        "value": 153316,
-        "prevValue": 153738,
-        "change": -422,
-        "changePct": -0.27,
+        "value": 151716,
+        "prevValue": 153063,
+        "change": -1347,
+        "changePct": -0.88,
         "status": "Decreasing",
-        "cumulative": 7
-      },
-      "breakoutSignal": null,
-      "pullbackSignal": null
-    },
-    {
-      "symbol": "乙二醇",
-      "category": "能化",
-      "timeframe": "30min",
-      "triggerTf": "15m",
-      "lastUpdate": "21:30:28",
-      "price": 5354.0,
-      "change": -2.58,
-      "ma": {
-        "status": "Silent",
-        "cumulative": 1,
-        "ma20": 5393.05,
-        "ma60": 5195.93,
-        "slope20Pct": 0.581,
-        "slope60Pct": 0.1484,
-        "slopeType": "steep"
-      },
-      "macd": {
-        "sign": "negative",
-        "rapidExpanding": true,
-        "expansionRate": 2.31,
-        "cumulative": 2
-      },
-      "volume": {
-        "status": "Shrink",
-        "cumulative": 1,
-        "value": 58847,
-        "change": -41736,
-        "changePct": -41.5,
-        "aboveVolMa": true,
-        "prevAboveVolMa": true,
-        "volMa": 35435.0
-      },
-      "openInterest": {
-        "value": 303188,
-        "prevValue": 306064,
-        "change": -2876,
-        "changePct": -0.94,
-        "status": "Decreasing",
-        "cumulative": 3
+        "cumulative": 8
       },
       "breakoutSignal": null,
       "pullbackSignal": null
@@ -1333,41 +1295,85 @@
       "category": "能化",
       "timeframe": "30min",
       "triggerTf": "15m",
-      "lastUpdate": "21:30:28",
-      "price": 17535.0,
-      "change": -1.93,
+      "lastUpdate": "21:45:26",
+      "price": 17200.0,
+      "change": -1.63,
       "ma": {
         "status": "Downward",
-        "cumulative": 1,
-        "ma20": 17774.25,
-        "ma60": 17678.67,
-        "slope20Pct": -0.4383,
-        "slope60Pct": 0.2704,
+        "cumulative": 2,
+        "ma20": 17735.75,
+        "ma60": 17680.58,
+        "slope20Pct": -0.4686,
+        "slope60Pct": 0.1913,
         "slopeType": "declining"
       },
       "macd": {
-        "sign": "positive",
-        "rapidExpanding": false,
-        "expansionRate": -3.47,
-        "cumulative": 11
+        "sign": "negative",
+        "rapidExpanding": true,
+        "expansionRate": 4.43,
+        "cumulative": 2
       },
       "volume": {
         "status": "Shrink",
         "cumulative": 1,
-        "value": 1950,
-        "change": -37786,
-        "changePct": -95.1,
-        "aboveVolMa": false,
+        "value": 40675,
+        "change": -6782,
+        "changePct": -14.3,
+        "aboveVolMa": true,
         "prevAboveVolMa": true,
-        "volMa": 27888.0
+        "volMa": 30014.0
       },
       "openInterest": {
-        "value": 85171,
-        "prevValue": 84680,
-        "change": 491,
-        "changePct": 0.58,
-        "status": "Increasing",
-        "cumulative": 2
+        "value": 82261,
+        "prevValue": 85416,
+        "change": -3155,
+        "changePct": -3.69,
+        "status": "Decreasing",
+        "cumulative": 1
+      },
+      "breakoutSignal": null,
+      "pullbackSignal": null
+    },
+    {
+      "symbol": "乙二醇",
+      "category": "能化",
+      "timeframe": "30min",
+      "triggerTf": "15m",
+      "lastUpdate": "21:45:27",
+      "price": 5272.0,
+      "change": -0.81,
+      "ma": {
+        "status": "Silent",
+        "cumulative": 2,
+        "ma20": 5394.6,
+        "ma60": 5193.63,
+        "slope20Pct": 0.4226,
+        "slope60Pct": 0.0302,
+        "slopeType": "steep"
+      },
+      "macd": {
+        "sign": "negative",
+        "rapidExpanding": true,
+        "expansionRate": 1.96,
+        "cumulative": 3
+      },
+      "volume": {
+        "status": "Shrink",
+        "cumulative": 2,
+        "value": 1184,
+        "change": -58152,
+        "changePct": -98.0,
+        "aboveVolMa": false,
+        "prevAboveVolMa": true,
+        "volMa": 43113.0
+      },
+      "openInterest": {
+        "value": 296986,
+        "prevValue": 303105,
+        "change": -6119,
+        "changePct": -2.02,
+        "status": "Decreasing",
+        "cumulative": 4
       },
       "breakoutSignal": null,
       "pullbackSignal": null
@@ -1377,41 +1383,41 @@
       "category": "能化",
       "timeframe": "30min",
       "triggerTf": "15m",
-      "lastUpdate": "21:30:29",
-      "price": 5138.0,
-      "change": -1.29,
+      "lastUpdate": "21:45:27",
+      "price": 5053.0,
+      "change": -0.49,
       "ma": {
         "status": "Downward",
-        "cumulative": 1,
-        "ma20": 5299.75,
-        "ma60": 5192.75,
-        "slope20Pct": 0.2137,
-        "slope60Pct": -0.1525,
-        "slopeType": "steep"
+        "cumulative": 2,
+        "ma20": 5290.6,
+        "ma60": 5185.23,
+        "slope20Pct": -0.0954,
+        "slope60Pct": -0.2664,
+        "slopeType": "declining"
       },
       "macd": {
         "sign": "negative",
-        "rapidExpanding": false,
-        "expansionRate": 0.97,
-        "cumulative": 19
+        "rapidExpanding": true,
+        "expansionRate": 1.85,
+        "cumulative": 20
       },
       "volume": {
         "status": "Shrink",
-        "cumulative": 1,
-        "value": 5031,
-        "change": -3675,
-        "changePct": -42.2,
-        "aboveVolMa": true,
+        "cumulative": 2,
+        "value": 190,
+        "change": -7584,
+        "changePct": -97.6,
+        "aboveVolMa": false,
         "prevAboveVolMa": true,
-        "volMa": 3317.0
+        "volMa": 4198.0
       },
       "openInterest": {
-        "value": 43929,
-        "prevValue": 44248,
-        "change": -319,
-        "changePct": -0.72,
+        "value": 42994,
+        "prevValue": 43620,
+        "change": -626,
+        "changePct": -1.44,
         "status": "Decreasing",
-        "cumulative": 12
+        "cumulative": 5
       },
       "breakoutSignal": null,
       "pullbackSignal": null
@@ -1421,41 +1427,41 @@
       "category": "建材",
       "timeframe": "30min",
       "triggerTf": "15m",
-      "lastUpdate": "21:30:30",
-      "price": 1026.0,
-      "change": -0.29,
+      "lastUpdate": "21:45:28",
+      "price": 1022.0,
+      "change": 0.0,
       "ma": {
         "status": "Downward",
-        "cumulative": 6,
-        "ma20": 1038.25,
-        "ma60": 1045.32,
-        "slope20Pct": -0.1347,
-        "slope60Pct": -0.1719,
+        "cumulative": 7,
+        "ma20": 1037.15,
+        "ma60": 1044.48,
+        "slope20Pct": -0.1925,
+        "slope60Pct": -0.1959,
         "slopeType": "declining"
       },
       "macd": {
         "sign": "negative",
         "rapidExpanding": false,
-        "expansionRate": -0.1,
-        "cumulative": 11
+        "expansionRate": 0.32,
+        "cumulative": 12
       },
       "volume": {
         "status": "Shrink",
         "cumulative": 1,
-        "value": 2246,
-        "change": -168,
-        "changePct": -7.0,
+        "value": 138,
+        "change": -3166,
+        "changePct": -95.8,
         "aboveVolMa": false,
         "prevAboveVolMa": false,
-        "volMa": 26429.0
+        "volMa": 25475.0
       },
       "openInterest": {
-        "value": 1059705,
-        "prevValue": 1056771,
-        "change": 2934,
-        "changePct": 0.28,
+        "value": 1067581,
+        "prevValue": 1064281,
+        "change": 3300,
+        "changePct": 0.31,
         "status": "Increasing",
-        "cumulative": 1
+        "cumulative": 2
       },
       "breakoutSignal": null,
       "pullbackSignal": null
@@ -1465,41 +1471,41 @@
       "category": "建材",
       "timeframe": "30min",
       "triggerTf": "15m",
-      "lastUpdate": "21:30:30",
-      "price": 1188.0,
-      "change": -0.5,
+      "lastUpdate": "21:45:29",
+      "price": 1189.0,
+      "change": 0.34,
       "ma": {
         "status": "Downward",
-        "cumulative": 12,
-        "ma20": 1210.5,
-        "ma60": 1226.83,
-        "slope20Pct": -0.4195,
-        "slope60Pct": -0.1925,
+        "cumulative": 13,
+        "ma20": 1208.45,
+        "ma60": 1225.82,
+        "slope20Pct": -0.4572,
+        "slope60Pct": -0.2157,
         "slopeType": "declining"
       },
       "macd": {
         "sign": "negative",
         "rapidExpanding": false,
-        "expansionRate": 0.98,
-        "cumulative": 21
+        "expansionRate": -0.16,
+        "cumulative": 22
       },
       "volume": {
-        "status": "Surge",
-        "cumulative": 4,
-        "value": 46184,
-        "change": 18597,
-        "changePct": 67.4,
+        "status": "Shrink",
+        "cumulative": 1,
+        "value": 31236,
+        "change": -30562,
+        "changePct": -49.5,
         "aboveVolMa": true,
         "prevAboveVolMa": true,
-        "volMa": 26840.0
+        "volMa": 28206.0
       },
       "openInterest": {
-        "value": 820556,
-        "prevValue": 825857,
-        "change": -5301,
-        "changePct": -0.64,
+        "value": 815926,
+        "prevValue": 820046,
+        "change": -4120,
+        "changePct": -0.5,
         "status": "Decreasing",
-        "cumulative": 1
+        "cumulative": 2
       },
       "breakoutSignal": null,
       "pullbackSignal": null
@@ -1509,41 +1515,41 @@
       "category": "股指",
       "timeframe": "30min",
       "triggerTf": "15m",
-      "lastUpdate": "21:30:31",
-      "price": 7509.4,
-      "change": 0.05,
+      "lastUpdate": "21:45:29",
+      "price": 7527.4,
+      "change": 0.24,
       "ma": {
         "status": "Upward",
-        "cumulative": 3,
-        "ma20": 7453.22,
-        "ma60": 7461.13,
-        "slope20Pct": 0.083,
-        "slope60Pct": -0.1517,
+        "cumulative": 4,
+        "ma20": 7460.45,
+        "ma60": 7458.87,
+        "slope20Pct": 0.1678,
+        "slope60Pct": -0.1335,
         "slopeType": "gentle"
       },
       "macd": {
         "sign": "positive",
         "rapidExpanding": false,
-        "expansionRate": -0.18,
-        "cumulative": 9
+        "expansionRate": 0.6,
+        "cumulative": 10
       },
       "volume": {
-        "status": "Shrink",
+        "status": "Surge",
         "cumulative": 1,
-        "value": 165,
-        "change": -3652,
-        "changePct": -95.7,
-        "aboveVolMa": false,
+        "value": 19742,
+        "change": 19577,
+        "changePct": 11864.8,
+        "aboveVolMa": true,
         "prevAboveVolMa": false,
-        "volMa": 6271.0
+        "volMa": 5980.0
       },
       "openInterest": {
-        "value": 199034,
-        "prevValue": 197366,
-        "change": 1668,
-        "changePct": 0.85,
-        "status": "Increasing",
-        "cumulative": 13
+        "value": 189894,
+        "prevValue": 199034,
+        "change": -9140,
+        "changePct": -4.59,
+        "status": "Decreasing",
+        "cumulative": 1
       },
       "breakoutSignal": null,
       "pullbackSignal": null

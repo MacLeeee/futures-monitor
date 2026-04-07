@@ -983,61 +983,105 @@ def build_pullback_message(data: list[dict], bj_time: str) -> str | None:
     return "\n".join(lines)
 
 
-def build_regime_message(data: list[dict], bj_time: str) -> str | None:
+def build_regime_message(data: list[dict], bj_time: str,
+                         prev_map: dict[str, dict] | None = None) -> str | None:
     """
-    市场状态 + 箱体策略推送:
-    ─────────────────────────────
-    🔮 市场状态 03-30 14:00
-    ─────────────────────────────
-    📊 趋势品种(12)：黄金↗ 铜↗ 原油↘ ...
-    📦 震荡品种(8)：白糖 螺纹 ...
-    📦 箱体信号：
-      ▲白糖 做多 触下沿5120 距0.3%
-      ▼螺纹 做空 触上沿3680 距0.2%
-    ─────────────────────────────
-    """
-    trending  = [d for d in data if d.get("marketRegime", {}).get("regime") == "trending"]
-    ranging   = [d for d in data if d.get("marketRegime", {}).get("regime") == "ranging"]
-    box_longs = [d for d in data if d.get("boxSignal") and d["boxSignal"]["type"] == "long"]
-    box_shorts= [d for d in data if d.get("boxSignal") and d["boxSignal"]["type"] == "short"]
+    推送规则：
+    1. 只推「震荡 → 趋势」或「趋势 → 震荡」的品种（存量不推）
+    2. 有箱体信号（触及通道边沿）时额外附加，仅供观测，不开单
 
-    if not box_longs and not box_shorts:
+    推送格式：
+    ─────────────────────────────
+    🔮 状态切换  03-30 14:00
+    ─────────────────────────────
+    📊 新入趋势：黄金↗(72分) 铜↗(68分)
+    📦 新入震荡：原油(38分) 螺纹(41分)
+    ─────────────────────────────
+    📦 箱体观测（仅供参考）：
+      ▲白糖 触下沿 距0.3%
+      ▼螺纹 触上沿 距0.2%
+    ─────────────────────────────
+    """
+    prev = prev_map or {}
+
+    to_trending: list[dict] = []   # 震荡 → 趋势
+    to_ranging:  list[dict] = []   # 趋势 → 震荡
+    box_longs:   list[dict] = []
+    box_shorts:  list[dict] = []
+
+    for d in data:
+        sym    = d["symbol"]
+        cur_rg = d.get("marketRegime", {}).get("regime")
+        if not cur_rg:
+            continue
+
+        # 箱体信号（独立收集，不受状态变化限制）
+        if d.get("boxSignal"):
+            if d["boxSignal"]["type"] == "long":
+                box_longs.append(d)
+            else:
+                box_shorts.append(d)
+
+        # 对比上一次 regime
+        prev_rg = prev.get(sym, {}).get("marketRegime", {}).get("regime")
+        if prev_rg is None or prev_rg == cur_rg:
+            continue   # 无变化，跳过
+
+        if cur_rg == "trending":
+            to_trending.append(d)
+        else:
+            to_ranging.append(d)
+
+    has_change = bool(to_trending or to_ranging)
+    has_box    = bool(box_longs or box_shorts)
+
+    if not has_change and not has_box:
         return None
 
     sep = "─" * 24
-    lines = [f"<b>🔮 市场状态</b>  {bj_time}", sep]
+    lines: list[str] = []
 
-    # 趋势/震荡品种概览
-    if trending:
-        t_list = []
-        for d in trending[:10]:
-            dr = d.get("marketRegime", {}).get("direction", "")
-            arrow = "↗" if dr == "bullish" else "↘" if dr == "bearish" else "→"
-            t_list.append(f"{d['symbol']}{arrow}")
-        lines.append(f"📊 趋势品种({len(trending)}): {' '.join(t_list)}"
-                     + ("..." if len(trending) > 10 else ""))
-    if ranging:
-        r_list = [d["symbol"] for d in ranging[:10]]
-        lines.append(f"📦 震荡品种({len(ranging)}): {' '.join(r_list)}"
-                     + ("..." if len(ranging) > 10 else ""))
+    # ── 状态切换 ──────────────────────────────────────────────
+    if has_change:
+        lines += [f"<b>🔮 状态切换</b>  {bj_time}", sep]
 
-    # 箱体信号
-    if box_longs or box_shorts:
-        lines.append("")
-        lines.append("📦 <b>箱体信号</b>（震荡行情 · 触及通道边沿）")
+        if to_trending:
+            items = []
+            for d in to_trending:
+                dr    = d.get("marketRegime", {}).get("direction", "")
+                arrow = "↗" if dr == "bullish" else "↘" if dr == "bearish" else "→"
+                score = d.get("marketRegime", {}).get("score", "?")
+                items.append(f"{d['symbol']}{arrow}({score}分)")
+            lines.append(f"📊 <b>震荡→趋势</b>: {' '.join(items)}")
+            lines.append("  💡 可关注回踩策略入场机会")
+
+        if to_ranging:
+            items = [
+                f"{d['symbol']}({d.get('marketRegime',{}).get('score','?')}分)"
+                for d in to_ranging
+            ]
+            lines.append(f"📦 <b>趋势→震荡</b>: {' '.join(items)}")
+            lines.append("  💡 可关注突破策略或箱体边沿机会")
+
+    # ── 箱体观测 ──────────────────────────────────────────────
+    if has_box:
+        if has_change:
+            lines.append("")
+        else:
+            lines += [f"<b>📦 箱体观测</b>  {bj_time}", sep]
+
+        lines.append("📦 <b>箱体边沿</b>（仅观测·不自动开单）")
         for d in box_longs:
             sig = d["boxSignal"]
             chg = f"+{d['change']:.2f}%" if d["change"] >= 0 else f"{d['change']:.2f}%"
             lines.append(f"  ▲{d['symbol']} {chg}"
-                         f"  做多·触下沿{sig['boundaryPrice']}"
-                         f"  距{sig['distPct']:.2f}%"
+                         f"  触下沿{sig['boundaryPrice']}  距{sig['distPct']:.2f}%"
                          f"  箱[{sig['boxLower']}~{sig['boxUpper']}]")
         for d in box_shorts:
             sig = d["boxSignal"]
             chg = f"+{d['change']:.2f}%" if d["change"] >= 0 else f"{d['change']:.2f}%"
             lines.append(f"  ▼{d['symbol']} {chg}"
-                         f"  做空·触上沿{sig['boundaryPrice']}"
-                         f"  距{sig['distPct']:.2f}%"
+                         f"  触上沿{sig['boundaryPrice']}  距{sig['distPct']:.2f}%"
                          f"  箱[{sig['boxLower']}~{sig['boxUpper']}]")
 
     lines.append(sep)
@@ -1227,11 +1271,13 @@ def main():
         sys.exit(1)
 
     # 合并上次数据中本次失败的品种（防止偶发故障清空）
-    merged = results
+    # prev_map 同时用于 regime 变化对比
+    merged   = results
+    prev_map: dict[str, dict] = {}
     if OUTPUT.exists():
         try:
-            prev = json.loads(OUTPUT.read_text("utf-8"))
-            prev_map = {d["symbol"]: d for d in prev.get("data", [])}
+            prev_raw = json.loads(OUTPUT.read_text("utf-8"))
+            prev_map = {d["symbol"]: d for d in prev_raw.get("data", [])}
             new_set  = {d["symbol"] for d in results}
             kept = [v for k, v in prev_map.items() if k not in new_set]
             merged = results + kept
@@ -1268,13 +1314,13 @@ def main():
     pb_msg = build_pullback_message(merged, bj_time)
     if pb_msg:
         messages.append(pb_msg)
-    rg_msg = build_regime_message(merged, bj_time)
+    rg_msg = build_regime_message(merged, bj_time, prev_map)
     if rg_msg:
         messages.append(rg_msg)
     if messages:
         tg_send_all("\n\n".join(messages))
     else:
-        print("[TG] 无突破/回踩/箱体信号，不推送")
+        print("[TG] 无突破/回踩/状态切换信号，不推送")
 
     # ── 持仓管理（检查止损止盈 + 新建信号持仓）──
     _manage_positions(merged)
@@ -1428,7 +1474,7 @@ def _manage_positions(merged: list[dict]) -> None:
         if not close or not atr:
             continue
 
-        for sig_key, sig_type in [("breakoutSignal", "breakout"), ("pullbackSignal", "pullback"), ("boxSignal", "box")]:
+        for sig_key, sig_type in [("breakoutSignal", "breakout"), ("pullbackSignal", "pullback")]:
             sig = d.get(sig_key)
             if not sig:
                 continue

@@ -50,6 +50,8 @@ export interface FuturesStatus {
   };
   breakoutSignal: BreakoutSignal | null;  // 突破信号（30m方向+15m触发）
   pullbackSignal: PullbackSignal | null;  // 回踩信号（30m MA60锚定+15m触发）
+  marketRegime?: MarketRegime | null;     // 市场状态（趋势/震荡判定）
+  boxSignal?: BoxSignal | null;           // 箱体信号（震荡行情触及通道边沿）
   macd: {
     sign: MacdSign;           // diff-dea 正负：positive=金叉区 / negative=死叉区
     rapidExpanding: boolean;  // |diff-dea| 是否快速走扩（当前变化速率 > 近10期均值）
@@ -74,6 +76,50 @@ export interface FuturesStatus {
     status: OIStatus;     // 增仓 or 减仓（由环比正负决定）
     cumulative: number;   // 连续同向 K 线数
   };
+}
+
+// ── 市场状态判定 ──────────────────────────────────────────────
+
+export type RegimeType = "trending" | "ranging";
+export type RegimeDirection = "bullish" | "bearish" | "neutral";
+export type PivotStructure = "HH_HL" | "LL_LH" | "mixed";
+export type EmaAlignment = "bull" | "bear" | "tangled";
+
+export interface DonchianChannel {
+  upper: number;
+  lower: number;
+  basis: number;
+  widthPct: number;
+  pricePos: number;       // 0=下轨, 0.5=中轴, 1=上轨
+  flatRatio: number;
+}
+
+export interface EmaRibbon {
+  alignment: EmaAlignment;
+  ema20: number;
+  ema50: number;
+  ema120: number;
+  slope20: number;
+  slope50: number;
+  slope120: number;
+}
+
+export interface MarketRegime {
+  regime: RegimeType;
+  direction: RegimeDirection;
+  score: number;           // 0~100, >=55=趋势
+  donchian: DonchianChannel;
+  pivot: PivotStructure;
+  emaRibbon: EmaRibbon;
+}
+
+export interface BoxSignal {
+  type: "long" | "short";
+  boundary: "upper" | "lower";
+  boundaryPrice: number;
+  distPct: number;
+  boxUpper: number;
+  boxLower: number;
 }
 
 // ── 持仓记录 ─────────────────────────────────────────────────

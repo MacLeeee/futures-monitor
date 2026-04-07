@@ -231,6 +231,260 @@ def calc_atr(df: pd.DataFrame, period: int = 14) -> float:
     return round(float(tr.iloc[-period:].mean()), 4)
 
 
+# ══════════════════════════════════════════════════════════════
+# 市场状态判定：趋势 vs 震荡
+# 维度1: 唐奇安通道 + 枢轴点结构
+# 维度2: EMA缎带(20/50/120) + 斜率
+# ══════════════════════════════════════════════════════════════
+
+def calc_donchian(df: pd.DataFrame, period: int = 20) -> dict:
+    """唐奇安通道: N周期最高/最低 + 中轴 + 宽度%。"""
+    n = len(df)
+    if n < period:
+        return {"upper": 0, "lower": 0, "basis": 0, "widthPct": 0, "pricePos": 0.5}
+    high   = df["high"].astype(float)
+    low    = df["low"].astype(float)
+    close  = float(df["close"].iloc[-1])
+    upper  = float(high.iloc[-period:].max())
+    lower  = float(low.iloc[-period:].min())
+    basis  = (upper + lower) / 2
+    width  = upper - lower
+    width_pct = round(width / basis * 100, 4) if basis > 0 else 0
+    price_pos = round((close - lower) / width, 4) if width > 0 else 0.5
+    # 通道近 5 根的斜率变化（上轨是否走平）
+    if n >= period + 5:
+        old_upper = float(high.iloc[-(period + 5):-5].max())
+        old_lower = float(low.iloc[-(period + 5):-5].min())
+        old_width = old_upper - old_lower
+        flat_ratio = round(abs(width - old_width) / max(old_width, 0.01), 4)
+    else:
+        flat_ratio = 0.0
+    return {
+        "upper":     round(upper, 4),
+        "lower":     round(lower, 4),
+        "basis":     round(basis, 4),
+        "widthPct":  width_pct,
+        "pricePos":  price_pos,      # 0=下轨, 0.5=中轴, 1=上轨
+        "flatRatio": flat_ratio,     # 通道宽度变化率，越小越走平
+    }
+
+
+def calc_pivot_structure(df: pd.DataFrame, lookback: int = 5) -> dict:
+    """
+    用分型点(Fractal)识别枢轴高低点序列，判定趋势结构。
+    返回: structure="HH_HL"|"LL_LH"|"mixed", pivotHighs=[], pivotLows=[]
+    """
+    n = len(df)
+    if n < lookback * 2 + 3:
+        return {"structure": "mixed", "pivotHighs": [], "pivotLows": []}
+    high = df["high"].astype(float).values
+    low  = df["low"].astype(float).values
+
+    pivot_highs: list[float] = []
+    pivot_lows:  list[float] = []
+
+    for i in range(lookback, n - lookback):
+        if all(high[i] >= high[i - j] for j in range(1, lookback + 1)) and \
+           all(high[i] >= high[i + j] for j in range(1, lookback + 1)):
+            pivot_highs.append(high[i])
+        if all(low[i] <= low[i - j] for j in range(1, lookback + 1)) and \
+           all(low[i] <= low[i + j] for j in range(1, lookback + 1)):
+            pivot_lows.append(low[i])
+
+    # 只取最近 4 个高点和低点做序列分析
+    recent_h = pivot_highs[-4:] if len(pivot_highs) >= 2 else pivot_highs
+    recent_l = pivot_lows[-4:]  if len(pivot_lows) >= 2 else pivot_lows
+
+    hh_hl = False
+    ll_lh = False
+
+    if len(recent_h) >= 2 and len(recent_l) >= 2:
+        higher_highs = all(recent_h[i] > recent_h[i-1] for i in range(1, len(recent_h)))
+        higher_lows  = all(recent_l[i] > recent_l[i-1] for i in range(1, len(recent_l)))
+        lower_highs  = all(recent_h[i] < recent_h[i-1] for i in range(1, len(recent_h)))
+        lower_lows   = all(recent_l[i] < recent_l[i-1] for i in range(1, len(recent_l)))
+        hh_hl = higher_highs and higher_lows
+        ll_lh = lower_lows and lower_highs
+
+    if hh_hl:
+        structure = "HH_HL"
+    elif ll_lh:
+        structure = "LL_LH"
+    else:
+        structure = "mixed"
+
+    return {
+        "structure":  structure,
+        "pivotHighs": [round(x, 4) for x in recent_h],
+        "pivotLows":  [round(x, 4) for x in recent_l],
+    }
+
+
+def calc_ema_ribbon(df: pd.DataFrame) -> dict:
+    """
+    EMA缎带: EMA20/50/120 + 各自线性回归斜率。
+    alignment: "bull"=多头排列, "bear"=空头排列, "tangled"=缠绕
+    """
+    c = df["close"].astype(float)
+    n = len(df)
+    ema20  = c.ewm(span=20,  adjust=False).mean()
+    ema50  = c.ewm(span=50,  adjust=False).mean()
+    ema120 = c.ewm(span=120, adjust=False).mean()
+
+    e20 = float(ema20.iloc[-1])
+    e50 = float(ema50.iloc[-1])
+    e120 = float(ema120.iloc[-1])
+
+    # 斜率: 用最近 5 根 EMA 的变化百分比
+    def slope_pct(series: pd.Series, window: int = 5) -> float:
+        if n < window + 1:
+            return 0.0
+        cur = float(series.iloc[-1])
+        old = float(series.iloc[-window])
+        return round((cur - old) / max(abs(old), 0.01) * 100, 4)
+
+    s20  = slope_pct(ema20)
+    s50  = slope_pct(ema50)
+    s120 = slope_pct(ema120)
+
+    if e20 > e50 > e120:
+        alignment = "bull"
+    elif e20 < e50 < e120:
+        alignment = "bear"
+    else:
+        alignment = "tangled"
+
+    return {
+        "alignment": alignment,
+        "ema20":     round(e20, 4),
+        "ema50":     round(e50, 4),
+        "ema120":    round(e120, 4),
+        "slope20":   s20,
+        "slope50":   s50,
+        "slope120":  s120,
+    }
+
+
+def calc_market_regime(donchian: dict, pivot: dict, ema: dict) -> dict:
+    """
+    综合唐奇安通道、枢轴点结构、EMA缎带，给出趋势/震荡判定。
+    评分 0~100: >=55 趋势，<55 震荡。
+    """
+    score = 0
+
+    # ── 维度1a: 唐奇安通道宽度 (0-15分) ──
+    # 宽度>3% 可能趋势展开；<1.5% 大概率震荡
+    w = donchian["widthPct"]
+    if w >= 4.0:
+        score += 15
+    elif w >= 2.5:
+        score += 10
+    elif w >= 1.5:
+        score += 5
+
+    # ── 维度1b: 价格在通道中的位置 (0-15分) ──
+    # 趋势：贴近上轨(>0.85)或下轨(<0.15)
+    pp = donchian["pricePos"]
+    if pp > 0.85 or pp < 0.15:
+        score += 15
+    elif pp > 0.75 or pp < 0.25:
+        score += 8
+
+    # ── 维度1c: 通道是否走平 (0-5分) ──
+    if donchian["flatRatio"] > 0.3:
+        score += 5    # 通道在扩张 → 趋势信号
+
+    # ── 维度2a: 枢轴点结构 (0-25分) ──
+    if pivot["structure"] == "HH_HL":
+        score += 25
+    elif pivot["structure"] == "LL_LH":
+        score += 25
+    # mixed → 0分
+
+    # ── 维度2b: EMA排列 (0-20分) ──
+    if ema["alignment"] in ("bull", "bear"):
+        score += 20
+    # tangled → 0分
+
+    # ── 维度2c: EMA斜率强度 (0-20分) ──
+    # 中短期EMA斜率绝对值 > 0.1% 视为有力度
+    abs_s20 = abs(ema["slope20"])
+    abs_s50 = abs(ema["slope50"])
+    abs_s120 = abs(ema["slope120"])
+    if abs_s20 > 0.2 and abs_s50 > 0.1:
+        score += 15
+    elif abs_s20 > 0.1 or abs_s50 > 0.05:
+        score += 8
+    if abs_s120 > 0.05:
+        score += 5
+
+    score = min(score, 100)
+    regime = "trending" if score >= 55 else "ranging"
+
+    # 趋势方向
+    if regime == "trending":
+        if pivot["structure"] == "HH_HL" or ema["alignment"] == "bull":
+            direction = "bullish"
+        elif pivot["structure"] == "LL_LH" or ema["alignment"] == "bear":
+            direction = "bearish"
+        else:
+            direction = "neutral"
+    else:
+        direction = "neutral"
+
+    return {
+        "regime":    regime,
+        "direction": direction,
+        "score":     score,
+        "donchian":  donchian,
+        "pivot":     pivot["structure"],
+        "emaRibbon": ema,
+    }
+
+
+def calc_box_signal(close: float, donchian: dict, regime: dict,
+                    tolerance_pct: float = 0.5) -> dict | None:
+    """
+    箱体策略信号：仅在震荡行情中，价格触及唐奇安通道上下沿时触发。
+    上沿附近 → 做空；下沿附近 → 做多
+    """
+    if regime["regime"] != "ranging":
+        return None
+
+    upper = donchian["upper"]
+    lower = donchian["lower"]
+    basis = donchian["basis"]
+    if upper <= lower or basis <= 0:
+        return None
+
+    dist_upper_pct = abs(close - upper) / upper * 100 if upper > 0 else 999
+    dist_lower_pct = abs(close - lower) / lower * 100 if lower > 0 else 999
+
+    # 触及上沿 → 做空（价格在上沿附近且接近或超过）
+    if dist_upper_pct <= tolerance_pct and close >= basis:
+        return {
+            "type":          "short",
+            "boundary":      "upper",
+            "boundaryPrice": round(upper, 4),
+            "distPct":       round(dist_upper_pct, 4),
+            "boxUpper":      round(upper, 4),
+            "boxLower":      round(lower, 4),
+        }
+
+    # 触及下沿 → 做多（价格在下沿附近且接近或低于）
+    if dist_lower_pct <= tolerance_pct and close <= basis:
+        return {
+            "type":          "long",
+            "boundary":      "lower",
+            "boundaryPrice": round(lower, 4),
+            "distPct":       round(dist_lower_pct, 4),
+            "boxUpper":      round(upper, 4),
+            "boxLower":      round(lower, 4),
+        }
+
+    return None
+
+
 _BOUNCE_TOL = 0.5   # 回踩阈值：价格距目标均线最大距离（%）
 
 def calc_breakout_signal(
@@ -539,23 +793,33 @@ def process_symbol(args: tuple) -> dict | None:
         atr      = calc_atr(df_30m)
         prev_low  = round(float(df_30m["low"].iloc[-2]),  4) if len(df_30m) >= 2 else close
         prev_high = round(float(df_30m["high"].iloc[-2]), 4) if len(df_30m) >= 2 else close
+
+        # ── 市场状态判定（30min 数据）──
+        donchian = calc_donchian(df_30m)
+        pivot    = calc_pivot_structure(df_30m)
+        ema_rib  = calc_ema_ribbon(df_30m)
+        regime   = calc_market_regime(donchian, pivot, ema_rib)
+        box_sig  = calc_box_signal(close, donchian, regime)
+
         return {
             "symbol":          symbol,
             "category":        category,
             "timeframe":       "30min",
-            "triggerTf":       tf_label,       # 实际触发周期（15m 或降级 30m↓）
+            "triggerTf":       tf_label,
             "lastUpdate":      datetime.now().strftime("%H:%M:%S"),
             "price":           close,
             "change":          change,
-            "atr":             atr,            # 14周期ATR（30min），用于持仓止损计算
-            "prevLow":         prev_low,       # 前一根30min K线最低价
-            "prevHigh":        prev_high,      # 前一根30min K线最高价
+            "atr":             atr,
+            "prevLow":         prev_low,
+            "prevHigh":        prev_high,
             "ma":              ma_30m,
             "macd":            macd_15m,
             "volume":          vol_15m,
             "openInterest":    oi_15m,
             "breakoutSignal":  calc_breakout_signal(ma_30m, macd_15m, vol_15m, oi_15m),
             "pullbackSignal":  calc_pullback_signal(close, ma_30m, macd_15m, vol_15m),
+            "marketRegime":    regime,
+            "boxSignal":       box_sig,
         }
     except Exception as e:
         print(f"  [SKIP] {symbol}({code}): {e}", file=sys.stderr)
@@ -714,6 +978,67 @@ def build_pullback_message(data: list[dict], bj_time: str) -> str | None:
         if longs: lines.append("")
         lines.append("🟠 <b>做空反抽</b>（30m MA60下方 · 价格贴近阻力 · 15m金叉缩窄 · 放量）")
         lines.extend(fmt_item(d, "↪") for d in shorts)
+
+    lines.append(sep)
+    return "\n".join(lines)
+
+
+def build_regime_message(data: list[dict], bj_time: str) -> str | None:
+    """
+    市场状态 + 箱体策略推送:
+    ─────────────────────────────
+    🔮 市场状态 03-30 14:00
+    ─────────────────────────────
+    📊 趋势品种(12)：黄金↗ 铜↗ 原油↘ ...
+    📦 震荡品种(8)：白糖 螺纹 ...
+    📦 箱体信号：
+      ▲白糖 做多 触下沿5120 距0.3%
+      ▼螺纹 做空 触上沿3680 距0.2%
+    ─────────────────────────────
+    """
+    trending  = [d for d in data if d.get("marketRegime", {}).get("regime") == "trending"]
+    ranging   = [d for d in data if d.get("marketRegime", {}).get("regime") == "ranging"]
+    box_longs = [d for d in data if d.get("boxSignal") and d["boxSignal"]["type"] == "long"]
+    box_shorts= [d for d in data if d.get("boxSignal") and d["boxSignal"]["type"] == "short"]
+
+    if not box_longs and not box_shorts:
+        return None
+
+    sep = "─" * 24
+    lines = [f"<b>🔮 市场状态</b>  {bj_time}", sep]
+
+    # 趋势/震荡品种概览
+    if trending:
+        t_list = []
+        for d in trending[:10]:
+            dr = d.get("marketRegime", {}).get("direction", "")
+            arrow = "↗" if dr == "bullish" else "↘" if dr == "bearish" else "→"
+            t_list.append(f"{d['symbol']}{arrow}")
+        lines.append(f"📊 趋势品种({len(trending)}): {' '.join(t_list)}"
+                     + ("..." if len(trending) > 10 else ""))
+    if ranging:
+        r_list = [d["symbol"] for d in ranging[:10]]
+        lines.append(f"📦 震荡品种({len(ranging)}): {' '.join(r_list)}"
+                     + ("..." if len(ranging) > 10 else ""))
+
+    # 箱体信号
+    if box_longs or box_shorts:
+        lines.append("")
+        lines.append("📦 <b>箱体信号</b>（震荡行情 · 触及通道边沿）")
+        for d in box_longs:
+            sig = d["boxSignal"]
+            chg = f"+{d['change']:.2f}%" if d["change"] >= 0 else f"{d['change']:.2f}%"
+            lines.append(f"  ▲{d['symbol']} {chg}"
+                         f"  做多·触下沿{sig['boundaryPrice']}"
+                         f"  距{sig['distPct']:.2f}%"
+                         f"  箱[{sig['boxLower']}~{sig['boxUpper']}]")
+        for d in box_shorts:
+            sig = d["boxSignal"]
+            chg = f"+{d['change']:.2f}%" if d["change"] >= 0 else f"{d['change']:.2f}%"
+            lines.append(f"  ▼{d['symbol']} {chg}"
+                         f"  做空·触上沿{sig['boundaryPrice']}"
+                         f"  距{sig['distPct']:.2f}%"
+                         f"  箱[{sig['boxLower']}~{sig['boxUpper']}]")
 
     lines.append(sep)
     return "\n".join(lines)
@@ -943,10 +1268,13 @@ def main():
     pb_msg = build_pullback_message(merged, bj_time)
     if pb_msg:
         messages.append(pb_msg)
+    rg_msg = build_regime_message(merged, bj_time)
+    if rg_msg:
+        messages.append(rg_msg)
     if messages:
         tg_send_all("\n\n".join(messages))
     else:
-        print("[TG] 无突破/回踩信号，不推送")
+        print("[TG] 无突破/回踩/箱体信号，不推送")
 
     # ── 持仓管理（检查止损止盈 + 新建信号持仓）──
     _manage_positions(merged)
@@ -1100,7 +1428,7 @@ def _manage_positions(merged: list[dict]) -> None:
         if not close or not atr:
             continue
 
-        for sig_key, sig_type in [("breakoutSignal", "breakout"), ("pullbackSignal", "pullback")]:
+        for sig_key, sig_type in [("breakoutSignal", "breakout"), ("pullbackSignal", "pullback"), ("boxSignal", "box")]:
             sig = d.get(sig_key)
             if not sig:
                 continue

@@ -53,9 +53,10 @@ def is_trading_time() -> bool:
             return True
     return False
 
-ROOT         = Path(__file__).parent.parent
-OUTPUT       = ROOT / "futures-monitor" / "public" / "data.json"
-OUTPUT_DAILY = ROOT / "futures-monitor" / "public" / "data_daily.json"
+ROOT            = Path(__file__).parent.parent
+OUTPUT          = ROOT / "futures-monitor" / "public" / "data.json"
+OUTPUT_DAILY    = ROOT / "futures-monitor" / "public" / "data_daily.json"
+POSITIONS_FILE  = ROOT / "futures-monitor" / "public" / "positions.json"
 
 # ── 品种定义 ─────────────────────────────────────────────────
 SYMBOLS = [
@@ -211,6 +212,24 @@ def calc_ma(df: pd.DataFrame) -> dict:
         "slope60Pct": slope60_pct,
         "slopeType":  slope_type,
     }
+
+
+def calc_atr(df: pd.DataFrame, period: int = 14) -> float:
+    """14周期 ATR（平均真实波幅），用于止损距离计算。"""
+    n = len(df)
+    if n < period + 1:
+        return 0.0
+    high  = df["high"].astype(float)
+    low   = df["low"].astype(float)
+    close = df["close"].astype(float)
+    prev_close = close.shift(1)
+    tr = pd.concat([
+        high - low,
+        (high - prev_close).abs(),
+        (low  - prev_close).abs(),
+    ], axis=1).max(axis=1)
+    return round(float(tr.iloc[-period:].mean()), 4)
+
 
 _BOUNCE_TOL = 0.5   # 回踩阈值：价格距目标均线最大距离（%）
 
@@ -517,6 +536,9 @@ def process_symbol(args: tuple) -> dict | None:
         oi_15m   = calc_oi(df_15m)
 
         close = round(last, 2)
+        atr      = calc_atr(df_30m)
+        prev_low  = round(float(df_30m["low"].iloc[-2]),  4) if len(df_30m) >= 2 else close
+        prev_high = round(float(df_30m["high"].iloc[-2]), 4) if len(df_30m) >= 2 else close
         return {
             "symbol":          symbol,
             "category":        category,
@@ -525,6 +547,9 @@ def process_symbol(args: tuple) -> dict | None:
             "lastUpdate":      datetime.now().strftime("%H:%M:%S"),
             "price":           close,
             "change":          change,
+            "atr":             atr,            # 14周期ATR（30min），用于持仓止损计算
+            "prevLow":         prev_low,       # 前一根30min K线最低价
+            "prevHigh":        prev_high,      # 前一根30min K线最高价
             "ma":              ma_30m,
             "macd":            macd_15m,
             "volume":          vol_15m,
@@ -923,9 +948,172 @@ def main():
     else:
         print("[TG] 无突破/回踩信号，不推送")
 
+    # ── 持仓管理（检查止损止盈 + 新建信号持仓）──
+    _manage_positions(merged)
+
     # ── Git Push（仅本地/服务器运行时；GitHub Actions 由 workflow 自行处理）──
     if not os.environ.get("GITHUB_ACTIONS"):
         _git_push()
+
+
+# ══════════════════════════════════════════════════════════════
+# 持仓记录管理
+# ══════════════════════════════════════════════════════════════
+
+def _load_positions() -> list[dict]:
+    """从 positions.json 读取历史持仓列表。"""
+    if POSITIONS_FILE.exists():
+        try:
+            return json.loads(POSITIONS_FILE.read_text("utf-8")).get("positions", [])
+        except Exception:
+            return []
+    return []
+
+
+def _save_positions(positions: list[dict]) -> None:
+    """将持仓列表写回 positions.json。"""
+    data = {
+        "updatedAt":  datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%S.000Z"),
+        "openCount":  sum(1 for p in positions if p["status"] == "open"),
+        "totalCount": len(positions),
+        "positions":  positions,
+    }
+    POSITIONS_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=2), "utf-8")
+
+
+def _can_open(positions: list[dict], symbol: str, direction: str,
+              cooldown_min: int = 60) -> bool:
+    """同一品种+方向在 cooldown_min 分钟内已有开仓则跳过（防止同一信号重复入场）。"""
+    now = datetime.now(ZoneInfo("Asia/Shanghai"))
+    for p in positions:
+        if p["symbol"] != symbol or p["direction"] != direction:
+            continue
+        try:
+            from datetime import timedelta
+            entry_dt = datetime.strptime(p["entryTime"], "%Y-%m-%d %H:%M")
+            entry_dt = entry_dt.replace(tzinfo=ZoneInfo("Asia/Shanghai"))
+            if (now - entry_dt) < timedelta(minutes=cooldown_min):
+                return False
+        except Exception:
+            pass
+    return True
+
+
+def _open_position(symbol: str, direction: str, signal_type: str,
+                   entry_price: float, atr: float,
+                   prev_low: float, prev_high: float) -> dict:
+    """
+    创建新持仓记录。
+    止损：做多 = 前K低点 - 1.5×ATR；做空 = 前K高点 + 1.5×ATR
+    止盈：2:1 固定风险回报（TP距离 = 2 × 止损距离）
+    """
+    bj_time = datetime.now(ZoneInfo("Asia/Shanghai")).strftime("%Y-%m-%d %H:%M")
+    uid     = datetime.now(ZoneInfo("Asia/Shanghai")).strftime("%Y%m%d%H%M%S")
+
+    if direction == "long":
+        stop_loss = prev_low - 1.5 * atr
+        risk      = entry_price - stop_loss
+    else:
+        stop_loss = prev_high + 1.5 * atr
+        risk      = stop_loss - entry_price
+
+    risk      = max(risk, 0.0001)   # 防止除零
+    take_profit = (entry_price + 2 * risk) if direction == "long" else (entry_price - 2 * risk)
+
+    return {
+        "id":          f"{symbol}-{direction[0].upper()}-{uid}",
+        "symbol":      symbol,
+        "direction":   direction,            # "long" | "short"
+        "signalType":  signal_type,          # "breakout" | "pullback"
+        "entryTime":   bj_time,
+        "entryPrice":  round(entry_price, 4),
+        "atr":         round(atr, 4),
+        "stopLoss":    round(stop_loss, 4),
+        "takeProfit":  round(take_profit, 4),
+        "riskDist":    round(risk, 4),
+        "status":      "open",               # open | closed_sl | closed_tp
+        "exitTime":    None,
+        "exitPrice":   None,
+        "pnl":         None,                 # 盈亏点数
+        "pnlPct":      None,                 # 盈亏 %
+    }
+
+
+def _check_and_close(positions: list[dict],
+                     current_map: dict[str, dict]) -> list[dict]:
+    """轮查所有 open 持仓，若触及止损/止盈则关闭并记录。"""
+    bj_time = datetime.now(ZoneInfo("Asia/Shanghai")).strftime("%Y-%m-%d %H:%M")
+    for pos in positions:
+        if pos["status"] != "open":
+            continue
+        sym_data = current_map.get(pos["symbol"])
+        if not sym_data:
+            continue
+        cur_price = sym_data.get("price") or sym_data.get("close")
+        if not cur_price:
+            continue
+
+        direction = pos["direction"]
+        sl, tp    = pos["stopLoss"], pos["takeProfit"]
+        entry     = pos["entryPrice"]
+
+        if direction == "long":
+            hit_sl = cur_price <= sl
+            hit_tp = cur_price >= tp
+        else:
+            hit_sl = cur_price >= sl
+            hit_tp = cur_price <= tp
+
+        if hit_sl or hit_tp:
+            exit_px     = sl if hit_sl else tp
+            pos["status"]    = "closed_sl" if hit_sl else "closed_tp"
+            pos["exitTime"]  = bj_time
+            pos["exitPrice"] = round(exit_px, 4)
+            pnl_pts          = (exit_px - entry) if direction == "long" else (entry - exit_px)
+            pos["pnl"]       = round(pnl_pts, 4)
+            pos["pnlPct"]    = round(pnl_pts / entry * 100, 4) if entry else None
+            print(f"[POS] {pos['id']} → {pos['status']} @ {exit_px}")
+    return positions
+
+
+def _manage_positions(merged: list[dict]) -> None:
+    """
+    主入口：
+    1. 检查现有 open 持仓是否触及 SL/TP
+    2. 扫描当次信号，新建持仓记录
+    3. 写回 positions.json
+    """
+    positions   = _load_positions()
+    current_map = {d["symbol"]: d for d in merged}
+
+    # ── Step A: 检查现有持仓 ──────────────────────────────────
+    positions = _check_and_close(positions, current_map)
+
+    # ── Step B: 根据当次信号新建持仓 ──────────────────────────
+    for d in merged:
+        symbol     = d["symbol"]
+        close      = d.get("price") or d.get("close")
+        atr        = d.get("atr", 0.0)
+        prev_low   = d.get("prevLow",  close or 0.0)
+        prev_high  = d.get("prevHigh", close or 0.0)
+
+        if not close or not atr:
+            continue
+
+        for sig_key, sig_type in [("breakoutSignal", "breakout"), ("pullbackSignal", "pullback")]:
+            sig = d.get(sig_key)
+            if not sig:
+                continue
+            direction = sig.get("type", "long")   # "long" | "short"
+            if _can_open(positions, symbol, direction):
+                pos = _open_position(symbol, direction, sig_type,
+                                     close, atr, prev_low, prev_high)
+                positions.append(pos)
+                print(f"[POS] 新建 {pos['id']}  SL={pos['stopLoss']}  TP={pos['takeProfit']}")
+
+    _save_positions(positions)
+    print(f"[POS] 持仓更新完成，共 {len(positions)} 笔，"
+          f"其中 open={sum(1 for p in positions if p['status']=='open')}")
 
 
 def _git_push():
@@ -942,6 +1130,7 @@ def _git_push():
     data_files = [
         "futures-monitor/public/data.json",
         "futures-monitor/public/data_daily.json",
+        "futures-monitor/public/positions.json",
     ]
 
     code, out = run(["git", "add"] + data_files)

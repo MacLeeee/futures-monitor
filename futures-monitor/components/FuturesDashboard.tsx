@@ -5,12 +5,13 @@
 // ============================================================
 
 import React, { useState, useEffect, useCallback } from "react";
-import { FuturesStatus } from "@/lib/types";
+import { FuturesStatus, Position, PositionsData } from "@/lib/types";
 import DashboardHeader from "./DashboardHeader";
 import FuturesTable from "./FuturesTable";
 import FilterBar from "./FilterBar";
 import SignalPanel from "./SignalPanel";
 import DipBuyPanel from "./DipBuyPanel";
+import CurrentPositions from "./CurrentPositions";
 import { AlertCircle, WifiOff, Database, Activity, CalendarDays } from "lucide-react";
 
 // 30 分钟自动刷新；日K 不自动刷新（每日复盘即可）
@@ -53,6 +54,7 @@ export default function FuturesDashboard() {
   const [dataSource, setDataSource] = useState<DataSource>(null);
   const [nextRefreshIn, setNextRefreshIn] = useState(AUTO_REFRESH_INTERVAL);
   const [remoteUpdatedAt, setRemoteUpdatedAt] = useState<string | null>(null);
+  const [positions, setPositions] = useState<Position[]>([]);
 
   // 筛选状态
   const [selectedCategory, setSelectedCategory] = useState("全部");
@@ -78,10 +80,26 @@ export default function FuturesDashboard() {
     }
   }, [timeframe]);
 
+  // 加载持仓数据
+  const loadPositions = useCallback(async () => {
+    try {
+      const isLocal = typeof window !== "undefined" && window.location.port !== "";
+      const base = isLocal ? "" : GITHUB_RAW;
+      const url = `${base}/positions.json?t=${Date.now()}`;
+      const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
+      if (!res.ok) return;
+      const json: PositionsData = await res.json();
+      setPositions(json.positions ?? []);
+    } catch {
+      // 持仓数据不影响主界面，静默失败
+    }
+  }, []);
+
   // 初始加载
   useEffect(() => {
     loadData();
-  }, [loadData]);
+    loadPositions();
+  }, [loadData, loadPositions]);
 
   // 自动刷新定时器（30 分钟触发一次）
   useEffect(() => {
@@ -195,6 +213,16 @@ export default function FuturesDashboard() {
 
         {/* 抄底信号面板 */}
         <DipBuyPanel data={data} />
+
+        {/* 当前持仓面板（仅30min实盘模式显示） */}
+        {timeframe === "30min" && (
+          <CurrentPositions
+            positions={positions}
+            currentPrices={Object.fromEntries(
+              data.map((d) => [d.symbol, d.price])
+            )}
+          />
+        )}
 
 
         {/* 主数据表格 */}

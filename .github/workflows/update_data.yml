@@ -65,7 +65,7 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add futures-monitor/public/data.json futures-monitor/public/data_daily.json
+          git add futures-monitor/public/data.json futures-monitor/public/data_daily.json futures-monitor/public/positions.json
           if git diff --quiet && git diff --staged --quiet; then
             echo "[SKIP] 数据无变化，跳过 commit"
             exit 0

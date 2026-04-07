@@ -12,6 +12,7 @@ import FilterBar from "./FilterBar";
 import SignalPanel from "./SignalPanel";
 import DipBuyPanel from "./DipBuyPanel";
 import CurrentPositions from "./CurrentPositions";
+import RegimePanel from "./RegimePanel";
 import { AlertCircle, WifiOff, Database, Activity, CalendarDays } from "lucide-react";
 
 // 30 分钟自动刷新；日K 不自动刷新（每日复盘即可）
@@ -213,6 +214,9 @@ export default function FuturesDashboard() {
 
         {/* 抄底信号面板 */}
         <DipBuyPanel data={data} />
+
+        {/* 市场状态面板（趋势/震荡 + 箱体信号） */}
+        <RegimePanel data={data} />
 
         {/* 当前持仓面板（仅30min实盘模式显示） */}
         {timeframe === "30min" && (

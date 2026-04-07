@@ -48,7 +48,7 @@ export default function RegimePanel({ data }: Props) {
       {trending.length > 0 && (
         <div>
           <div className="mb-2 text-xs font-medium text-purple-400">
-            📊 趋势行情 — 重点关注<span className="text-gray-500">回踩策略</span>
+            📊 趋势行情 — 关注<span className="text-gray-500">突破策略（顺势）+ 回踩策略</span>
           </div>
           <div className="flex flex-wrap gap-1.5">
             {trending.map((d) => (

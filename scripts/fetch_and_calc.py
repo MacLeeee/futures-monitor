@@ -1053,7 +1053,7 @@ def build_regime_message(data: list[dict], bj_time: str,
                 score = d.get("marketRegime", {}).get("score", "?")
                 items.append(f"{d['symbol']}{arrow}({score}分)")
             lines.append(f"📊 <b>震荡→趋势</b>: {' '.join(items)}")
-            lines.append("  💡 可关注回踩策略入场机会")
+            lines.append("  💡 可关注突破策略（顺势）或回踩策略入场机会")
 
         if to_ranging:
             items = [

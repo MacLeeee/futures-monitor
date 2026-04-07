@@ -76,6 +76,37 @@ export interface FuturesStatus {
   };
 }
 
+// ── 持仓记录 ─────────────────────────────────────────────────
+
+export type PositionStatus = "open" | "closed_sl" | "closed_tp";
+export type PositionDirection = "long" | "short";
+export type SignalType = "breakout" | "pullback";
+
+export interface Position {
+  id: string;
+  symbol: string;
+  direction: PositionDirection;
+  signalType: SignalType;
+  entryTime: string;          // "2026-03-30 13:33"
+  entryPrice: number;
+  atr: number;
+  stopLoss: number;
+  takeProfit: number;
+  riskDist: number;           // |entry - stopLoss|
+  status: PositionStatus;
+  exitTime: string | null;
+  exitPrice: number | null;
+  pnl: number | null;         // 盈亏点数（正=盈利）
+  pnlPct: number | null;      // 盈亏 %
+}
+
+export interface PositionsData {
+  updatedAt: string;
+  openCount: number;
+  totalCount: number;
+  positions: Position[];
+}
+
 // 板块分组，用于表格分组渲染
 export interface CategoryGroup {
   name: string;

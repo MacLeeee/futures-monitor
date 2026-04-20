@@ -1378,17 +1378,23 @@ def _open_position(symbol: str, direction: str, signal_type: str,
                    prev_low: float, prev_high: float) -> dict:
     """
     创建新持仓记录。
-    止损：做多 = 前K低点 - 1.5×ATR；做空 = 前K高点 + 1.5×ATR
+    止损：做多 = max(入场价-2ATR, 前K低点-1ATR)；做空 = min(入场价+2ATR, 前K高点+1ATR)
     止盈：2:1 固定风险回报（TP距离 = 2 × 止损距离）
     """
     bj_time = datetime.now(ZoneInfo("Asia/Shanghai")).strftime("%Y-%m-%d %H:%M")
     uid     = datetime.now(ZoneInfo("Asia/Shanghai")).strftime("%Y%m%d%H%M%S")
 
     if direction == "long":
-        stop_loss = prev_low - 1.5 * atr
+        # 两种方案取较大值（价格较高 = 止损距离较小 = 更保守地控制风险）
+        # 方案1: 入场价 - 2×ATR
+        # 方案2: 前一根K线低点 - 1×ATR
+        stop_loss = max(entry_price - 2 * atr, prev_low - 1 * atr)
         risk      = entry_price - stop_loss
     else:
-        stop_loss = prev_high + 1.5 * atr
+        # 两种方案取较小值（价格较低 = 止损距离较小 = 更保守地控制风险）
+        # 方案1: 入场价 + 2×ATR
+        # 方案2: 前一根K线高点 + 1×ATR
+        stop_loss = min(entry_price + 2 * atr, prev_high + 1 * atr)
         risk      = stop_loss - entry_price
 
     risk      = max(risk, 0.0001)   # 防止除零

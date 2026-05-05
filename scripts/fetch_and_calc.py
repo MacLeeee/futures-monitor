@@ -21,9 +21,21 @@ import sys
 import urllib.request
 import urllib.parse
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime, time, UTC
+from datetime import datetime, time, timezone
 from pathlib import Path
-from zoneinfo import ZoneInfo
+
+# Python 3.9+ 标准库 zoneinfo；Python 3.8 需要 backports.zoneinfo
+try:
+    from zoneinfo import ZoneInfo  # type: ignore
+except ModuleNotFoundError:  # pragma: no cover
+    try:
+        from backports.zoneinfo import ZoneInfo  # type: ignore
+    except ModuleNotFoundError:
+        print("[FATAL] 缺少时区依赖：Python<3.9 请安装 backports.zoneinfo：pip install backports.zoneinfo")
+        raise
+
+# Python 3.11+ 有 datetime.UTC；为兼容 3.8/3.9/3.10 统一使用 timezone.utc
+UTC = timezone.utc
 
 import numpy as np
 import pandas as pd
@@ -790,9 +802,12 @@ def process_symbol(args: tuple) -> dict | None:
         oi_15m   = calc_oi(df_15m)
 
         close = round(last, 2)
-        atr      = calc_atr(df_30m)
-        prev_low  = round(float(df_30m["low"].iloc[-2]),  4) if len(df_30m) >= 2 else close
-        prev_high = round(float(df_30m["high"].iloc[-2]), 4) if len(df_30m) >= 2 else close
+        atr        = calc_atr(df_30m)
+        cur_low    = round(float(df_30m["low"].iloc[-1]),   4)
+        cur_high   = round(float(df_30m["high"].iloc[-1]),  4)
+        prev_low   = round(float(df_30m["low"].iloc[-2]),   4) if len(df_30m) >= 2 else close
+        prev_high  = round(float(df_30m["high"].iloc[-2]),  4) if len(df_30m) >= 2 else close
+        prev_close = round(float(df_30m["close"].iloc[-2]), 4) if len(df_30m) >= 2 else close
 
         # ── 市场状态判定（30min 数据）──
         donchian = calc_donchian(df_30m)
@@ -810,8 +825,11 @@ def process_symbol(args: tuple) -> dict | None:
             "price":           close,
             "change":          change,
             "atr":             atr,
+            "curLow":          cur_low,
+            "curHigh":         cur_high,
             "prevLow":         prev_low,
             "prevHigh":        prev_high,
+            "prevClose":       prev_close,
             "ma":              ma_30m,
             "macd":            macd_15m,
             "volume":          vol_15m,
@@ -1421,7 +1439,14 @@ def _open_position(symbol: str, direction: str, signal_type: str,
 
 def _check_and_close(positions: list[dict],
                      current_map: dict[str, dict]) -> list[dict]:
-    """轮查所有 open 持仓，若触及止损/止盈则关闭并记录。"""
+    """
+    轮查所有 open 持仓：
+    - 初始止损：触及 stopLoss 则止损出
+    - 移动止损（Trailing Stop）：
+        激活条件: 做多 price >= entry + 2×ATR  /  做空 price <= entry - 2×ATR
+        激活后每根K线更新止损 = prev_close ± 2×ATR（只向有利方向移动）
+        触发移动止损出场记录为 closed_tp
+    """
     bj_time = datetime.now(ZoneInfo("Asia/Shanghai")).strftime("%Y-%m-%d %H:%M")
     for pos in positions:
         if pos["status"] != "open":
@@ -1429,30 +1454,76 @@ def _check_and_close(positions: list[dict],
         sym_data = current_map.get(pos["symbol"])
         if not sym_data:
             continue
-        cur_price = sym_data.get("price") or sym_data.get("close")
+
+        cur_price  = sym_data.get("price") or sym_data.get("close")
         if not cur_price:
             continue
 
-        direction = pos["direction"]
-        sl, tp    = pos["stopLoss"], pos["takeProfit"]
-        entry     = pos["entryPrice"]
+        # 用当前K线最高/最低价判断是否触及止损（更接近实盘）
+        cur_low    = sym_data.get("curLow",  cur_price)
+        cur_high   = sym_data.get("curHigh", cur_price)
+        cur_atr    = sym_data.get("atr") or pos.get("atr", 0)
+        prev_close = sym_data.get("prevClose") or cur_price  # 前一根K线收盘价
+        direction  = pos["direction"]
+        entry      = pos["entryPrice"]
+        sl         = pos["stopLoss"]
+        trailing   = pos.get("trailingActive", False)  # 是否已进入移动止损模式
 
         if direction == "long":
-            hit_sl = cur_price <= sl
-            hit_tp = cur_price >= tp
-        else:
-            hit_sl = cur_price >= sl
-            hit_tp = cur_price <= tp
+            # ── 移动止损激活检查（用最高价判断是否已盈利足够）──
+            if not trailing and cur_atr > 0 and cur_high >= entry + 2 * cur_atr:
+                trailing = True
+                pos["trailingActive"] = True
+                print(f"[POS] {pos['id']} 移动止损激活 @ high={cur_high:.4f} "
+                      f"(entry+2ATR={entry + 2*cur_atr:.4f})")
+
+            # ── 移动止损更新（每根K线往上推进）──────────────
+            if trailing and cur_atr > 0:
+                new_sl = round(prev_close - 2 * cur_atr, 4)
+                if new_sl > sl:   # 只向上移动，绝不下调
+                    pos["stopLoss"] = new_sl
+                    sl = new_sl
+
+            # ── 出场判断（用最低价触碰止损）─────────────────
+            hit_sl = cur_low <= sl
+            # 未进入移动止损时，仍保留固定止盈兜底（用最高价触碰止盈）
+            hit_tp = (not trailing) and cur_high >= pos["takeProfit"]
+
+        else:  # short
+            # ── 移动止损激活检查（用最低价判断是否已盈利足够）──
+            if not trailing and cur_atr > 0 and cur_low <= entry - 2 * cur_atr:
+                trailing = True
+                pos["trailingActive"] = True
+                print(f"[POS] {pos['id']} 移动止损激活 @ low={cur_low:.4f} "
+                      f"(entry-2ATR={entry - 2*cur_atr:.4f})")
+
+            if trailing and cur_atr > 0:
+                new_sl = round(prev_close + 2 * cur_atr, 4)
+                if new_sl < sl:   # 只向下移动
+                    pos["stopLoss"] = new_sl
+                    sl = new_sl
+
+            # ── 出场判断（用最高价触碰止损）─────────────────
+            hit_sl = cur_high >= sl
+            # 未进入移动止损时，仍保留固定止盈兜底（用最低价触碰止盈）
+            hit_tp = (not trailing) and cur_low <= pos["takeProfit"]
 
         if hit_sl or hit_tp:
-            exit_px     = sl if hit_sl else tp
-            pos["status"]    = "closed_sl" if hit_sl else "closed_tp"
+            # 移动止损触发视为止盈；初始止损触发视为止损
+            if hit_tp or (hit_sl and trailing):
+                exit_px        = pos["takeProfit"] if hit_tp else sl
+                pos["status"]  = "closed_tp"
+            else:
+                exit_px        = sl
+                pos["status"]  = "closed_sl"
+
             pos["exitTime"]  = bj_time
             pos["exitPrice"] = round(exit_px, 4)
             pnl_pts          = (exit_px - entry) if direction == "long" else (entry - exit_px)
             pos["pnl"]       = round(pnl_pts, 4)
             pos["pnlPct"]    = round(pnl_pts / entry * 100, 4) if entry else None
-            print(f"[POS] {pos['id']} → {pos['status']} @ {exit_px}")
+            print(f"[POS] {pos['id']} → {pos['status']} @ {exit_px:.4f}  "
+                  f"{'(trailing)' if trailing else ''}")
     return positions
 
 
@@ -1496,8 +1567,75 @@ def _manage_positions(merged: list[dict]) -> None:
           f"其中 open={sum(1 for p in positions if p['status']=='open')}")
 
 
+def _merge_positions_union(local_path: Path) -> None:
+    """
+    合并本地与远端的 positions.json：
+    以 ID 为唯一键取两者的并集，同 ID 时优先保留状态更新的版本
+    （closed > open，或以 exitTime 更晚者为准）。
+    写回本地后由调用方 git add。
+    """
+    import subprocess
+    repo_root = local_path.parent.parent.parent
+
+    # 读取远端最新版本
+    r = subprocess.run(
+        ["git", "show", "origin/main:futures-monitor/public/positions.json"],
+        cwd=repo_root, capture_output=True, text=True,
+    )
+    if r.returncode != 0:
+        print("[GIT] 无法读取远端 positions.json，跳过并集合并")
+        return
+
+    try:
+        remote_data = json.loads(r.stdout)
+        remote_positions = remote_data.get("positions", [])
+    except Exception:
+        print("[GIT] 远端 positions.json 解析失败，跳过并集合并")
+        return
+
+    try:
+        local_data = json.loads(local_path.read_text("utf-8"))
+        local_positions = local_data.get("positions", [])
+    except Exception:
+        return
+
+    # 以 ID 为键合并：同 ID 取"已关闭"或"退出时间更晚"的版本
+    merged: dict[str, dict] = {}
+    for p in remote_positions + local_positions:   # local 覆盖 remote（same ID）
+        pid = p.get("id", "")
+        if not pid:
+            continue
+        if pid not in merged:
+            merged[pid] = p
+        else:
+            existing = merged[pid]
+            # 优先保留已平仓的版本
+            if existing["status"] == "open" and p["status"] != "open":
+                merged[pid] = p
+            elif existing["status"] != "open" and p["status"] == "open":
+                pass  # 保留已有的已平仓版本
+            else:
+                # 同状态：取 exitTime 更晚（或 entryTime 更晚）的
+                def ts(pos):
+                    return pos.get("exitTime") or pos.get("entryTime") or ""
+                if ts(p) > ts(existing):
+                    merged[pid] = p
+
+    merged_list = sorted(merged.values(), key=lambda x: x.get("entryTime", ""))
+    merged_out = {
+        "updatedAt":  datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%S.000Z"),
+        "openCount":  sum(1 for p in merged_list if p["status"] == "open"),
+        "totalCount": len(merged_list),
+        "positions":  merged_list,
+    }
+    local_path.write_text(json.dumps(merged_out, ensure_ascii=False, indent=2), "utf-8")
+    print(f"[GIT] positions 并集合并完成：本地{len(local_positions)} + 远端{len(remote_positions)} → {len(merged_list)}笔")
+
+
 def _git_push():
-    """将更新后的 data.json / data_daily.json 推送到 GitHub，供 Cloudflare Pages 部署。"""
+    """将更新后的 data.json / data_daily.json / positions.json 推送到 GitHub。
+    positions.json 采用并集合并策略：永远保留条目更多的版本，不因本地/远端冲突丢失持仓。
+    """
     import subprocess
 
     repo_root = Path(__file__).resolve().parent.parent
@@ -1506,6 +1644,10 @@ def _git_push():
         r = subprocess.run(cmd, cwd=repo_root, capture_output=True, text=True)
         out = (r.stdout + r.stderr).strip()
         return r.returncode, out
+
+    # Step 1: 先 fetch 远端，再对 positions.json 做并集合并
+    run(["git", "fetch", "origin", "main"])
+    _merge_positions_union(POSITIONS_FILE)
 
     data_files = [
         "futures-monitor/public/data.json",
@@ -1529,8 +1671,7 @@ def _git_push():
         return
     print(f"[GIT] commit: {out}")
 
-    # fetch + merge -X ours 防止远端有其他提交导致 push 被拒
-    run(["git", "fetch", "origin", "main"])
+    # Step 2: merge 其余文件（data.json 等），positions.json 已经是并集，不会丢失
     run(["git", "merge", "origin/main", "--no-edit", "-X", "ours"])
 
     code, out = run(["git", "push", "origin", "main"])

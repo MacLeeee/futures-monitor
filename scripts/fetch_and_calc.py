@@ -497,13 +497,16 @@ def calc_box_signal(close: float, donchian: dict, regime: dict,
     return None
 
 
-_BOUNCE_TOL = 0.5   # 回踩阈值：价格距目标均线最大距离（%）
+_BOUNCE_TOL = 1.5   # 回踩阈值：右侧入场时价格已从支撑反弹，允许距均线最大 1.5%
 
 def calc_breakout_signal(
     ma_30m: dict,
     macd_15m: dict,
     vol_15m: dict,
     oi_15m: dict,
+    regime: dict | None = None,
+    donchian: dict | None = None,
+    close: float = 0.0,
 ) -> dict | None:
     """
     突破信号（多周期）- 三个必选条件（缺一不触发）：
@@ -511,6 +514,10 @@ def calc_breakout_signal(
          ★ 不要求均线斜率，早期突破时均线往往还未跟上价格
       2. 15min MACD 方向正确且快速扩口（金叉区做多，死叉区做空）
       3. 15min 成交量：环比放量 + （当前或前一根）高于近10根均量
+
+    震荡行情附加条件（regime=ranging 时必须同时满足）：
+      4. 价格必须已突破唐奇安通道边沿（做多须穿越上轨，做空须穿越下轨）
+         → 震荡中仅突破均线极易假突破快速折返；只有连箱体边沿也突破才算有效
 
     增仓（OI）为或有加分项：触发后额外标注 "+OI"，不影响信号触发。
     """
@@ -529,6 +536,24 @@ def calc_breakout_signal(
     if not (macd_ok and vol_ok):
         return None
 
+    # ── 震荡行情附加：必须同时突破箱体边沿 ─────────────────────
+    # 趋势行情中均线排列已经说明价格有持续性，箱体条件可豁免
+    # 震荡行情中仅突破均线极易快速折返，需要箱体上/下沿也被穿越才开单
+    box_breakout = False   # 是否突破了箱体（仅在 ranging 时强制要求）
+    if regime is not None and regime.get("regime") == "ranging" and donchian and close > 0:
+        upper = donchian.get("upper", 0)
+        lower = donchian.get("lower", 0)
+        basis = donchian.get("basis", 0)
+        if upper > lower > 0:
+            if is_long:
+                # 做多：价格须已站上箱体上沿（允许 0.1% 容差，防止恰好卡边）
+                box_breakout = close >= upper * (1 - 0.001)
+            else:
+                # 做空：价格须已跌破箱体下沿
+                box_breakout = close <= lower * (1 + 0.001)
+        if not box_breakout:
+            return None   # 震荡中未突破箱体，不触发
+
     oi_ok = oi_15m.get("status") == "Increasing"
     return {
         "type":          "long" if is_long else "short",
@@ -536,6 +561,7 @@ def calc_breakout_signal(
         "macdSign":      macd_15m.get("sign"),
         "expansionRate": macd_15m.get("expansionRate", 1.0),
         "oiConfirmed":   oi_ok,
+        "boxBreakout":   box_breakout,   # True=震荡行情下同步突破了箱体
     }
 
 
@@ -547,24 +573,19 @@ def calc_pullback_signal(
     regime: dict | None = None,
 ) -> dict | None:
     """
-    回踩信号（多周期）：
-      30min MA60 锚定多空方向 + 价格回踩 MA20/MA60 ±0.5%
-      + 15min MACD 方向缩窄（已到位，压力/动能将释放）
-      + 15min 放量确认
+    回踩信号（右侧入场）：
+      价格回踩 MA20/MA60 支撑后反弹，等第二波启动确认再入场。
+      30min MA60 锚定多空方向 + 15min MACD 回归趋势方向且扩口 + 放量确认
 
-    过滤层（新增）：
-      ① 市场状态必须为趋势（regime=trending），震荡期回踩均线是走弱/震荡非入场点
-      ② MA20/MA60 必须保持多空排列（多头: MA20>MA60；空头: MA20<MA60），纠缠时不触发
-      ③ 斜率最小阈值：slope20 ≥ 0.05%（3根变化）/ slope60 ≥ 0.02%，防止走平均线误触发
+    过滤层：
+      ① 市场状态必须为趋势（regime=trending），震荡期不触发
+      ② MA20/MA60 必须保持多空排列，纠缠时不触发
+      ③ 斜率最小阈值：slope20 ≥ 0.05% / slope60 ≥ 0.02%，走平均线不触发
 
-    做多回踩: close > MA60(30m) → 在 Upward 上行中回踩支撑
-      - MA20 斜率 steep → 用 MA20 作支撑
-      - MA20 斜率 gentle → 用 MA60 作支撑
-      - 15min MACD 死叉 + 缩窄（粘合）→ 卖压将尽
-    做空反抽: close < MA60(30m) → 在 Downward 下行中反抽阻力
-      - MA20 斜率 declining → 用 MA20 作阻力
-      - 否则用 MA60 作阻力
-      - 15min MACD 金叉 + 缩窄 → 买压将尽
+    做多回踩（右侧）: close > MA60(30m) → 回踩支撑后，MACD 金叉 + 扩口 → 确认第二波上涨启动
+      - 价格在支撑均线上方 0~1.5%（已反弹区域），或轻微跌穿 0.3%（wick）
+    做空反抽（右侧）: close < MA60(30m) → 反抽阻力后，MACD 死叉 + 扩口 → 确认第二波下跌启动
+      - 价格在阻力均线下方 0~1.5%（已回落区域），或轻微突破 0.3%（wick）
     """
     ma20 = ma_30m.get("ma20")
     ma60 = ma_30m.get("ma60")
@@ -615,16 +636,16 @@ def calc_pullback_signal(
     if not vol_ok:
         return None
 
-    # 回踩方向精确判断阈值：允许收盘价在均线下方的最大容忍幅度
-    # 做多回踩：价格从上方回落贴近均线，close ≥ support * (1 - 0.15%)
-    #   即只允许极小幅度跌穿（收盘wick），防止把"从下方逼近"也误判为回踩
-    # 做空反抽：价格从下方反弹贴近阻力，close ≤ resist  * (1 + 0.15%)，同理
-    _APPROACH_TOL = 0.15  # 方向容忍：允许穿越均线的最大 %
+    # 右侧入场阈值：价格已从支撑/阻力反弹，允许在均线附近 ±幅度内触发
+    # 做多：close 在 support 下方最多 0.3%（仅允许wick轻微跌穿）~ 上方最多 1.5%（已反弹区域）
+    # 做空：close 在 resist  上方最多 0.3%（仅允许wick轻微突破）~ 下方最多 1.5%（已回落区域）
+    _APPROACH_TOL = 0.30  # 穿越容忍：允许超过均线方向 %（wick容忍）
+    # _BOUNCE_TOL 来自模块全局，目前为 1.5%
 
     if bullish:
-        # 多头回踩：MACD 15min 死叉 + 缩窄（粘合）→ 买入
-        macd_ok = (macd_15m.get("sign") == "negative"
-                   and not macd_15m.get("rapidExpanding", True))
+        # 多头回踩右侧入场：价格已从支撑反弹，MACD 回归金叉区 + 快速扩口 → 第二波启动确认
+        macd_ok = (macd_15m.get("sign") == "positive"
+                   and macd_15m.get("rapidExpanding", False))
         if not macd_ok:
             return None
         # 支撑均线选择
@@ -635,8 +656,9 @@ def calc_pullback_signal(
 
         dist_pct = (close - support_val) / support_val * 100   # 正=上方，负=下方
 
-        # 价格必须从上方贴近：close ∈ [support*(1-0.15%), support*(1+0.5%)]
-        # 上方 0.5% 以内说明正在回踩；下方 0.15% 是允许wick轻微跌穿
+        # 价格在支撑均线附近：close ∈ [support*(1-0.3%), support*(1+1.5%)]
+        # 下方 0.3%：允许wick轻微跌穿支撑后反弹
+        # 上方 1.5%：右侧确认时价格已反弹，允许距支撑最多 1.5%
         if not (support_val * (1 - _APPROACH_TOL / 100) <= close <= support_val * (1 + _BOUNCE_TOL / 100)):
             return None
 
@@ -644,16 +666,16 @@ def calc_pullback_signal(
             "type":       "long",
             "target":     target,
             "support":    round(support_val, 2),
-            "distPct":    round(abs(dist_pct), 3),   # 展示用，取绝对值
-            "aboveMa":    dist_pct >= 0,             # True=价格仍在均线上方
+            "distPct":    round(abs(dist_pct), 3),
+            "aboveMa":    dist_pct >= 0,
             "slopeType":  slope_type,
             "ma20":       round(ma20, 2),
             "ma60":       round(ma60, 2),
         }
     else:
-        # 空头反抽：MACD 15min 金叉 + 缩窄（粘合）→ 做空
-        macd_ok = (macd_15m.get("sign") == "positive"
-                   and not macd_15m.get("rapidExpanding", True))
+        # 空头反抽右侧入场：价格已从阻力回落，MACD 回归死叉区 + 快速扩口 → 第二波下跌确认
+        macd_ok = (macd_15m.get("sign") == "negative"
+                   and macd_15m.get("rapidExpanding", False))
         if not macd_ok:
             return None
         # 阻力均线选择
@@ -664,8 +686,9 @@ def calc_pullback_signal(
 
         dist_pct = (resist_val - close) / resist_val * 100   # 正=下方，负=上方
 
-        # 价格必须从下方贴近：close ∈ [resist*(1-0.5%), resist*(1+0.15%)]
-        # 下方 0.5% 以内说明正在反抽；上方 0.15% 是允许wick轻微突破
+        # 价格在阻力均线附近：close ∈ [resist*(1-1.5%), resist*(1+0.3%)]
+        # 下方 1.5%：右侧确认时价格已回落，允许距阻力最多 1.5%
+        # 上方 0.3%：允许wick轻微突破阻力后回落
         if not (resist_val * (1 - _BOUNCE_TOL / 100) <= close <= resist_val * (1 + _APPROACH_TOL / 100)):
             return None
 
@@ -674,7 +697,7 @@ def calc_pullback_signal(
             "target":     target,
             "support":    round(resist_val, 2),
             "distPct":    round(abs(dist_pct), 3),
-            "aboveMa":    dist_pct <= 0,             # True=价格已经突破均线上方（轻微）
+            "aboveMa":    dist_pct <= 0,
             "slopeType":  slope_type,
             "ma20":       round(ma20, 2),
             "ma60":       round(ma60, 2),
@@ -708,10 +731,18 @@ def calc_macd(df: pd.DataFrame) -> dict:
     deltas = [float(hist_abs.iloc[i]) - float(hist_abs.iloc[i - 1]) for i in range(start, n)]
 
     current_delta = deltas[-1] if deltas else 0.0
+    prev_delta    = deltas[-2] if len(deltas) >= 2 else 0.0   # 前一根棒的扩口幅度
     prev_deltas = [abs(d) for d in deltas[:-1]]
     avg_abs_delta = float(np.mean(prev_deltas)) if prev_deltas else 0.0
 
-    rapid_expanding = bool(current_delta > 0 and (avg_abs_delta == 0 or current_delta > avg_abs_delta))
+    # 当前棒扩口：expansionRate > 1.2（略高于 1.0 基线，排除刚刚勉强触发的弱信号）
+    # 前一棒也需扩口（prev_delta > 0）：两根连续扩口，过滤单根脉冲急冲
+    _EXPANSION_RATE_MIN = 1.2
+    rapid_expanding = bool(
+        current_delta > 0
+        and prev_delta > 0                                                   # 前一根也在扩口
+        and (avg_abs_delta == 0 or current_delta > avg_abs_delta * _EXPANSION_RATE_MIN)
+    )
     expansion_rate = round(current_delta / avg_abs_delta, 2) if avg_abs_delta > 0 else (1.0 if current_delta > 0 else 0.0)
 
     return {
@@ -719,6 +750,7 @@ def calc_macd(df: pd.DataFrame) -> dict:
         "rapidExpanding": rapid_expanding,
         "expansionRate":  expansion_rate,
         "cumulative":     cnt,
+        "prevExpanding":  bool(prev_delta > 0),   # 前一根是否也在扩口（供外部调试/前端展示）
     }
 
 def calc_volume(df: pd.DataFrame) -> dict:
@@ -855,7 +887,8 @@ def process_symbol(args: tuple) -> dict | None:
             "macd":            macd_15m,
             "volume":          vol_15m,
             "openInterest":    oi_15m,
-            "breakoutSignal":  calc_breakout_signal(ma_30m, macd_15m, vol_15m, oi_15m),
+            "breakoutSignal":  calc_breakout_signal(ma_30m, macd_15m, vol_15m, oi_15m,
+                                                     regime=regime, donchian=donchian, close=close),
             "pullbackSignal":  calc_pullback_signal(close, ma_30m, macd_15m, vol_15m, regime),
             "marketRegime":    regime,
             "boxSignal":       box_sig,
@@ -886,7 +919,7 @@ def process_symbol_daily(args: tuple) -> dict | None:
             "macd":            macd_data,
             "volume":          vol_data,
             "openInterest":    oi_data,
-            "breakoutSignal":  calc_breakout_signal(ma_data, macd_data, vol_data, oi_data),
+            "breakoutSignal":  calc_breakout_signal(ma_data, macd_data, vol_data, oi_data),  # daily 无 regime/donchian 数据，沿用原逻辑
             "pullbackSignal":  calc_pullback_signal(round(last, 2), ma_data, macd_data, vol_data),
         }
     except Exception as e:
@@ -1025,28 +1058,20 @@ def build_pullback_message(data: list[dict], bj_time: str) -> str | None:
 def build_regime_message(data: list[dict], bj_time: str,
                          prev_map: dict[str, dict] | None = None) -> str | None:
     """
-    推送规则：
-    1. 只推「震荡 → 趋势」或「趋势 → 震荡」的品种（存量不推）
-    2. 有箱体信号（触及通道边沿）时额外附加，仅供观测，不开单
+    推送规则：只推「震荡 → 趋势」或「趋势 → 震荡」的品种（存量不推，箱体不推）
 
     推送格式：
     ─────────────────────────────
     🔮 状态切换  03-30 14:00
     ─────────────────────────────
-    📊 新入趋势：黄金↗(72分) 铜↗(68分)
-    📦 新入震荡：原油(38分) 螺纹(41分)
-    ─────────────────────────────
-    📦 箱体观测（仅供参考）：
-      ▲白糖 触下沿 距0.3%
-      ▼螺纹 触上沿 距0.2%
+    📊 震荡→趋势：黄金↗(72分) 铜↗(68分)
+    📦 趋势→震荡：原油(38分) 螺纹(41分)
     ─────────────────────────────
     """
     prev = prev_map or {}
 
     to_trending: list[dict] = []   # 震荡 → 趋势
     to_ranging:  list[dict] = []   # 趋势 → 震荡
-    box_longs:   list[dict] = []
-    box_shorts:  list[dict] = []
 
     for d in data:
         sym    = d["symbol"]
@@ -1054,14 +1079,6 @@ def build_regime_message(data: list[dict], bj_time: str,
         if not cur_rg:
             continue
 
-        # 箱体信号（独立收集，不受状态变化限制）
-        if d.get("boxSignal"):
-            if d["boxSignal"]["type"] == "long":
-                box_longs.append(d)
-            else:
-                box_shorts.append(d)
-
-        # 对比上一次 regime
         prev_rg = prev.get(sym, {}).get("marketRegime", {}).get("regime")
         if prev_rg is None or prev_rg == cur_rg:
             continue   # 无变化，跳过
@@ -1071,57 +1088,29 @@ def build_regime_message(data: list[dict], bj_time: str,
         else:
             to_ranging.append(d)
 
-    has_change = bool(to_trending or to_ranging)
-    has_box    = bool(box_longs or box_shorts)
-
-    if not has_change and not has_box:
+    if not to_trending and not to_ranging:
         return None
 
     sep = "─" * 24
-    lines: list[str] = []
+    lines: list[str] = [f"<b>🔮 状态切换</b>  {bj_time}", sep]
 
-    # ── 状态切换 ──────────────────────────────────────────────
-    if has_change:
-        lines += [f"<b>🔮 状态切换</b>  {bj_time}", sep]
+    if to_trending:
+        items = []
+        for d in to_trending:
+            dr    = d.get("marketRegime", {}).get("direction", "")
+            arrow = "↗" if dr == "bullish" else "↘" if dr == "bearish" else "→"
+            score = d.get("marketRegime", {}).get("score", "?")
+            items.append(f"{d['symbol']}{arrow}({score}分)")
+        lines.append(f"📊 <b>震荡→趋势</b>: {' '.join(items)}")
+        lines.append("  💡 可关注突破策略（顺势）或回踩策略入场机会")
 
-        if to_trending:
-            items = []
-            for d in to_trending:
-                dr    = d.get("marketRegime", {}).get("direction", "")
-                arrow = "↗" if dr == "bullish" else "↘" if dr == "bearish" else "→"
-                score = d.get("marketRegime", {}).get("score", "?")
-                items.append(f"{d['symbol']}{arrow}({score}分)")
-            lines.append(f"📊 <b>震荡→趋势</b>: {' '.join(items)}")
-            lines.append("  💡 可关注突破策略（顺势）或回踩策略入场机会")
-
-        if to_ranging:
-            items = [
-                f"{d['symbol']}({d.get('marketRegime',{}).get('score','?')}分)"
-                for d in to_ranging
-            ]
-            lines.append(f"📦 <b>趋势→震荡</b>: {' '.join(items)}")
-            lines.append("  💡 可关注突破策略或箱体边沿机会")
-
-    # ── 箱体观测 ──────────────────────────────────────────────
-    if has_box:
-        if has_change:
-            lines.append("")
-        else:
-            lines += [f"<b>📦 箱体观测</b>  {bj_time}", sep]
-
-        lines.append("📦 <b>箱体边沿</b>（仅观测·不自动开单）")
-        for d in box_longs:
-            sig = d["boxSignal"]
-            chg = f"+{d['change']:.2f}%" if d["change"] >= 0 else f"{d['change']:.2f}%"
-            lines.append(f"  ▲{d['symbol']} {chg}"
-                         f"  触下沿{sig['boundaryPrice']}  距{sig['distPct']:.2f}%"
-                         f"  箱[{sig['boxLower']}~{sig['boxUpper']}]")
-        for d in box_shorts:
-            sig = d["boxSignal"]
-            chg = f"+{d['change']:.2f}%" if d["change"] >= 0 else f"{d['change']:.2f}%"
-            lines.append(f"  ▼{d['symbol']} {chg}"
-                         f"  触上沿{sig['boundaryPrice']}  距{sig['distPct']:.2f}%"
-                         f"  箱[{sig['boxLower']}~{sig['boxUpper']}]")
+    if to_ranging:
+        items = [
+            f"{d['symbol']}({d.get('marketRegime',{}).get('score','?')}分)"
+            for d in to_ranging
+        ]
+        lines.append(f"📦 <b>趋势→震荡</b>: {' '.join(items)}")
+        lines.append("  💡 回踩信号暂停，等待状态切回趋势")
 
     lines.append(sep)
     return "\n".join(lines)

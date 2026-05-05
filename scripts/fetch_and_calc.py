@@ -544,6 +544,7 @@ def calc_pullback_signal(
     ma_30m: dict,
     macd_15m: dict,
     vol_15m: dict,
+    regime: dict | None = None,
 ) -> dict | None:
     """
     回踩信号（多周期）：
@@ -551,9 +552,14 @@ def calc_pullback_signal(
       + 15min MACD 方向缩窄（已到位，压力/动能将释放）
       + 15min 放量确认
 
+    过滤层（新增）：
+      ① 市场状态必须为趋势（regime=trending），震荡期回踩均线是走弱/震荡非入场点
+      ② MA20/MA60 必须保持多空排列（多头: MA20>MA60；空头: MA20<MA60），纠缠时不触发
+      ③ 斜率最小阈值：slope20 ≥ 0.05%（3根变化）/ slope60 ≥ 0.02%，防止走平均线误触发
+
     做多回踩: close > MA60(30m) → 在 Upward 上行中回踩支撑
       - MA20 斜率 steep → 用 MA20 作支撑
-      - MA20 斜率 gentle/flat → 用 MA60 作支撑
+      - MA20 斜率 gentle → 用 MA60 作支撑
       - 15min MACD 死叉 + 缩窄（粘合）→ 卖压将尽
     做空反抽: close < MA60(30m) → 在 Downward 下行中反抽阻力
       - MA20 斜率 declining → 用 MA20 作阻力
@@ -567,11 +573,13 @@ def calc_pullback_signal(
     if not ma20 or not ma60 or ma20 <= 0 or ma60 <= 0:
         return None
 
-    dist_ma20 = abs(close - ma20) / ma20 * 100
-    dist_ma60 = abs(close - ma60) / ma60 * 100
-
     slope20 = ma_30m.get("slope20Pct", 0.0)
     slope60 = ma_30m.get("slope60Pct", 0.0)
+
+    # ── 过滤①：市场状态必须为趋势 ───────────────────────────────
+    # 震荡市中价格触碰均线是正常来回，不构成有效回踩
+    if regime is not None and regime.get("regime") == "ranging":
+        return None
 
     # 方向由 30min MA60 锚定
     bullish = close > ma60   # 多头方向（价格在 MA60 上方）
@@ -580,12 +588,25 @@ def calc_pullback_signal(
     if not bullish and not bearish:
         return None
 
-    # 斜率双重过滤：防止震荡期误触发
-    # 做多回踩：MA20 和 MA60 斜率都 > 0（趋势明确向上）
-    # 做空反抽：MA20 和 MA60 斜率都 < 0（趋势明确向下）
-    if bullish and not (slope20 > 0 and slope60 > 0):
+    # ── 过滤②：MA多空排列校验 + 纠缠检测 ───────────────────────
+    # 多头回踩：MA20 必须在 MA60 上方（标准多头排列）
+    # 空头反抽：MA20 必须在 MA60 下方（标准空头排列）
+    # 纠缠：MA20 与 MA60 间距 < 0.15% → 均线交织，趋势不明，跳过
+    ma_gap_pct = abs(ma20 - ma60) / ma60 * 100
+    if ma_gap_pct < 0.15:
+        return None   # 均线纠缠，不触发
+    if bullish and ma20 <= ma60:
+        return None   # 价格在MA60上方但均线倒排，趋势不可信
+    if bearish and ma20 >= ma60:
+        return None   # 价格在MA60下方但均线倒排，趋势不可信
+
+    # ── 过滤③：斜率最小阈值 ─────────────────────────────────────
+    # slope20/60 是3根K线内的累计变化%，< 0.05% 视为走平
+    _MIN_SLOPE20 = 0.05   # MA20 至少 3根内涨/跌 0.05%
+    _MIN_SLOPE60 = 0.02   # MA60 趋势惯性足，阈值较低
+    if bullish and not (slope20 >= _MIN_SLOPE20 and slope60 >= _MIN_SLOPE60):
         return None
-    if bearish and not (slope20 < 0 and slope60 < 0):
+    if bearish and not (slope20 <= -_MIN_SLOPE20 and slope60 <= -_MIN_SLOPE60):
         return None
 
     # 成交量：环比放量 + （当前量 OR 前一根量）高于均量
@@ -835,7 +856,7 @@ def process_symbol(args: tuple) -> dict | None:
             "volume":          vol_15m,
             "openInterest":    oi_15m,
             "breakoutSignal":  calc_breakout_signal(ma_30m, macd_15m, vol_15m, oi_15m),
-            "pullbackSignal":  calc_pullback_signal(close, ma_30m, macd_15m, vol_15m),
+            "pullbackSignal":  calc_pullback_signal(close, ma_30m, macd_15m, vol_15m, regime),
             "marketRegime":    regime,
             "boxSignal":       box_sig,
         }

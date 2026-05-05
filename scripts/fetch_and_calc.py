@@ -1362,8 +1362,43 @@ def _load_positions() -> list[dict]:
     return []
 
 
+def _dedup_positions(positions: list[dict]) -> list[dict]:
+    """
+    去除两类重复持仓：
+    1. 同入场价重复（同一批量信号的副本）：(symbol, direction, entryPrice) 相同 → 保留最早入场那笔
+    2. 同批次平仓重复（ghost rebuild 副本）：(symbol, direction, exitPrice, exitTime) 相同 → 保留最早入场那笔
+    """
+    removed: set[str] = set()
+
+    seen_entry: dict = {}
+    for p in sorted(positions, key=lambda x: x.get("entryTime", "")):
+        key = (p["symbol"], p["direction"], p["entryPrice"])
+        if key not in seen_entry:
+            seen_entry[key] = p["id"]
+        else:
+            removed.add(p["id"])
+
+    seen_exit: dict = {}
+    for p in sorted(positions, key=lambda x: x.get("entryTime", "")):
+        if p["id"] in removed:
+            continue
+        ep, et = p.get("exitPrice"), p.get("exitTime")
+        if ep is not None and et is not None:
+            key = (p["symbol"], p["direction"], ep, et)
+            if key not in seen_exit:
+                seen_exit[key] = p["id"]
+            else:
+                removed.add(p["id"])
+
+    if removed:
+        print(f"[POS] 自动去重：移除 {len(removed)} 笔重复持仓")
+    return [p for p in positions if p["id"] not in removed]
+
+
 def _save_positions(positions: list[dict]) -> None:
-    """将持仓列表写回 positions.json。"""
+    """将持仓列表写回 positions.json（自动去重后写入）。"""
+    positions = _dedup_positions(positions)
+    positions.sort(key=lambda x: x.get("entryTime", ""))
     data = {
         "updatedAt":  datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%S.000Z"),
         "openCount":  sum(1 for p in positions if p["status"] == "open"),

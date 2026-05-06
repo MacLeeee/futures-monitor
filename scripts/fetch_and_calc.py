@@ -507,17 +507,19 @@ def calc_breakout_signal(
     regime: dict | None = None,
     donchian: dict | None = None,
     close: float = 0.0,
+    trigger_open: float = 0.0,
+    atr: float = 0.0,
 ) -> dict | None:
     """
-    突破信号（多周期）- 三个必选条件（缺一不触发）：
+    突破信号（多周期）- 四个必选条件（缺一不触发）：
       1. 30min MA 排列方向：收盘价在 MA20 和 MA60 上方（Upward）/ 下方（Downward）
-         ★ 不要求均线斜率，早期突破时均线往往还未跟上价格
       2. 15min MACD 方向正确且快速扩口（金叉区做多，死叉区做空）
-      3. 15min 成交量：环比放量 + （当前或前一根）高于近10根均量
+      3. 15min 成交量：环比放量（或量超均量1.5倍）且高于近10根均量
+      4. 触发K线实体足够大：abs(close - open) / ATR > 1
+         → 抓起爆点，实体太小说明方向不够果断，容易折返
 
     震荡行情附加条件（regime=ranging 时必须同时满足）：
-      4. 价格必须已突破唐奇安通道边沿（做多须穿越上轨，做空须穿越下轨）
-         → 震荡中仅突破均线极易假突破快速折返；只有连箱体边沿也突破才算有效
+      5. 价格必须已突破唐奇安通道边沿（做多须穿越上轨，做空须穿越下轨）
 
     增仓（OI）为或有加分项：触发后额外标注 "+OI"，不影响信号触发。
     """
@@ -535,6 +537,13 @@ def calc_breakout_signal(
 
     if not (macd_ok and vol_ok):
         return None
+
+    # ── 触发K线实体校验：abs(close - open) / ATR > 1 ────────────
+    # 抓起爆点要求方向性足够强，实体小于 1 ATR 说明力度不足
+    if trigger_open > 0 and atr > 0 and close > 0:
+        body = abs(close - trigger_open)
+        if body / atr <= 1.0:
+            return None
 
     # ── 震荡行情附加：必须同时突破箱体边沿 ─────────────────────
     # 趋势行情中均线排列已经说明价格有持续性，箱体条件可豁免
@@ -760,17 +769,8 @@ def calc_volume(df: pd.DataFrame) -> dict:
         return {"status": "Shrink", "cumulative": 0, "value": 0,
                 "change": 0, "changePct": 0.0, "aboveVolMa": False, "volMa": 0}
 
-    def st(i): return "Surge" if i >= 1 and v.iloc[i] > v.iloc[i - 1] else "Shrink"
-    cur = st(n - 1)
-    change = float(v.iloc[-1] - v.iloc[-2])
-    pct = round(change / float(v.iloc[-2]) * 100, 1) if v.iloc[-2] else 0.0
-    cnt = 1
-    for i in range(n - 2, 0, -1):
-        if st(i) == cur: cnt += 1
-        else: break
-
     # 量MA10：以倒数第2~11根（排除当前可能未完结K线）计算均量
-    # 用 prev（上一根已完结K线）对比均量，更能反映真实量能水平
+    # 先算均量，供放量判断函数使用
     vol_ma_window = 10
     if n > vol_ma_window + 1:
         vol_ma = float(v.iloc[-(vol_ma_window + 2):-2].mean())   # 排除最新两根，取稳定均值
@@ -778,6 +778,22 @@ def calc_volume(df: pd.DataFrame) -> dict:
         vol_ma = float(v.iloc[:-2].mean())
     else:
         vol_ma = float(v.iloc[-1])
+
+    # 放量判断：环比放量（v[i] > v[i-1]），或绝对量超过均量 1.5 倍（开盘段/放量启动也能被捕捉）
+    # 场景：开盘第2棒可能量略少于第1棒，但绝对量远高于历史均量，仍应视为放量
+    _SURGE_MA_MULT = 1.5
+    def st(i):
+        env_surge = i >= 1 and v.iloc[i] > v.iloc[i - 1]          # 环比放量
+        abs_surge = vol_ma > 0 and v.iloc[i] > vol_ma * _SURGE_MA_MULT  # 绝对量超均量1.5倍
+        return "Surge" if (env_surge or abs_surge) else "Shrink"
+
+    cur = st(n - 1)
+    change = float(v.iloc[-1] - v.iloc[-2])
+    pct = round(change / float(v.iloc[-2]) * 100, 1) if v.iloc[-2] else 0.0
+    cnt = 1
+    for i in range(n - 2, 0, -1):
+        if st(i) == cur: cnt += 1
+        else: break
 
     cur_vol  = float(v.iloc[-1])
     prev_vol = float(v.iloc[-2]) if n >= 2 else cur_vol
@@ -888,7 +904,9 @@ def process_symbol(args: tuple) -> dict | None:
             "volume":          vol_15m,
             "openInterest":    oi_15m,
             "breakoutSignal":  calc_breakout_signal(ma_30m, macd_15m, vol_15m, oi_15m,
-                                                     regime=regime, donchian=donchian, close=close),
+                                                     regime=regime, donchian=donchian, close=close,
+                                                     trigger_open=round(float(df_15m["open"].iloc[-1]), 2),
+                                                     atr=atr),
             "pullbackSignal":  calc_pullback_signal(close, ma_30m, macd_15m, vol_15m, regime),
             "marketRegime":    regime,
             "boxSignal":       box_sig,

@@ -17,6 +17,7 @@
 
 import json
 import os
+import socket
 import sys
 import urllib.request
 import urllib.parse
@@ -36,6 +37,9 @@ except ModuleNotFoundError:  # pragma: no cover
 
 # Python 3.11+ 有 datetime.UTC；为兼容 3.8/3.9/3.10 统一使用 timezone.utc
 UTC = timezone.utc
+
+# 全局 Socket 超时：20秒无响应则抛异常（防止 Sina API 挂死产生僵尸进程）
+socket.setdefaulttimeout(20)
 
 import numpy as np
 import pandas as pd
@@ -1299,8 +1303,15 @@ def main():
     with ThreadPoolExecutor(max_workers=4) as pool:
         futures = {pool.submit(process_symbol, s): s for s in SYMBOLS}
         for fut in as_completed(futures):
-            r = fut.result()
-            if r: results.append(r)
+            try:
+                r = fut.result(timeout=90)
+                if r: results.append(r)
+            except TimeoutError:
+                (name, cat, code) = futures[fut]
+                print(f"  [TIMEOUT] {name}({code}) 超时90s，跳过", file=sys.stderr)
+            except Exception as e:
+                (name, cat, code) = futures[fut]
+                print(f"  [SKIP] {name}({code}): {e}", file=sys.stderr)
 
     # ── Step 2: 抓取日K（仅在收盘后23:00-23:15执行，其余时间跳过，避免API挂死产生僵尸）──
     _now_bj_daily = datetime.now(ZoneInfo("Asia/Shanghai"))
@@ -1313,8 +1324,15 @@ def main():
         with ThreadPoolExecutor(max_workers=4) as pool:
             futs = {pool.submit(process_symbol_daily, s): s for s in SYMBOLS}
             for fut in as_completed(futs):
-                r = fut.result()
-                if r: daily_results_pre.append(r)
+                try:
+                    r = fut.result(timeout=60)
+                    if r: daily_results_pre.append(r)
+                except TimeoutError:
+                    (name, cat, code) = futs[fut]
+                    print(f"  [TIMEOUT-D] {name}({code}) 超时60s，跳过", file=sys.stderr)
+                except Exception as e:
+                    (name, cat, code) = futs[fut]
+                    print(f"  [SKIP-D] {name}({code}): {e}", file=sys.stderr)
     else:
         print(f"[DAILY] 非收盘窗口({_now_bj_daily.strftime('%H:%M')})，跳过日K抓取")
 

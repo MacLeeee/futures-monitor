@@ -1302,15 +1302,21 @@ def main():
             r = fut.result()
             if r: results.append(r)
 
-    # ── Step 2: 抓取日K（复盘用，稍作等待让 API 冷却）──
-    print("[DAILY] 开始抓取日K数据...")
-    _time_module.sleep(2)
+    # ── Step 2: 抓取日K（仅在收盘后23:00-23:15执行，其余时间跳过，避免API挂死产生僵尸）──
+    _now_bj_daily = datetime.now(ZoneInfo("Asia/Shanghai"))
+    _daily_window   = (time(23, 0), time(23, 15))
+    _do_daily       = (_daily_window[0] <= _now_bj_daily.time() <= _daily_window[1])
     daily_results_pre: list[dict] = []
-    with ThreadPoolExecutor(max_workers=4) as pool:
-        futs = {pool.submit(process_symbol_daily, s): s for s in SYMBOLS}
-        for fut in as_completed(futs):
-            r = fut.result()
-            if r: daily_results_pre.append(r)
+    if _do_daily:
+        print("[DAILY] 收盘窗口(23:00-23:15)，开始抓取日K数据...")
+        _time_module.sleep(2)
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            futs = {pool.submit(process_symbol_daily, s): s for s in SYMBOLS}
+            for fut in as_completed(futs):
+                r = fut.result()
+                if r: daily_results_pre.append(r)
+    else:
+        print(f"[DAILY] 非收盘窗口({_now_bj_daily.strftime('%H:%M')})，跳过日K抓取")
 
     if not results:
         print("[FATAL] No data fetched — aborting write.", file=sys.stderr)

@@ -10,10 +10,10 @@ import { TrendingUp, TrendingDown, Minus, Zap, ZapOff, ArrowUpCircle, ArrowDownC
 // ---------- 均线状态 ----------
 export function MABadge({ status, cumulative }: { status: string; cumulative: number }) {
   const cfg = {
-    Upward:   { label: "上行", color: "text-red-400",   bg: "bg-red-950/60",   border: "border-red-700/50",   Icon: TrendingUp },
-    Downward: { label: "下行", color: "text-green-400", bg: "bg-green-950/60", border: "border-green-700/50", Icon: TrendingDown },
-    Silent:   { label: "静默", color: "text-gray-400",  bg: "bg-gray-800/60",  border: "border-gray-600/50",  Icon: Minus },
-  }[status] ?? { label: status, color: "text-gray-400", bg: "bg-gray-800/60", border: "border-gray-600/50", Icon: Minus };
+    Upward:   { label: "上行", color: "text-red-600",   bg: "bg-red-50",   border: "border-red-200",   Icon: TrendingUp },
+    Downward: { label: "下行", color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-200", Icon: TrendingDown },
+    Silent:   { label: "静默", color: "text-gray-400",  bg: "bg-gray-100",  border: "border-gray-300",  Icon: Minus },
+  }[status] ?? { label: status, color: "text-gray-400", bg: "bg-gray-100", border: "border-gray-300", Icon: Minus };
 
   const { label, color, bg, border, Icon } = cfg;
 
@@ -42,11 +42,11 @@ export function MACDBadge({
 
   // 方向标签样式
   const signCfg = isPositive
-    ? { label: "金叉区", color: "text-red-300",   bg: "bg-red-950/70",   border: "border-red-700" }
-    : { label: "死叉区", color: "text-green-300", bg: "bg-green-950/70", border: "border-green-700" };
+    ? { label: "金叉区", color: "text-red-700",   bg: "bg-red-50/90",   border: "border-red-300" }
+    : { label: "死叉区", color: "text-emerald-700", bg: "bg-emerald-50/90", border: "border-green-700" };
 
   // 走扩/粘合颜色：走扩=橙色高亮，粘合=天蓝
-  const expandColor = rapidExpanding ? "text-amber-400" : "text-sky-500";
+  const expandColor = rapidExpanding ? "text-blue-500" : "text-sky-600";
   const expandLabel = rapidExpanding ? "走扩" : "粘合";
 
   return (
@@ -96,15 +96,15 @@ export function VolumeBadge({
 
   const pctSign = (change ?? 0) > 0 ? "+" : "";
   const absPct = Math.abs(changePct ?? 0);
-  const pctColor = isSurge ? "text-orange-400" : "text-sky-400";
+  const pctColor = isSurge ? "text-orange-600" : "text-sky-600";
 
   return (
     <div className="flex flex-col gap-0.5">
       {/* 状态标签 + 连续计数 */}
       <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium border ${
         isSurge
-          ? "text-orange-400 bg-orange-950/60 border-orange-700/50"
-          : "text-sky-400 bg-sky-950/60 border-sky-700/50"
+          ? "text-orange-600 bg-orange-50 border-orange-200"
+          : "text-sky-600 bg-sky-50 border-sky-200"
       }`}>
         {isSurge ? <ArrowUpCircle size={11} /> : <ArrowDownCircle size={11} />}
         <span>{isSurge ? "放量" : "缩量"}</span>
@@ -116,7 +116,7 @@ export function VolumeBadge({
         <span className={`font-mono text-[11px] font-semibold ${pctColor}`}>
           {pctSign}{absPct.toFixed(1)}%
         </span>
-        <span className="text-gray-600 font-mono text-[10px]">
+        <span className="text-gray-400 font-mono text-[10px]">
           ({pctSign}{fmtVol(change ?? 0)})
         </span>
       </div>
@@ -151,7 +151,7 @@ export function OIBadge({
   };
 
   // 变化幅度颜色：增仓红，减仓绿
-  const pctColor = isInc ? "text-red-400" : "text-green-400";
+  const pctColor = isInc ? "text-red-600" : "text-emerald-600";
   const pctSign = (change ?? 0) > 0 ? "+" : "";
   const absPct = Math.abs(changePct ?? 0);
 
@@ -160,8 +160,8 @@ export function OIBadge({
       {/* 状态标签 + 连续计数 */}
       <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium border ${
         isInc
-          ? "text-red-400 bg-red-950/60 border-red-700/50"
-          : "text-green-400 bg-green-950/60 border-green-700/50"
+          ? "text-red-600 bg-red-50 border-red-200"
+          : "text-emerald-600 bg-emerald-50 border-emerald-200"
       }`}>
         {isInc ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
         <span>{isInc ? "增仓" : "减仓"}</span>
@@ -173,13 +173,13 @@ export function OIBadge({
         <span className={`font-mono text-[11px] font-semibold ${pctColor}`}>
           {pctSign}{absPct.toFixed(2)}%
         </span>
-        <span className="text-gray-600 font-mono text-[10px]">
+        <span className="text-gray-400 font-mono text-[10px]">
           ({pctSign}{fmtOI(change)})
         </span>
       </div>
 
       {/* 当前持仓量 */}
-      <span className="text-gray-600 font-mono text-[10px] pl-1">
+      <span className="text-gray-400 font-mono text-[10px] pl-1">
         持仓 {fmtOI(value)}手
       </span>
     </div>
@@ -190,7 +190,7 @@ export function OIBadge({
 export function PriceCell({ price, change }: { price: number; change: number }) {
   const isUp = change > 0;
   const isDown = change < 0;
-  const color = isUp ? "text-red-400" : isDown ? "text-green-400" : "text-gray-400";
+  const color = isUp ? "text-red-600" : isDown ? "text-emerald-600" : "text-gray-400";
 
   return (
     <div className="text-right">

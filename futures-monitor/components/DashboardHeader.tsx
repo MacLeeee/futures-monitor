@@ -51,13 +51,13 @@ export default function DashboardHeader({
       {/* 状态栏: 刷新 + 时钟 */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-[#0f1016] rounded-md border border-[#1e1f2a]">
-            <Clock size={12} className="text-[#9090a0]" />
-            <span className="text-xs font-mono text-[#9090a0]" suppressHydrationWarning>
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-white rounded-md border border-gray-200">
+            <Clock size={12} className="text-gray-500" />
+            <span className="text-xs font-mono text-gray-500" suppressHydrationWarning>
               {now ? formatTime(now) : "--:--:--"}
             </span>
           </div>
-          <span className="text-[10px] text-[#585868] font-mono" suppressHydrationWarning>
+          <span className="text-[10px] text-gray-400 font-mono" suppressHydrationWarning>
             更新于 {now ? formatTime(lastRefresh) : "--:--:--"}
           </span>
         </div>
@@ -68,8 +68,8 @@ export default function DashboardHeader({
               onClick={onToggleAutoRefresh}
               className={`px-3 py-1.5 text-xs rounded-md font-medium transition-all ${
                 autoRefresh
-                  ? "bg-amber-500/15 text-amber-400 ring-1 ring-amber-500/30"
-                  : "text-[#585868] hover:text-[#9090a0]"
+                  ? "bg-blue-50/90 text-blue-500 ring-1 ring-blue-300/50"
+                  : "text-gray-400 hover:text-gray-500"
               }`}
             >
               {autoRefresh ? `● ${nextRefreshIn ?? "自动"}` : "○ 暂停"}
@@ -78,7 +78,7 @@ export default function DashboardHeader({
           <button
             onClick={onManualRefresh}
             disabled={isLoading}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-[#0f1016] border border-[#1e1f2a] rounded-md text-[#9090a0] hover:text-[#e4e4ec] hover:border-[#2a2b36] transition-all disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-md text-gray-500 hover:text-gray-900 hover:border-gray-300 transition-all disabled:opacity-50"
           >
             <RefreshCw size={11} className={isLoading ? "animate-spin" : ""} />
             刷新
@@ -100,11 +100,11 @@ export default function DashboardHeader({
 }
 
 const ACCENT_MAP = {
-  emerald: { text: "text-emerald-400", bg: "bg-emerald-400", cardBg: "bg-emerald-500/5" },
-  red:    { text: "text-red-400",    bg: "bg-red-400",    cardBg: "bg-red-500/5" },
-  amber:  { text: "text-amber-400",  bg: "bg-amber-400",  cardBg: "bg-amber-500/5" },
-  sky:    { text: "text-sky-400",    bg: "bg-sky-400",    cardBg: "bg-sky-500/5" },
-  muted:  { text: "text-[#585868]",  bg: "bg-[#585868]",  cardBg: "bg-[#0f1016]" },
+  emerald: { text: "text-emerald-600", bg: "bg-emerald-400", cardBg: "bg-emerald-50/60" },
+  red:    { text: "text-red-600",    bg: "bg-red-400",    cardBg: "bg-red-500/5" },
+  amber:  { text: "text-blue-500",  bg: "bg-blue-500",  cardBg: "bg-blue-50/40" },
+  sky:    { text: "text-sky-600",    bg: "bg-sky-400",    cardBg: "bg-sky-500/5" },
+  muted:  { text: "text-gray-400",  bg: "bg-gray-400",  cardBg: "bg-white" },
 };
 
 function StatCard({
@@ -117,16 +117,16 @@ function StatCard({
   const pct = total > 0 ? Math.round((value / total) * 100) : 0;
 
   return (
-    <div className={`rounded-lg px-3 py-2.5 ${a.cardBg} transition-colors hover:bg-opacity-100`}>
+    <div className={`rounded-lg px-3 py-2.5 border border-gray-200 shadow-sm ${a.cardBg} transition-colors hover:shadow-md`}>
       <div className="flex items-center justify-between mb-1.5">
-        <span className="text-[10px] text-[#585868] font-medium tracking-wide uppercase">{label}</span>
+        <span className="text-[10px] text-gray-400 font-medium tracking-wide uppercase">{label}</span>
         {Icon && <Icon size={11} className={a.text} />}
       </div>
       <div className="flex items-baseline gap-1">
         <span className={`text-xl font-bold font-mono tracking-tight ${a.text}`}>{value}</span>
-        <span className="text-[#585868] text-[10px] font-mono">/ {total}</span>
+        <span className="text-gray-400 text-[10px] font-mono">/ {total}</span>
       </div>
-      <div className="mt-2 h-0.5 bg-[#1e1f2a] rounded-full overflow-hidden">
+      <div className="mt-2 h-0.5 bg-gray-200 rounded-full overflow-hidden">
         <div className={`h-full rounded-full ${a.bg} transition-all duration-700`}
           style={{ width: `${pct}%` }} />
       </div>

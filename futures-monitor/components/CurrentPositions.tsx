@@ -14,31 +14,31 @@ export default function CurrentPositions({ positions, currentPrices }: Props) {
 
   if (open.length === 0) {
     return (
-      <div className="rounded-xl border border-gray-800 bg-gray-900/60 p-3">
+      <div className="rounded-xl border border-gray-200 bg-white p-3">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-gray-200">📋 当前持仓</span>
-          <span className="rounded bg-gray-800 px-2 py-0.5 text-xs text-gray-500">0 笔</span>
+          <span className="text-sm font-semibold text-gray-800">📋 当前持仓</span>
+          <span className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-500">0 笔</span>
         </div>
-        <p className="mt-2 text-xs text-gray-600">暂无持仓记录</p>
+        <p className="mt-2 text-xs text-gray-400">暂无持仓记录</p>
       </div>
     );
   }
 
   return (
-    <div className="rounded-xl border border-gray-800 bg-gray-900/60 p-3">
+    <div className="rounded-xl border border-gray-200 bg-white p-3">
       {/* 标题行 */}
       <div className="mb-2.5 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-gray-200">📋 当前持仓</span>
-          <span className="rounded bg-sky-900/50 px-1.5 py-0.5 text-[10px] text-sky-400 font-medium">
+          <span className="text-sm font-semibold text-gray-800">📋 当前持仓</span>
+          <span className="rounded bg-sky-100/50 px-1.5 py-0.5 text-[10px] text-sky-600 font-medium">
             {open.length} 笔
           </span>
-          <span className="text-[10px] text-emerald-500">▲{longs.length}</span>
-          <span className="text-[10px] text-red-500">▼{shorts.length}</span>
+          <span className="text-[10px] text-emerald-600">▲{longs.length}</span>
+          <span className="text-[10px] text-red-600">▼{shorts.length}</span>
         </div>
         <a
           href="/trades"
-          className="text-[11px] text-gray-600 hover:text-gray-300 transition-colors"
+          className="text-[11px] text-gray-400 hover:text-gray-700 transition-colors"
         >
           完整记录 →
         </a>
@@ -82,13 +82,13 @@ function PositionChip({ pos, floatPts }: { pos: Position; floatPts: number }) {
   const isProfit  = floatPts >= 0;
 
   const borderColor = isLong
-    ? "border-emerald-800/60"
-    : "border-red-800/60";
+    ? "border-emerald-300"
+    : "border-red-200";
   const bgColor = isLong
-    ? "bg-emerald-950/40"
-    : "bg-red-950/40";
-  const dirColor = isLong ? "text-emerald-400" : "text-red-400";
-  const pnlColor = isProfit ? "text-emerald-400" : "text-red-400";
+    ? "bg-emerald-50/60"
+    : "bg-red-50/60";
+  const dirColor = isLong ? "text-emerald-600" : "text-red-600";
+  const pnlColor = isProfit ? "text-emerald-600" : "text-red-600";
 
   return (
     <div
@@ -98,7 +98,7 @@ function PositionChip({ pos, floatPts }: { pos: Position; floatPts: number }) {
       <span className={`text-[10px] font-bold ${dirColor}`}>
         {isLong ? "▲" : "▼"}
       </span>
-      <span className="text-[11px] font-medium text-gray-200">{pos.symbol}</span>
+      <span className="text-[11px] font-medium text-gray-800">{pos.symbol}</span>
       <span className={`text-[10px] ${pnlColor}`}>
         {floatPts >= 0 ? "+" : ""}{floatPts.toFixed(1)}
       </span>

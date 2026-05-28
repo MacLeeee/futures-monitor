@@ -343,14 +343,14 @@ const STATUS_LABEL: Record<PositionStatus, string> = {
   closed_tp: "止盈",
 };
 const STATUS_COLOR: Record<PositionStatus, string> = {
-  open:      "text-sky-400 bg-sky-900/30",
-  closed_sl: "text-red-400 bg-red-900/30",
-  closed_tp: "text-emerald-400 bg-emerald-900/30",
+  open:      "text-sky-600 bg-sky-900/30",
+  closed_sl: "text-red-600 bg-red-900/30",
+  closed_tp: "text-emerald-600 bg-emerald-900/30",
 };
 const DIR_LABEL: Record<string, string> = { long: "多 ▲", short: "空 ▼" };
 const DIR_COLOR: Record<string, string> = {
-  long:  "text-emerald-400",
-  short: "text-red-400",
+  long:  "text-emerald-600",
+  short: "text-red-600",
 };
 const SIG_LABEL: Record<string, string> = {
   breakout: "突破",
@@ -436,14 +436,14 @@ export default function TradeLog() {
     : "—";
 
   return (
-    <div className="min-h-screen bg-[#10141c] text-gray-200 p-4 md:p-6 lg:p-8">
+    <div className="min-h-screen bg-[#10141c] text-gray-800 p-4 md:p-6 lg:p-8">
       {/* 顶部导航 */}
       <div className="mb-6 flex items-center gap-4">
-        <a href="/" className="text-gray-600 hover:text-gray-400 text-sm transition-colors">
+        <a href="/" className="text-gray-400 hover:text-gray-400 text-sm transition-colors">
           ← 返回监控
         </a>
-        <h1 className="text-xl font-bold text-gray-100">📒 交易记录</h1>
-        <span className="ml-auto text-xs text-gray-600">
+        <h1 className="text-xl font-bold text-gray-900">📒 交易记录</h1>
+        <span className="ml-auto text-xs text-gray-400">
           初始1000万 · 每笔保证金20万
         </span>
       </div>
@@ -477,12 +477,12 @@ export default function TradeLog() {
 
       {/* ── 净值曲线图 ───────────────────────────────────── */}
       {!loading && metrics.navPoints.length > 1 && (
-        <div className="mb-8 rounded-xl border border-[#1e2d47] bg-[#141820] p-4">
+        <div className="mb-8 rounded-xl border border-gray-200 bg-gray-50 p-4">
           <p className="mb-3 text-xs text-gray-500">
             净值曲线  ·  {metrics.wins + metrics.losses} 笔已平仓
             {metrics.rows.length > 0 && (
-              <>  ·  平均盈 <span className="text-emerald-400">+{(metrics.avgWin / 10000).toFixed(2)}万</span>
-              &nbsp;·  平均亏 <span className="text-red-400">{(metrics.avgLoss / 10000).toFixed(2)}万</span></>
+              <>  ·  平均盈 <span className="text-emerald-600">+{(metrics.avgWin / 10000).toFixed(2)}万</span>
+              &nbsp;·  平均亏 <span className="text-red-600">{(metrics.avgLoss / 10000).toFixed(2)}万</span></>
             )}
           </p>
           <NavChart
@@ -518,22 +518,22 @@ export default function TradeLog() {
           ))}
         </div>
         {updatedAt && (
-          <span className="ml-auto text-xs text-gray-700 self-center">
+          <span className="ml-auto text-xs text-gray-300 self-center">
             更新：{updatedAt}
           </span>
         )}
       </div>
 
       {loading && (
-        <div className="py-16 text-center text-gray-600 text-sm">正在加载...</div>
+        <div className="py-16 text-center text-gray-400 text-sm">正在加载...</div>
       )}
 
       {/* ── 已平仓交易表格 ──────────────────────────────── */}
       {!loading && filteredClosed.length > 0 && (
-        <div className="mb-8 overflow-x-auto rounded-xl border border-[#1e2d47]">
+        <div className="mb-8 overflow-x-auto rounded-xl border border-gray-200">
           <table className="w-full text-xs">
             <thead>
-              <tr className="border-b border-[#1e2d47] bg-[#141820] text-gray-500">
+              <tr className="border-b border-gray-200 bg-gray-50 text-gray-500">
                 <th className="px-3 py-2.5 text-left">品种</th>
                 <th className="px-3 py-2.5 text-left">方向</th>
                 <th className="px-3 py-2.5 text-left">类型</th>
@@ -559,19 +559,19 @@ export default function TradeLog() {
       )}
 
       {!loading && filteredClosed.length === 0 && (
-        <div className="py-12 text-center text-gray-600 text-sm">暂无已平仓记录</div>
+        <div className="py-12 text-center text-gray-400 text-sm">暂无已平仓记录</div>
       )}
 
       {/* ── 持仓中 ──────────────────────────────────────── */}
       {!loading && openPositions.length > 0 && (
         <>
           <h2 className="mb-3 text-sm font-semibold text-gray-400">
-            持仓中 <span className="ml-1 text-sky-400">{openPositions.length}</span>
+            持仓中 <span className="ml-1 text-sky-600">{openPositions.length}</span>
           </h2>
-          <div className="overflow-x-auto rounded-xl border border-[#1e2d47]">
+          <div className="overflow-x-auto rounded-xl border border-gray-200">
             <table className="w-full text-xs">
               <thead>
-                <tr className="border-b border-[#1e2d47] bg-[#141820] text-gray-500">
+                <tr className="border-b border-gray-200 bg-gray-50 text-gray-500">
                   <th className="px-3 py-2.5 text-left">品种</th>
                   <th className="px-3 py-2.5 text-left">方向</th>
                   <th className="px-3 py-2.5 text-left">类型</th>
@@ -592,7 +592,7 @@ export default function TradeLog() {
                   return (
                     <tr key={pos.id}
                       className="border-b border-[#1a2233]/60 hover:bg-[#1a2233]/40 transition-colors">
-                      <td className="px-3 py-2 font-medium text-gray-200">{pos.symbol}</td>
+                      <td className="px-3 py-2 font-medium text-gray-800">{pos.symbol}</td>
                       <td className={`px-3 py-2 font-medium ${DIR_COLOR[pos.direction]}`}>
                         {DIR_LABEL[pos.direction]}
                       </td>
@@ -603,9 +603,9 @@ export default function TradeLog() {
                       </td>
                       <td className="px-3 py-2 text-right text-gray-300">{lots}</td>
                       <td className="px-3 py-2 text-right text-gray-300">{pos.entryPrice.toFixed(2)}</td>
-                      <td className="px-3 py-2 text-right text-red-400/80">{pos.stopLoss.toFixed(2)}</td>
-                      <td className="px-3 py-2 text-right text-emerald-400/80">{pos.takeProfit.toFixed(2)}</td>
-                      <td className="px-3 py-2 text-gray-600 whitespace-nowrap">{pos.entryTime}</td>
+                      <td className="px-3 py-2 text-right text-red-600/80">{pos.stopLoss.toFixed(2)}</td>
+                      <td className="px-3 py-2 text-right text-emerald-600/80">{pos.takeProfit.toFixed(2)}</td>
+                      <td className="px-3 py-2 text-gray-400 whitespace-nowrap">{pos.entryTime}</td>
                     </tr>
                   );
                 })}
@@ -615,7 +615,7 @@ export default function TradeLog() {
         </>
       )}
 
-      <p className="mt-4 text-right text-xs text-gray-700">
+      <p className="mt-4 text-right text-xs text-gray-300">
         共 {positions.length} 条 · 已平仓 {metrics.wins + metrics.losses} · 持仓中 {openPositions.length}
       </p>
     </div>
@@ -629,7 +629,7 @@ function ClosedTradeRow({ m }: { m: TradeMetrics }) {
 
   return (
     <tr className="border-b border-[#1a2233]/60 hover:bg-[#1a2233]/40 transition-colors">
-      <td className="px-3 py-2 font-medium text-gray-200">{pos.symbol}</td>
+      <td className="px-3 py-2 font-medium text-gray-800">{pos.symbol}</td>
       <td className={`px-3 py-2 font-medium ${DIR_COLOR[pos.direction]}`}>
         {DIR_LABEL[pos.direction]}
       </td>
@@ -643,11 +643,11 @@ function ClosedTradeRow({ m }: { m: TradeMetrics }) {
       <td className="px-3 py-2 text-right text-gray-400">
         {pos.exitPrice !== null ? pos.exitPrice.toFixed(2) : "—"}
       </td>
-      <td className={`px-3 py-2 text-right font-semibold ${isWin ? "text-emerald-400" : "text-red-400"}`}>
+      <td className={`px-3 py-2 text-right font-semibold ${isWin ? "text-emerald-600" : "text-red-600"}`}>
         {pnlRmb >= 0 ? "+" : ""}
         {(pnlRmb / 10000).toFixed(2)}万
       </td>
-      <td className={`px-3 py-2 text-right ${isWin ? "text-emerald-400/80" : "text-red-400/80"}`}>
+      <td className={`px-3 py-2 text-right ${isWin ? "text-emerald-600/80" : "text-red-600/80"}`}>
         {chgPct >= 0 ? "+" : ""}{chgPct.toFixed(2)}%
       </td>
       <td className="px-3 py-2 text-right text-sky-300 font-mono text-[11px]">
@@ -658,7 +658,7 @@ function ClosedTradeRow({ m }: { m: TradeMetrics }) {
           {STATUS_LABEL[pos.status]}
         </span>
       </td>
-      <td className="px-3 py-2 text-gray-600 whitespace-nowrap">{pos.entryTime}</td>
+      <td className="px-3 py-2 text-gray-400 whitespace-nowrap">{pos.entryTime}</td>
     </tr>
   );
 }
@@ -666,10 +666,10 @@ function ClosedTradeRow({ m }: { m: TradeMetrics }) {
 // ── 统计卡片 ───────────────────────────────────────────────────
 type CardColor = "emerald" | "red" | "sky" | "yellow" | "gray";
 const CARD_COLOR: Record<CardColor, string> = {
-  emerald: "text-emerald-400",
-  red:     "text-red-400",
-  sky:     "text-sky-400",
-  yellow:  "text-yellow-400",
+  emerald: "text-emerald-600",
+  red:     "text-red-600",
+  sky:     "text-sky-600",
+  yellow:  "text-yellow-600",
   gray:    "text-gray-300",
 };
 
@@ -685,10 +685,10 @@ function StatCard({
   color?: CardColor;
 }) {
   return (
-    <div className="rounded-lg border border-[#1e2d47] bg-[#141820] px-3 py-2.5">
-      <p className="text-[10px] text-gray-600 mb-0.5">{label}</p>
+    <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5">
+      <p className="text-[10px] text-gray-400 mb-0.5">{label}</p>
       <p className={`text-base font-bold leading-tight ${CARD_COLOR[color]}`}>{value}</p>
-      {sub && <p className="text-[10px] text-gray-600 mt-0.5">{sub}</p>}
+      {sub && <p className="text-[10px] text-gray-400 mt-0.5">{sub}</p>}
     </div>
   );
 }

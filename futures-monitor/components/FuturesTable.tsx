@@ -18,21 +18,21 @@ const CATEGORY_COLORS: Record<string, string> = {
   有色:   "border-l-orange-500",
   黑色:   "border-l-gray-500",
   农产品: "border-l-lime-500",
-  油脂:   "border-l-amber-500",
+  油脂:   "border-l-yellow-500",
   能化:   "border-l-purple-500",
   建材:   "border-l-cyan-500",
   股指:   "border-l-blue-500",
 };
 
 const CATEGORY_TEXT: Record<string, string> = {
-  贵金属: "text-yellow-400",
-  有色:   "text-orange-400",
+  贵金属: "text-yellow-600",
+  有色:   "text-orange-600",
   黑色:   "text-gray-400",
-  农产品: "text-lime-400",
-  油脂:   "text-amber-400",
-  能化:   "text-purple-400",
+  农产品: "text-lime-600",
+  油脂:   "text-blue-500",
+  能化:   "text-purple-600",
   建材:   "text-cyan-400",
-  股指:   "text-blue-400",
+  股指:   "text-blue-600",
 };
 
 // 表格列定义
@@ -59,17 +59,17 @@ export default function FuturesTable({ data }: FuturesTableProps) {
   }, [data]);
 
   return (
-    <div className="w-full overflow-x-auto rounded-lg border border-gray-800 shadow-2xl">
+    <div className="w-full overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
       <table className="w-full min-w-[900px] border-collapse">
         {/* 固定表头 */}
         <thead className="sticky top-0 z-20">
-          <tr className="bg-gray-900 border-b border-gray-700">
+          <tr className="bg-white border-b border-gray-300">
             {COLUMNS.map((col) => (
               <th
                 key={col.key}
                 className={`
                   px-3 py-2.5 text-[11px] font-semibold tracking-widest uppercase
-                  text-gray-400 whitespace-nowrap
+                  text-gray-500 whitespace-nowrap
                   ${col.align} ${col.width}
                 `}
               >
@@ -83,13 +83,13 @@ export default function FuturesTable({ data }: FuturesTableProps) {
           {grouped.map(({ cat, items }) => (
             <React.Fragment key={cat}>
               {/* 板块分组标题行 */}
-              <tr className="bg-gray-900/80 border-t border-gray-700/50">
+              <tr className="bg-white/90 border-t border-gray-200">
                 <td
                   colSpan={COLUMNS.length}
                   className={`px-3 py-1.5 text-xs font-bold tracking-wider ${CATEGORY_TEXT[cat] ?? "text-gray-400"}`}
                 >
                   ▸ {cat}
-                  <span className="ml-2 text-gray-600 font-normal">{items.length} 个品种</span>
+                  <span className="ml-2 text-gray-400 font-normal">{items.length} 个品种</span>
                 </td>
               </tr>
 
@@ -112,17 +112,17 @@ function DataRow({ row, idx, cat }: { row: FuturesStatus; idx: number; cat: stri
   return (
     <tr
       className={`
-        border-b border-gray-800/60 transition-colors duration-150
-        hover:bg-gray-800/40
-        ${idx % 2 === 0 ? "bg-gray-950" : "bg-gray-900/30"}
+        border-b border-gray-200 transition-colors duration-150
+        hover:bg-gray-100
+        ${idx % 2 === 0 ? "bg-white" : "bg-gray-50/60"}
       `}
     >
       {/* 品种名称 */}
       <td className={`px-3 py-2.5 border-l-2 ${borderColor}`}>
-        <div className="font-semibold text-sm text-gray-100 whitespace-nowrap">
+        <div className="font-semibold text-sm text-gray-900 whitespace-nowrap">
           {row.symbol}
         </div>
-        <div className="text-[10px] text-gray-600 font-mono">30min</div>
+        <div className="text-[10px] text-gray-400 font-mono">30min</div>
       </td>
 
       {/* 价格 */}
@@ -170,7 +170,7 @@ function DataRow({ row, idx, cat }: { row: FuturesStatus; idx: number; cat: stri
 
       {/* 更新时间 */}
       <td className="px-3 py-2.5 text-right">
-        <span className="text-[11px] font-mono text-gray-600">{row.lastUpdate}</span>
+        <span className="text-[11px] font-mono text-gray-400">{row.lastUpdate}</span>
       </td>
     </tr>
   );

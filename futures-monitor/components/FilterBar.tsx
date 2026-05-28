@@ -46,8 +46,8 @@ export default function FilterBar({
             onClick={() => onCategoryChange(cat)}
             className={`px-2.5 py-1 text-xs rounded border transition-all ${
               selectedCategory === cat
-                ? "bg-blue-900/60 border-blue-600 text-blue-300 font-semibold"
-                : "bg-gray-800/50 border-gray-700 text-gray-400 hover:border-gray-500 hover:text-gray-300"
+                ? "bg-blue-100/60 border-blue-600 text-blue-700 font-semibold"
+                : "bg-gray-100 border-gray-300 text-gray-400 hover:border-gray-400 hover:text-gray-700"
             }`}
           >
             {cat}
@@ -55,7 +55,7 @@ export default function FilterBar({
         ))}
       </div>
 
-      <div className="w-px h-4 bg-gray-700" />
+      <div className="w-px h-4 bg-gray-200" />
 
       {/* 均线状态筛选 */}
       <div className="flex gap-1">
@@ -65,8 +65,8 @@ export default function FilterBar({
             onClick={() => onMAStatusChange(s.value)}
             className={`px-2.5 py-1 text-xs rounded border transition-all ${
               selectedMAStatus === s.value
-                ? "bg-gray-700 border-gray-500 text-white font-semibold"
-                : "bg-gray-800/50 border-gray-700 text-gray-400 hover:border-gray-500"
+                ? "bg-gray-200 border-gray-500 text-white font-semibold"
+                : "bg-gray-100 border-gray-300 text-gray-400 hover:border-gray-400"
             }`}
           >
             {s.label}
@@ -75,7 +75,7 @@ export default function FilterBar({
       </div>
 
       {/* 过滤结果计数 */}
-      <span className="ml-auto text-xs text-gray-600 font-mono">
+      <span className="ml-auto text-xs text-gray-400 font-mono">
         显示 <span className="text-gray-400 font-semibold">{filteredCount}</span> / {totalCount} 个品种
       </span>
     </div>

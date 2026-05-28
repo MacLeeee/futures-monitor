@@ -13,24 +13,24 @@ const GITHUB_RAW =
 
 // 状态机配色
 const REGIME_COLORS: Record<GoldRegime, { bg: string; border: string; text: string }> = {
-  "Cash Liquidation":            { bg: "bg-red-950/70",  border: "border-red-700",   text: "text-red-400" },
-  "Rates-Dollar Bearish Gold":   { bg: "bg-orange-950/70", border: "border-orange-700", text: "text-orange-400" },
-  "Clean Bullish Gold":          { bg: "bg-emerald-950/70", border: "border-emerald-700", text: "text-emerald-400" },
-  "Reflation Gold":              { bg: "bg-amber-950/70",  border: "border-amber-700",  text: "text-amber-400" },
-  "Defensive Gold":              { bg: "bg-slate-950/70",  border: "border-slate-700",  text: "text-slate-400" },
-  "Fiscal / Debasement Hedge":   { bg: "bg-purple-950/70", border: "border-purple-700", text: "text-purple-400" },
-  "Bullish Price Override":      { bg: "bg-cyan-950/70",   border: "border-cyan-700",   text: "text-cyan-400" },
-  "Bearish Price Override":      { bg: "bg-pink-950/70",   border: "border-pink-700",   text: "text-pink-400" },
-  "Mixed":                       { bg: "bg-gray-900/70",   border: "border-gray-700",   text: "text-gray-400" },
+  "Cash Liquidation":            { bg: "bg-red-50/90",  border: "border-red-300",   text: "text-red-600" },
+  "Rates-Dollar Bearish Gold":   { bg: "bg-orange-50/90", border: "border-orange-300", text: "text-orange-600" },
+  "Clean Bullish Gold":          { bg: "bg-emerald-50/90", border: "border-emerald-300", text: "text-emerald-600" },
+  "Reflation Gold":              { bg: "bg-blue-50/90",  border: "border-blue-300",  text: "text-blue-500" },
+  "Defensive Gold":              { bg: "bg-slate-50/90",  border: "border-slate-300",  text: "text-slate-600" },
+  "Fiscal / Debasement Hedge":   { bg: "bg-purple-50/90", border: "border-purple-300", text: "text-purple-600" },
+  "Bullish Price Override":      { bg: "bg-cyan-50/90",   border: "border-cyan-700",   text: "text-cyan-400" },
+  "Bearish Price Override":      { bg: "bg-pink-50/90",   border: "border-pink-700",   text: "text-pink-400" },
+  "Mixed":                       { bg: "bg-white/90",   border: "border-gray-300",   text: "text-gray-400" },
 };
 
 // 流动性状态配色
 function getLiquidityColor(score: number): string {
-  if (score >= 75) return "text-red-400";
-  if (score >= 60) return "text-orange-400";
-  if (score >= 45) return "text-yellow-400";
-  if (score >= 30) return "text-blue-400";
-  return "text-emerald-400";
+  if (score >= 75) return "text-red-600";
+  if (score >= 60) return "text-orange-600";
+  if (score >= 45) return "text-yellow-600";
+  if (score >= 30) return "text-blue-600";
+  return "text-emerald-600";
 }
 
 function getLiquidityBg(score: number): string {
@@ -44,9 +44,9 @@ function getLiquidityBg(score: number): string {
 // 趋势信号标记
 function TrendBadge({ sign }: { sign: TrendSign }) {
   const color =
-    sign === "Bull"  ? "bg-emerald-900/60 text-emerald-400 border-emerald-700" :
-    sign === "Bear"  ? "bg-red-900/60 text-red-400 border-red-700" :
-                       "bg-gray-800/60 text-gray-500 border-gray-700";
+    sign === "Bull"  ? "bg-emerald-100/60 text-emerald-600 border-emerald-300" :
+    sign === "Bear"  ? "bg-red-100/60 text-red-600 border-red-300" :
+                       "bg-gray-100 text-gray-500 border-gray-300";
   const label = sign === "Bull" ? "↗" : sign === "Bear" ? "↘" : "→";
   return (
     <span className={`px-2 py-0.5 text-xs rounded border font-mono ${color}`}>
@@ -61,7 +61,7 @@ function ScoreBar({ score, max, color }: { score: number; max: number; color: st
   return (
     <div className="flex items-center gap-2">
       <span className="text-xs text-gray-400 w-12 text-right">{score}/{max}</span>
-      <div className="flex-1 h-1.5 bg-gray-800 rounded-full overflow-hidden">
+      <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
         <div
           className={`h-full rounded-full transition-all ${color}`}
           style={{ width: `${pct}%` }}
@@ -77,8 +77,8 @@ function FlagItem({ active, label }: { active: boolean; label: string }) {
     <span
       className={`px-1.5 py-0.5 text-[10px] rounded border font-mono ${
         active
-          ? "bg-emerald-950/60 text-emerald-400 border-emerald-800"
-          : "bg-gray-900 text-gray-600 border-gray-800"
+          ? "bg-emerald-50 text-emerald-600 border-emerald-800"
+          : "bg-white text-gray-400 border-gray-200"
       }`}
     >
       {label}
@@ -116,7 +116,7 @@ export default function GoldBusPanel() {
 
   if (loading) {
     return (
-      <div className="bg-gray-950 border border-gray-800 rounded-lg p-4">
+      <div className="bg-white border border-gray-200 rounded-lg p-4">
         <div className="flex items-center gap-2 text-gray-500 text-xs">
           <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" />
           加载黄金监控数据...
@@ -127,7 +127,7 @@ export default function GoldBusPanel() {
 
   if (error || !data) {
     return (
-      <div className="bg-gray-950 border border-gray-800 rounded-lg p-4">
+      <div className="bg-white border border-gray-200 rounded-lg p-4">
         <div className="flex items-center gap-2 text-gray-500 text-xs">
           <AlertTriangle size={14} />
           黄金监控数据暂不可用{error ? ` (${error})` : ""}
@@ -146,13 +146,13 @@ export default function GoldBusPanel() {
   return (
     <div className={`${regimeStyle.bg} border ${regimeStyle.border} rounded-lg overflow-hidden`}>
       {/* 标题栏 */}
-      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-gray-800/60">
-        <Activity size={14} className="text-yellow-400" />
-        <span className="text-xs font-semibold text-yellow-400 tracking-wide">
+      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-gray-200">
+        <Activity size={14} className="text-yellow-600" />
+        <span className="text-xs font-semibold text-yellow-600 tracking-wide">
           黄金宝宝巴士 · 宏观监控
         </span>
         {data.timestamp && (
-          <span className="ml-auto text-[10px] text-gray-600 font-mono">
+          <span className="ml-auto text-[10px] text-gray-400 font-mono">
             {(() => {
               try {
                 return new Date(data.timestamp).toLocaleString("zh-CN", {
@@ -218,7 +218,7 @@ export default function GoldBusPanel() {
         </div>
 
         {/* 第二行：趋势组合 + 多空结构 */}
-        <div className="grid grid-cols-2 gap-4 pt-2 border-t border-gray-800/60">
+        <div className="grid grid-cols-2 gap-4 pt-2 border-t border-gray-200">
           {/* 趋势 15m/1h/4h */}
           <div>
             <div className="flex items-center gap-1.5 mb-2">
@@ -227,17 +227,17 @@ export default function GoldBusPanel() {
             </div>
             <div className="flex items-center gap-2">
               <div className="flex flex-col items-center gap-0.5">
-                <span className="text-[9px] text-gray-600">15m</span>
+                <span className="text-[9px] text-gray-400">15m</span>
                 <TrendBadge sign={trend["15m"]} />
               </div>
-              <span className="text-gray-700">→</span>
+              <span className="text-gray-300">→</span>
               <div className="flex flex-col items-center gap-0.5">
-                <span className="text-[9px] text-gray-600">1h</span>
+                <span className="text-[9px] text-gray-400">1h</span>
                 <TrendBadge sign={trend["1h"]} />
               </div>
-              <span className="text-gray-700">→</span>
+              <span className="text-gray-300">→</span>
               <div className="flex flex-col items-center gap-0.5">
-                <span className="text-[9px] text-gray-600">4h</span>
+                <span className="text-[9px] text-gray-400">4h</span>
                 <TrendBadge sign={trend["4h"]} />
               </div>
             </div>
@@ -264,7 +264,7 @@ export default function GoldBusPanel() {
         </div>
 
         {/* 第三行：交易建议 */}
-        <div className="pt-2 border-t border-gray-800/60">
+        <div className="pt-2 border-t border-gray-200">
           <div className="flex items-start gap-2">
             <AlertTriangle size={13} className="text-yellow-500 mt-0.5 shrink-0" />
             <div>

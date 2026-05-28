@@ -7,8 +7,8 @@ interface Props {
 }
 
 const REGIME_BADGE: Record<string, { label: string; bg: string; text: string }> = {
-  trending: { label: "趋势", bg: "bg-purple-900/50", text: "text-purple-300" },
-  ranging:  { label: "震荡", bg: "bg-amber-900/50",  text: "text-amber-300" },
+  trending: { label: "趋势", bg: "bg-purple-50", text: "text-purple-700" },
+  ranging:  { label: "震荡", bg: "bg-blue-100/50",  text: "text-blue-600" },
 };
 const DIR_ICON: Record<string, string> = {
   bullish: "↗",
@@ -27,19 +27,19 @@ export default function RegimePanel({ data }: Props) {
   const boxShorts= boxSigs.filter((d) => d.boxSignal?.type === "short");
 
   return (
-    <div className="rounded-xl border border-gray-800 bg-gray-900/60 p-4 space-y-4">
+    <div className="rounded-xl border border-gray-200 bg-white p-4 space-y-4">
       {/* 标题栏 */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-base font-semibold text-gray-200">🔮 市场状态</span>
-          <span className="rounded bg-purple-900/40 px-2 py-0.5 text-xs text-purple-300">
+          <span className="text-base font-semibold text-gray-800">🔮 市场状态</span>
+          <span className="rounded bg-purple-50/80 px-2 py-0.5 text-xs text-purple-700">
             趋势 {trending.length}
           </span>
-          <span className="rounded bg-amber-900/40 px-2 py-0.5 text-xs text-amber-300">
+          <span className="rounded bg-blue-100/40 px-2 py-0.5 text-xs text-blue-600">
             震荡 {ranging.length}
           </span>
         </div>
-        <div className="text-[10px] text-gray-600">
+        <div className="text-[10px] text-gray-400">
           30m唐奇安通道 · 枢轴点结构 · EMA缎带(20/50/120)
         </div>
       </div>
@@ -47,7 +47,7 @@ export default function RegimePanel({ data }: Props) {
       {/* 趋势品种列表 */}
       {trending.length > 0 && (
         <div>
-          <div className="mb-2 text-xs font-medium text-purple-400">
+          <div className="mb-2 text-xs font-medium text-purple-600">
             📊 趋势行情 — 关注<span className="text-gray-500">突破策略（顺势）+ 回踩策略</span>
           </div>
           <div className="flex flex-wrap gap-1.5">
@@ -61,7 +61,7 @@ export default function RegimePanel({ data }: Props) {
       {/* 震荡品种列表 */}
       {ranging.length > 0 && (
         <div>
-          <div className="mb-2 text-xs font-medium text-amber-400">
+          <div className="mb-2 text-xs font-medium text-blue-500">
             📦 震荡行情 — 重点关注<span className="text-gray-500">突破策略 / 箱体策略</span>
           </div>
           <div className="flex flex-wrap gap-1.5">
@@ -74,19 +74,19 @@ export default function RegimePanel({ data }: Props) {
 
       {/* 箱体信号 */}
       {(boxLongs.length > 0 || boxShorts.length > 0) && (
-        <div className="border-t border-gray-800 pt-3">
-          <div className="mb-2 text-xs font-semibold text-amber-300">
+        <div className="border-t border-gray-200 pt-3">
+          <div className="mb-2 text-xs font-semibold text-blue-600">
             📦 箱体信号（震荡行情 · 触及唐奇安通道边沿）
           </div>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {/* 做多箱体 */}
             {boxLongs.length > 0 && (
-              <div className="rounded-lg border border-emerald-800/40 bg-emerald-900/10 p-3">
-                <div className="mb-1.5 text-xs font-medium text-emerald-400">
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50/20 p-3">
+                <div className="mb-1.5 text-xs font-medium text-emerald-600">
                   ▲ 做多（触下沿支撑）
                 </div>
                 {boxLongs.length === 0 ? (
-                  <p className="text-xs text-gray-600">暂无</p>
+                  <p className="text-xs text-gray-400">暂无</p>
                 ) : (
                   <div className="space-y-1">
                     {boxLongs.map((d) => (
@@ -98,12 +98,12 @@ export default function RegimePanel({ data }: Props) {
             )}
             {/* 做空箱体 */}
             {boxShorts.length > 0 && (
-              <div className="rounded-lg border border-red-800/40 bg-red-900/10 p-3">
-                <div className="mb-1.5 text-xs font-medium text-red-400">
+              <div className="rounded-lg border border-red-200 bg-red-50/20 p-3">
+                <div className="mb-1.5 text-xs font-medium text-red-600">
                   ▼ 做空（触上沿阻力）
                 </div>
                 {boxShorts.length === 0 ? (
-                  <p className="text-xs text-gray-600">暂无</p>
+                  <p className="text-xs text-gray-400">暂无</p>
                 ) : (
                   <div className="space-y-1">
                     {boxShorts.map((d) => (
@@ -118,10 +118,10 @@ export default function RegimePanel({ data }: Props) {
       )}
 
       {/* 说明 */}
-      <div className="text-[10px] text-gray-600 leading-relaxed">
-        <span className="text-purple-400">趋势</span> = 唐奇安通道扩张 + 枢轴HH/HL或LL/LH + EMA多/空头排列 + 斜率显著
+      <div className="text-[10px] text-gray-400 leading-relaxed">
+        <span className="text-purple-600">趋势</span> = 唐奇安通道扩张 + 枢轴HH/HL或LL/LH + EMA多/空头排列 + 斜率显著
         &nbsp;·&nbsp;
-        <span className="text-amber-400">震荡</span> = 通道走平 + 枢轴无序 + EMA缠绕 + 斜率≈0
+        <span className="text-blue-500">震荡</span> = 通道走平 + 枢轴无序 + EMA缠绕 + 斜率≈0
         &nbsp;·&nbsp;
         箱体信号 = 震荡行情中价格触及通道上沿(空)/下沿(多)
       </div>
@@ -140,7 +140,7 @@ function RegimeChip({ d }: { d: FuturesStatus }) {
       <span className={`font-medium ${badge.text}`}>{d.symbol}</span>
       <span className="text-gray-500">{arrow}</span>
       <span className="text-gray-400 text-[10px]">{chg}</span>
-      <span className="text-gray-600 text-[10px]">{regime.score}分</span>
+      <span className="text-gray-400 text-[10px]">{regime.score}分</span>
     </div>
   );
 }
@@ -153,7 +153,7 @@ function BoxItem({ d }: { d: FuturesStatus }) {
   return (
     <div className="flex items-center justify-between text-xs">
       <div className="flex items-center gap-1.5">
-        <span className={`font-medium ${isLong ? "text-emerald-400" : "text-red-400"}`}>
+        <span className={`font-medium ${isLong ? "text-emerald-600" : "text-red-600"}`}>
           {isLong ? "●" : "●"} {d.symbol}
         </span>
         <span className="text-gray-500">{chg}</span>
@@ -162,8 +162,8 @@ function BoxItem({ d }: { d: FuturesStatus }) {
         <span>
           {isLong ? "下沿" : "上沿"}{sig.boundaryPrice}
         </span>
-        <span className="text-gray-600">距{sig.distPct.toFixed(2)}%</span>
-        <span className="text-gray-700 text-[10px]">
+        <span className="text-gray-400">距{sig.distPct.toFixed(2)}%</span>
+        <span className="text-gray-300 text-[10px]">
           [{sig.boxLower}~{sig.boxUpper}]
         </span>
       </div>

@@ -125,24 +125,24 @@ export default function FuturesDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-[#08080c] text-[#e4e4ec] font-sans">
+    <div className="min-h-screen bg-[#f4f5f7] text-gray-900 font-sans">
       <div className="max-w-screen-2xl mx-auto p-4 space-y-4">
 
         {/* ── 顶栏：Logo + 导航 + 切换 ───────────────── */}
-        <header className="flex items-center gap-3 pb-3 border-b border-[#1e1f2a]">
-          <Zap size={18} className="text-amber-500" />
-          <span className="text-sm font-bold tracking-tight text-amber-500">
+        <header className="flex items-center gap-3 pb-3 border-b border-gray-200">
+          <Zap size={18} className="text-blue-600" />
+          <span className="text-sm font-bold tracking-tight text-blue-600">
             期货监控
           </span>
-          <span className="text-[10px] text-[#585868]">v2</span>
+          <span className="text-[10px] text-gray-400">v2</span>
 
           <div className="flex items-center gap-1.5 ml-6">
             <button
               onClick={() => handleTimeframeChange("30min")}
               className={`px-3 py-1.5 text-xs rounded-md font-medium transition-all ${
                 timeframe === "30min"
-                  ? "bg-amber-500/15 text-amber-400 ring-1 ring-amber-500/30"
-                  : "text-[#9090a0] hover:text-[#e4e4ec] hover:bg-[#161720]"
+                  ? "bg-blue-50/90 text-blue-500 ring-1 ring-blue-300/50"
+                  : "text-gray-500 hover:text-gray-900 hover:bg-gray-100"
               }`}
             >
               <Activity size={11} className="inline mr-1" />
@@ -152,8 +152,8 @@ export default function FuturesDashboard() {
               onClick={() => handleTimeframeChange("daily")}
               className={`px-3 py-1.5 text-xs rounded-md font-medium transition-all ${
                 timeframe === "daily"
-                  ? "bg-amber-500/15 text-amber-400 ring-1 ring-amber-500/30"
-                  : "text-[#9090a0] hover:text-[#e4e4ec] hover:bg-[#161720]"
+                  ? "bg-blue-50/90 text-blue-500 ring-1 ring-blue-300/50"
+                  : "text-gray-500 hover:text-gray-900 hover:bg-gray-100"
               }`}
             >
               <CalendarDays size={11} className="inline mr-1" />
@@ -165,14 +165,14 @@ export default function FuturesDashboard() {
 
           <Link
             href="/gold"
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md font-medium transition-all text-[#9090a0] hover:text-amber-400 hover:bg-amber-500/10"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md font-medium transition-all text-gray-500 hover:text-blue-500 hover:bg-blue-50/70"
           >
             <TrendingUp size={12} />
             黄金监控
           </Link>
 
           {timeframe === "daily" && (
-            <span className="text-[10px] text-[#585868] ml-2">日K随脚本同步更新</span>
+            <span className="text-[10px] text-gray-400 ml-2">日K随脚本同步更新</span>
           )}
         </header>
 
@@ -218,15 +218,15 @@ export default function FuturesDashboard() {
         {isLoading && data.length === 0 ? (
           <div className="space-y-2">
             {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="h-10 bg-[#0f1016] rounded-md animate-pulse"
+              <div key={i} className="h-10 bg-white rounded-md animate-pulse"
                 style={{ opacity: 1 - i * 0.08 }} />
             ))}
           </div>
         ) : (
           <div className="relative">
             {isLoading && (
-              <div className="absolute top-3 right-3 z-30 flex items-center gap-2 px-2.5 py-1 bg-[#0f1016]/95 backdrop-blur border border-[#1e1f2a] rounded-md text-xs text-[#9090a0]">
-                <div className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse" />
+              <div className="absolute top-3 right-3 z-30 flex items-center gap-2 px-2.5 py-1 bg-white/95 backdrop-blur border border-gray-200 rounded-md text-xs text-gray-500">
+                <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-pulse" />
                 拉取数据...
               </div>
             )}
@@ -235,7 +235,7 @@ export default function FuturesDashboard() {
         )}
 
         {/* ── 页脚 ────────────────────────────────────── */}
-        <footer className="flex items-center justify-between text-[10px] text-[#585868] pt-4 border-t border-[#1e1f2a]">
+        <footer className="flex items-center justify-between text-[10px] text-gray-400 pt-4 border-t border-gray-200">
           <div className="flex gap-4">
             <span>AKShare · 新浪财经</span>
             <span>30min K 线</span>
@@ -244,7 +244,7 @@ export default function FuturesDashboard() {
           <div className="flex gap-3">
             <Legend color="bg-red-500" label="上涨/上行" />
             <Legend color="bg-emerald-500" label="下跌/下行" />
-            <Legend color="bg-[#585868]" label="持平" />
+            <Legend color="bg-gray-400" label="持平" />
           </div>
         </footer>
       </div>
@@ -263,28 +263,28 @@ function DataSourceBanner({ source, updatedAt }: { source: DataSource; updatedAt
 
   if (source === "github-actions" || source === "akshare") {
     return (
-      <div className="flex items-center gap-2 px-3 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-md text-xs text-emerald-400">
+      <div className="flex items-center gap-2 px-3 py-2 bg-emerald-50/80 border border-emerald-500/20 rounded-md text-xs text-emerald-600">
         <Database size={12} />
         <span className="font-medium">实盘数据</span>
-        <span className="text-emerald-400/60">— 数据源已连接</span>
-        {updatedAt && <span className="ml-auto text-emerald-400/40 font-mono text-[10px]">{fmtTime(updatedAt)}</span>}
+        <span className="text-emerald-600/60">— 数据源已连接</span>
+        {updatedAt && <span className="ml-auto text-emerald-600/40 font-mono text-[10px]">{fmtTime(updatedAt)}</span>}
       </div>
     );
   }
 
   if (source === "mock") {
     return (
-      <div className="flex items-center gap-2 px-3 py-2 bg-amber-500/10 border border-amber-500/20 rounded-md text-xs text-amber-400">
+      <div className="flex items-center gap-2 px-3 py-2 bg-blue-50/70 border border-blue-200 rounded-md text-xs text-blue-500">
         <WifiOff size={12} />
         <span className="font-medium">模拟数据</span>
-        <span className="text-amber-400/60">— 演示模式</span>
+        <span className="text-blue-500/60">— 演示模式</span>
       </div>
     );
   }
 
   return (
-    <div className="flex items-center gap-2 px-3 py-2 bg-[#0f1016] border border-[#1e1f2a] rounded-md text-xs text-[#585868]">
-      <div className="w-1.5 h-1.5 rounded-full bg-[#585868] animate-pulse" />
+    <div className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-md text-xs text-gray-400">
+      <div className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-pulse" />
       加载数据...
     </div>
   );

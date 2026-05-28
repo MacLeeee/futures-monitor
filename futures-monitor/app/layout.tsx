@@ -15,8 +15,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "期货品种监控 | Futures Monitor — Redesign v2",
-  description: "30分钟周期期货品种状态监控 Dashboard — 均线、MACD、成交量、持仓量 · Inter + Amber Design System",
+  title: "期货品种监控 | Futures Monitor",
+  description: "30分钟周期期货品种状态监控 Dashboard — 均线、MACD、成交量、持仓量",
 };
 
 export default function RootLayout({
@@ -25,8 +25,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="zh-CN" className="dark">
-      <body className={`${jetbrainsMono.variable} ${inter.variable} font-sans bg-gray-950 text-gray-100 antialiased`}>
+    <html lang="zh-CN">
+      <body className={`${jetbrainsMono.variable} ${inter.variable} font-sans bg-[#f4f5f7] text-gray-900 antialiased`}>
         {children}
       </body>
     </html>

@@ -1,8 +1,6 @@
 "use client";
 // ============================================================
-// 主 Dashboard 容器 — Redesign v2
-// 字体: Inter (标题) + JetBrains Mono (数据)
-// 配色: 统一琥珀金 accent
+// 主 Dashboard 容器 — 浅色专业版
 // ============================================================
 
 import React, { useState, useEffect, useCallback } from "react";
@@ -13,18 +11,16 @@ import FilterBar from "./FilterBar";
 import SignalPanel from "./SignalPanel";
 import DipBuyPanel from "./DipBuyPanel";
 import CurrentPositions from "./CurrentPositions";
-import RegimePanel from "./RegimePanel";
-import { AlertCircle, WifiOff, Database, Activity, CalendarDays, TrendingUp, Zap } from "lucide-react";
+import { Database, WifiOff, TrendingUp, Zap } from "lucide-react";
 import Link from "next/link";
 
 const AUTO_REFRESH_INTERVAL = 30 * 60 * 1000;
-type Timeframe = "30min" | "daily";
 
 const GITHUB_RAW = "https://raw.githubusercontent.com/MacLeeee/futures-monitor/main/futures-monitor/public";
-function getDataUrl(tf: Timeframe): string {
+function getDataUrl(): string {
   const isLocalhost = typeof window !== "undefined" && window.location.port !== "";
   const base = isLocalhost ? "" : GITHUB_RAW;
-  return tf === "daily" ? `${base}/data_daily.json` : `${base}/data.json`;
+  return `${base}/data.json`;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -43,7 +39,6 @@ function normalizeMacd(data: any[]): FuturesStatus[] {
 type DataSource = "akshare" | "mock" | "github-actions" | null;
 
 export default function FuturesDashboard() {
-  const [timeframe, setTimeframe] = useState<Timeframe>("30min");
   const [data, setData] = useState<FuturesStatus[]>([]);
   const [filteredData, setFilteredData] = useState<FuturesStatus[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -57,11 +52,10 @@ export default function FuturesDashboard() {
   const [selectedCategory, setSelectedCategory] = useState("全部");
   const [selectedMAStatus, setSelectedMAStatus] = useState("全部");
 
-  const loadData = useCallback(async (tf: Timeframe = timeframe) => {
+  const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const base = getDataUrl(tf);
-      const url = `${base}?t=${Date.now()}`;
+      const url = `${getDataUrl()}?t=${Date.now()}`;
       const res = await fetch(url, { signal: AbortSignal.timeout(20000) });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
@@ -75,7 +69,7 @@ export default function FuturesDashboard() {
       setLastRefresh(new Date());
       setNextRefreshIn(AUTO_REFRESH_INTERVAL);
     }
-  }, [timeframe]);
+  }, []);
 
   const loadPositions = useCallback(async () => {
     try {
@@ -103,13 +97,9 @@ export default function FuturesDashboard() {
     return () => clearInterval(tick);
   }, [autoRefresh, lastRefresh]);
 
-  const handleTimeframeChange = useCallback((tf: Timeframe) => {
-    setTimeframe(tf); setData([]); loadData(tf);
-  }, [loadData]);
-
   const handleManualRefresh = useCallback(() => {
-    setNextRefreshIn(AUTO_REFRESH_INTERVAL); loadData(timeframe);
-  }, [loadData, timeframe]);
+    setNextRefreshIn(AUTO_REFRESH_INTERVAL); loadData();
+  }, [loadData]);
 
   useEffect(() => {
     let result = data;
@@ -128,38 +118,13 @@ export default function FuturesDashboard() {
     <div className="min-h-screen bg-[#f4f5f7] text-gray-900 font-sans">
       <div className="max-w-screen-2xl mx-auto p-4 space-y-4">
 
-        {/* ── 顶栏：Logo + 导航 + 切换 ───────────────── */}
+        {/* ── 顶栏 ───────────────── */}
         <header className="flex items-center gap-3 pb-3 border-b border-gray-200">
           <Zap size={18} className="text-blue-600" />
           <span className="text-sm font-bold tracking-tight text-blue-600">
             期货监控
           </span>
-          <span className="text-[10px] text-gray-400">v2</span>
-
-          <div className="flex items-center gap-1.5 ml-6">
-            <button
-              onClick={() => handleTimeframeChange("30min")}
-              className={`px-3 py-1.5 text-xs rounded-md font-medium transition-all ${
-                timeframe === "30min"
-                  ? "bg-blue-50/90 text-blue-500 ring-1 ring-blue-300/50"
-                  : "text-gray-500 hover:text-gray-900 hover:bg-gray-100"
-              }`}
-            >
-              <Activity size={11} className="inline mr-1" />
-              30分钟
-            </button>
-            <button
-              onClick={() => handleTimeframeChange("daily")}
-              className={`px-3 py-1.5 text-xs rounded-md font-medium transition-all ${
-                timeframe === "daily"
-                  ? "bg-blue-50/90 text-blue-500 ring-1 ring-blue-300/50"
-                  : "text-gray-500 hover:text-gray-900 hover:bg-gray-100"
-              }`}
-            >
-              <CalendarDays size={11} className="inline mr-1" />
-              日K
-            </button>
-          </div>
+          <span className="text-[10px] text-gray-400">30min</span>
 
           <div className="flex-1" />
 
@@ -170,10 +135,6 @@ export default function FuturesDashboard() {
             <TrendingUp size={12} />
             黄金监控
           </Link>
-
-          {timeframe === "daily" && (
-            <span className="text-[10px] text-gray-400 ml-2">日K随脚本同步更新</span>
-          )}
         </header>
 
         {/* ── 数据源状态 ─────────────────────────────── */}
@@ -187,8 +148,7 @@ export default function FuturesDashboard() {
           onToggleAutoRefresh={() => setAutoRefresh((v) => !v)}
           onManualRefresh={handleManualRefresh}
           isLoading={isLoading}
-          nextRefreshIn={autoRefresh && timeframe === "30min" ? formatCountdown(nextRefreshIn) : null}
-          timeframe={timeframe}
+          nextRefreshIn={autoRefresh ? formatCountdown(nextRefreshIn) : null}
         />
 
         {/* ── 筛选栏 ──────────────────────────────────── */}
@@ -204,15 +164,12 @@ export default function FuturesDashboard() {
         {/* ── 信号面板 ────────────────────────────────── */}
         <SignalPanel data={data} />
         <DipBuyPanel data={data} />
-        <RegimePanel data={data} />
 
         {/* ── 持仓 ────────────────────────────────────── */}
-        {timeframe === "30min" && (
-          <CurrentPositions
-            positions={positions}
-            currentPrices={Object.fromEntries(data.map((d) => [d.symbol, d.price]))}
-          />
-        )}
+        <CurrentPositions
+          positions={positions}
+          currentPrices={Object.fromEntries(data.map((d) => [d.symbol, d.price]))}
+        />
 
         {/* ── 数据表格 ────────────────────────────────── */}
         {isLoading && data.length === 0 ? (
@@ -240,11 +197,6 @@ export default function FuturesDashboard() {
             <span>AKShare · 新浪财经</span>
             <span>30min K 线</span>
             <span>MA20/60 · MACD · Vol · OI</span>
-          </div>
-          <div className="flex gap-3">
-            <Legend color="bg-red-500" label="上涨/上行" />
-            <Legend color="bg-emerald-500" label="下跌/下行" />
-            <Legend color="bg-gray-400" label="持平" />
           </div>
         </footer>
       </div>
@@ -287,14 +239,5 @@ function DataSourceBanner({ source, updatedAt }: { source: DataSource; updatedAt
       <div className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-pulse" />
       加载数据...
     </div>
-  );
-}
-
-function Legend({ color, label }: { color: string; label: string }) {
-  return (
-    <span className="flex items-center gap-1.5">
-      <span className={`w-1.5 h-1.5 rounded-full ${color}`} />
-      {label}
-    </span>
   );
 }

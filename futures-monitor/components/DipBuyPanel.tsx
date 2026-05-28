@@ -77,12 +77,6 @@ export default function DipBuyPanel({ data }: DipBuyPanelProps) {
               emptyText="暂无品种满足做空反抽条件"
             />
           </div>
-
-          <div className="flex flex-wrap gap-x-4 gap-y-1 pt-1 border-t border-gray-200 text-[10px] text-gray-400">
-            <span><span className="text-teal-500">做多回踩</span>: price&gt;MA60 · 贴近MA20(steep)/MA60(gentle) · 15m死叉+粘合</span>
-            <span><span className="text-orange-500">做空反抽</span>: price&lt;MA60 · 贴近MA20(declining)/MA60 · 15m金叉+粘合</span>
-            <span className="ml-auto text-gray-300">回踩距离≤0.5% · 放量确认</span>
-          </div>
         </div>
       )}
     </div>
@@ -98,7 +92,6 @@ function PullbackColumn({ title, subtitle, colorClass, items, emptyText }: {
     <div>
       <div className="mb-2">
         <span className={`text-xs font-bold ${isLong ? "text-teal-400" : "text-orange-600"}`}>{title}</span>
-        <span className={`ml-2 text-[10px] ${isLong ? "text-teal-800" : "text-orange-800"}`}>{subtitle}</span>
       </div>
       {items.length === 0 ? (
         <p className="text-xs text-gray-300 italic py-2">{emptyText}</p>

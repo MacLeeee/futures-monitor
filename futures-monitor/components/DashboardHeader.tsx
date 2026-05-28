@@ -15,7 +15,6 @@ interface DashboardHeaderProps {
   onManualRefresh: () => void;
   isLoading: boolean;
   nextRefreshIn: string | null;
-  timeframe?: "30min" | "daily";
 }
 
 export default function DashboardHeader({
@@ -26,7 +25,6 @@ export default function DashboardHeader({
   onManualRefresh,
   isLoading,
   nextRefreshIn,
-  timeframe = "30min",
 }: DashboardHeaderProps) {
   const [now, setNow] = useState<Date | null>(null);
 
@@ -63,18 +61,16 @@ export default function DashboardHeader({
         </div>
 
         <div className="flex items-center gap-2">
-          {timeframe === "30min" && (
-            <button
-              onClick={onToggleAutoRefresh}
-              className={`px-3 py-1.5 text-xs rounded-md font-medium transition-all ${
-                autoRefresh
-                  ? "bg-blue-50/90 text-blue-500 ring-1 ring-blue-300/50"
-                  : "text-gray-400 hover:text-gray-500"
-              }`}
-            >
-              {autoRefresh ? `● ${nextRefreshIn ?? "自动"}` : "○ 暂停"}
-            </button>
-          )}
+          <button
+            onClick={onToggleAutoRefresh}
+            className={`px-3 py-1.5 text-xs rounded-md font-medium transition-all ${
+              autoRefresh
+                ? "bg-blue-50/90 text-blue-500 ring-1 ring-blue-300/50"
+                : "text-gray-400 hover:text-gray-500"
+            }`}
+          >
+            {autoRefresh ? `● ${nextRefreshIn ?? "自动"}` : "○ 暂停"}
+          </button>
           <button
             onClick={onManualRefresh}
             disabled={isLoading}

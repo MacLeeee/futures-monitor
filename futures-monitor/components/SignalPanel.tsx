@@ -82,7 +82,6 @@ export default function SignalPanel({ data }: SignalPanelProps) {
           </div>
         </div>
         <div className="flex items-center gap-2 text-gray-500">
-          <span className="text-[10px]">30m均线斜率同向 · 15m MACD扩口 · 15m放量&gt;均量</span>
           {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
         </div>
       </button>
@@ -112,13 +111,6 @@ export default function SignalPanel({ data }: SignalPanelProps) {
               ))}
             </div>
           )}
-
-          <div className="flex flex-wrap gap-x-4 gap-y-1 pt-1 border-t border-gray-200 text-[10px] text-gray-400">
-            <span><span className="text-blue-600">MA 30m</span> = 方向层（斜率同向上/下）</span>
-            <span><span className="text-blue-500">MACD 15m</span> = 触发层（金/死叉快速扩口）</span>
-            <span><span className="text-orange-600">V 15m</span> = 放量且高于均量（双确认）</span>
-            <span className="ml-auto text-gray-300"><span className="text-purple-600">+OI</span> = 增仓（或有加分项，不影响触发）</span>
-          </div>
         </div>
       )}
     </div>
@@ -137,7 +129,6 @@ function BreakoutColumn({ title, subtitle, direction, signals, near }: {
       <div className="flex items-center gap-2 mb-2.5">
         {isLong ? <TrendingUp size={13} className="text-red-600" /> : <TrendingDown size={13} className="text-emerald-600" />}
         <span className={`text-sm font-bold ${isLong ? "text-red-700" : "text-emerald-700"}`}>{title}</span>
-        <span className="text-[10px] text-gray-400">{subtitle}</span>
       </div>
       {signals.length > 0 ? (
         <div className="space-y-1.5 mb-2">

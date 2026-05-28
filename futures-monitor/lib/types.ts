@@ -175,3 +175,47 @@ export interface AKShareResponse {
   symbol: string;
   data: KLineData[];
 }
+
+// ── 黄金宝宝巴士 ─────────────────────────────────────────────────
+
+export type GoldRegime =
+  | "Cash Liquidation"
+  | "Rates-Dollar Bearish Gold"
+  | "Clean Bullish Gold"
+  | "Reflation Gold"
+  | "Fiscal / Debasement Hedge"
+  | "Bullish Price Override"
+  | "Bearish Price Override"
+  | "Mixed";
+
+export type TrendSign = "Bull" | "Bear" | "Neutral";
+
+export interface GoldStructureFlags {
+  vwap_reclaim: boolean;
+  vwap_reject: boolean;
+  near_fib_618: boolean;
+  above_vwap: boolean;
+  below_vwap: boolean;
+  higher_low: boolean;
+  lower_high: boolean;
+}
+
+export interface GoldBusData {
+  timestamp: string;
+  regime: GoldRegime;
+  regime_guide: string;
+  liquidity_score: number;
+  liquidity_state: string;
+  trend_15m_1h_4h: {
+    "15m": TrendSign;
+    "1h": TrendSign;
+    "4h": TrendSign;
+  };
+  structure: {
+    long_score: number;
+    short_score: number;
+    flags: GoldStructureFlags;
+  };
+  advice: string;
+  error?: string;
+}

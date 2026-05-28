@@ -13,6 +13,7 @@ import SignalPanel from "./SignalPanel";
 import DipBuyPanel from "./DipBuyPanel";
 import CurrentPositions from "./CurrentPositions";
 import RegimePanel from "./RegimePanel";
+import GoldBusPanel from "./GoldBusPanel";
 import { AlertCircle, WifiOff, Database, Activity, CalendarDays } from "lucide-react";
 
 // 30 分钟自动刷新；日K 不自动刷新（每日复盘即可）
@@ -217,6 +218,9 @@ export default function FuturesDashboard() {
 
         {/* 市场状态面板（趋势/震荡 + 箱体信号） */}
         <RegimePanel data={data} />
+
+        {/* 黄金宝宝巴士 · 宏观监控面板 */}
+        <GoldBusPanel />
 
         {/* 当前持仓面板（仅30min实盘模式显示） */}
         {timeframe === "30min" && (

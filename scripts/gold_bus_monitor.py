@@ -338,9 +338,9 @@ def get_window_change(
     steps_back = max(1, mins // 15)
     prev_row = None
 
-    # 主逻辑：位置索引
+    # 主逻辑：位置索引（每行≈15min间隔）
     if len(history_df) > steps_back:
-        prev_row = history_df.iloc[-(steps_back + 1)]
+        prev_row = history_df.iloc[-steps_back]
     # 回退：墙钟时间
     if prev_row is None:
         prev_row = nearest_past_row(history_df, now - timedelta(minutes=mins))
@@ -617,6 +617,10 @@ def analyze_once(history_path: Path, data_source: str = "yfinance") -> Dict[str,
     append_snapshot(history_path, latest, ts)
     regime_guide = REGIME_GUIDE.get(regime, REGIME_GUIDE["Mixed"])
 
+    # 把 Optional[float] 转为 float|null 便于 JSON 序列化
+    def safe_chg(d: Dict[str, Optional[float]]) -> Dict[str, Optional[float]]:
+        return {k: (round(v, 4) if v is not None else None) for k, v in d.items()}
+
     return {
         "timestamp": ts.isoformat(timespec="seconds"),
         "regime": regime,
@@ -630,6 +634,12 @@ def analyze_once(history_path: Path, data_source: str = "yfinance") -> Dict[str,
             "flags": flags,
         },
         "advice": advice,
+        "etf_snapshot": {
+            "prices": {k: round(v, 2) for k, v in latest.items()},
+            "chg_15m": safe_chg(chg_15),
+            "chg_60m": safe_chg(chg_60),
+            "chg_240m": safe_chg(chg_240),
+        },
     }
 
 

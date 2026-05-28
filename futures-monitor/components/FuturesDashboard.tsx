@@ -13,8 +13,8 @@ import SignalPanel from "./SignalPanel";
 import DipBuyPanel from "./DipBuyPanel";
 import CurrentPositions from "./CurrentPositions";
 import RegimePanel from "./RegimePanel";
-import GoldBusPanel from "./GoldBusPanel";
-import { AlertCircle, WifiOff, Database, Activity, CalendarDays } from "lucide-react";
+import { AlertCircle, WifiOff, Database, Activity, CalendarDays, TrendingUp } from "lucide-react";
+import Link from "next/link";
 
 // 30 分钟自动刷新；日K 不自动刷新（每日复盘即可）
 const AUTO_REFRESH_INTERVAL = 30 * 60 * 1000;
@@ -183,6 +183,14 @@ export default function FuturesDashboard() {
           {timeframe === "daily" && (
             <span className="ml-2 text-[10px] text-gray-600">日K数据每次运行脚本时同步更新，无自动推送</span>
           )}
+          <div className="flex-1" />
+          <Link
+            href="/gold"
+            className="flex items-center gap-1.5 px-4 py-1.5 text-xs rounded border transition-colors text-gray-500 border-gray-800 hover:text-yellow-400 hover:border-yellow-700"
+          >
+            <TrendingUp size={12} />
+            黄金监控
+          </Link>
         </div>
 
         {/* 实盘/模拟数据状态横幅 */}
@@ -218,9 +226,6 @@ export default function FuturesDashboard() {
 
         {/* 市场状态面板（趋势/震荡 + 箱体信号） */}
         <RegimePanel data={data} />
-
-        {/* 黄金宝宝巴士 · 宏观监控面板 */}
-        <GoldBusPanel />
 
         {/* 当前持仓面板（仅30min实盘模式显示） */}
         {timeframe === "30min" && (

@@ -218,4 +218,10 @@ export interface GoldBusData {
   };
   advice: string;
   error?: string;
+  etf_snapshot?: {
+    prices: Record<string, number>;
+    chg_15m: Record<string, number | null>;
+    chg_60m: Record<string, number | null>;
+    chg_240m: Record<string, number | null>;
+  };
 }

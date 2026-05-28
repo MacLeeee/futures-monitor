@@ -325,15 +325,15 @@ export default function GoldPage() {
               <Bar value={struct.short_score} max={10} color="bg-red-500" label="Short" />
             </div>
             <div className="flex flex-wrap gap-1.5">
-              <Flag active={struct.flags.vwap_reclaim} label="VWAP↑" desc="突破均价" />
-              <Flag active={struct.flags.vwap_reject} label="VWAP↓" desc="跌破均价" />
+              <Flag active={struct.flags.vwap_reclaim ?? false} label="VWAP↑" desc="突破均价" />
+              <Flag active={struct.flags.vwap_reject ?? false} label="VWAP↓" desc="跌破均价" />
               <Flag active={struct.flags.near_key_fib ?? struct.flags.near_fib_618} label="KeyFib" desc="关键斐波" />
-              <Flag active={struct.flags.bull_sweep} label="Sweep↑" desc="多头扫损" />
-              <Flag active={struct.flags.bear_sweep} label="Sweep↓" desc="空头扫损" />
-              <Flag active={struct.flags.double_bottom} label="2Btm" desc="双底" />
-              <Flag active={struct.flags.double_top} label="2Top" desc="双顶" />
-              <Flag active={struct.flags.higher_low} label="HL" desc="低点抬升" />
-              <Flag active={struct.flags.lower_high} label="LH" desc="高点降低" />
+              <Flag active={struct.flags.bull_sweep ?? false} label="Sweep↑" desc="多头扫损" />
+              <Flag active={struct.flags.bear_sweep ?? false} label="Sweep↓" desc="空头扫损" />
+              <Flag active={struct.flags.double_bottom ?? false} label="2Btm" desc="双底" />
+              <Flag active={struct.flags.double_top ?? false} label="2Top" desc="双顶" />
+              <Flag active={struct.flags.higher_low ?? false} label="HL" desc="低点抬升" />
+              <Flag active={struct.flags.lower_high ?? false} label="LH" desc="高点降低" />
             </div>
           </div>
         </div>

@@ -17,6 +17,7 @@ const REGIME_COLORS: Record<GoldRegime, { bg: string; border: string; text: stri
   "Rates-Dollar Bearish Gold":   { bg: "bg-orange-950/70", border: "border-orange-700", text: "text-orange-400" },
   "Clean Bullish Gold":          { bg: "bg-emerald-950/70", border: "border-emerald-700", text: "text-emerald-400" },
   "Reflation Gold":              { bg: "bg-amber-950/70",  border: "border-amber-700",  text: "text-amber-400" },
+  "Defensive Gold":              { bg: "bg-slate-950/70",  border: "border-slate-700",  text: "text-slate-400" },
   "Fiscal / Debasement Hedge":   { bg: "bg-purple-950/70", border: "border-purple-700", text: "text-purple-400" },
   "Bullish Price Override":      { bg: "bg-cyan-950/70",   border: "border-cyan-700",   text: "text-cyan-400" },
   "Bearish Price Override":      { bg: "bg-pink-950/70",   border: "border-pink-700",   text: "text-pink-400" },

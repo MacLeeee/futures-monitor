@@ -15,8 +15,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "期货品种监控 | Futures Monitor",
-  description: "30分钟周期期货品种状态监控 Dashboard — 均线、MACD、成交量、持仓量",
+  title: "期货品种监控 | Futures Monitor — Redesign v2",
+  description: "30分钟周期期货品种状态监控 Dashboard — 均线、MACD、成交量、持仓量 · Inter + Amber Design System",
 };
 
 export default function RootLayout({

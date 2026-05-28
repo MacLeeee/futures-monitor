@@ -14,22 +14,22 @@ export default function CurrentPositions({ positions, currentPrices }: Props) {
 
   if (open.length === 0) {
     return (
-      <div className="rounded-xl border border-gray-200 bg-white p-3">
+      <div className="rounded-xl border border-stone-200 bg-white p-3">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-gray-800">📋 当前持仓</span>
-          <span className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-500">0 笔</span>
+          <span className="text-sm font-semibold text-stone-800">📋 当前持仓</span>
+          <span className="rounded bg-stone-100 px-2 py-0.5 text-xs text-stone-500">0 笔</span>
         </div>
-        <p className="mt-2 text-xs text-gray-400">暂无持仓记录</p>
+        <p className="mt-2 text-xs text-stone-400">暂无持仓记录</p>
       </div>
     );
   }
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-3">
+    <div className="rounded-xl border border-stone-200 bg-white p-3">
       {/* 标题行 */}
       <div className="mb-2.5 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-gray-800">📋 当前持仓</span>
+          <span className="text-sm font-semibold text-stone-800">📋 当前持仓</span>
           <span className="rounded bg-sky-100/50 px-1.5 py-0.5 text-[10px] text-sky-600 font-medium">
             {open.length} 笔
           </span>
@@ -38,7 +38,7 @@ export default function CurrentPositions({ positions, currentPrices }: Props) {
         </div>
         <a
           href="/trades"
-          className="text-[11px] text-gray-400 hover:text-gray-700 transition-colors"
+          className="text-[11px] text-stone-400 hover:text-stone-700 transition-colors"
         >
           完整记录 →
         </a>
@@ -98,7 +98,7 @@ function PositionChip({ pos, floatPts }: { pos: Position; floatPts: number }) {
       <span className={`text-[10px] font-bold ${dirColor}`}>
         {isLong ? "▲" : "▼"}
       </span>
-      <span className="text-[11px] font-medium text-gray-800">{pos.symbol}</span>
+      <span className="text-[11px] font-medium text-stone-800">{pos.symbol}</span>
       <span className={`text-[10px] ${pnlColor}`}>
         {floatPts >= 0 ? "+" : ""}{floatPts.toFixed(1)}
       </span>

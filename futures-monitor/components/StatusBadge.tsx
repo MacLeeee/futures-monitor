@@ -12,8 +12,8 @@ export function MABadge({ status, cumulative }: { status: string; cumulative: nu
   const cfg = {
     Upward:   { label: "上行", color: "text-red-600",   bg: "bg-red-50",   border: "border-red-200",   Icon: TrendingUp },
     Downward: { label: "下行", color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-200", Icon: TrendingDown },
-    Silent:   { label: "静默", color: "text-gray-400",  bg: "bg-gray-100",  border: "border-gray-300",  Icon: Minus },
-  }[status] ?? { label: status, color: "text-gray-400", bg: "bg-gray-100", border: "border-gray-300", Icon: Minus };
+    Silent:   { label: "静默", color: "text-stone-400",  bg: "bg-stone-100",  border: "border-stone-300",  Icon: Minus },
+  }[status] ?? { label: status, color: "text-stone-400", bg: "bg-stone-100", border: "border-stone-300", Icon: Minus };
 
   const { label, color, bg, border, Icon } = cfg;
 
@@ -21,7 +21,7 @@ export function MABadge({ status, cumulative }: { status: string; cumulative: nu
     <div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium border ${bg} ${border} ${color}`}>
       <Icon size={11} />
       <span>{label}</span>
-      <span className="text-gray-500 font-mono">×{cumulative}</span>
+      <span className="text-stone-500 font-mono">×{cumulative}</span>
     </div>
   );
 }
@@ -46,7 +46,7 @@ export function MACDBadge({
     : { label: "死叉区", color: "text-emerald-700", bg: "bg-emerald-50/90", border: "border-green-700" };
 
   // 走扩/粘合颜色：走扩=橙色高亮，粘合=天蓝
-  const expandColor = rapidExpanding ? "text-blue-500" : "text-sky-600";
+  const expandColor = rapidExpanding ? "text-amber-500" : "text-sky-600";
   const expandLabel = rapidExpanding ? "走扩" : "粘合";
 
   return (
@@ -55,7 +55,7 @@ export function MACDBadge({
       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold border ${signCfg.bg} ${signCfg.border} ${signCfg.color}`}>
         {isPositive ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
         {signCfg.label}
-        <span className="text-gray-500 font-mono font-normal">×{cumulative}</span>
+        <span className="text-stone-500 font-mono font-normal">×{cumulative}</span>
       </span>
 
       {/* 走扩状态 + 倍率 */}
@@ -63,7 +63,7 @@ export function MACDBadge({
         {rapidExpanding ? <Zap size={10} /> : <ZapOff size={10} />}
         {expandLabel}
         {expansionRate > 0 && (
-          <span className="text-gray-500 text-[10px]">
+          <span className="text-stone-500 text-[10px]">
             {expansionRate.toFixed(1)}x
           </span>
         )}
@@ -108,7 +108,7 @@ export function VolumeBadge({
       }`}>
         {isSurge ? <ArrowUpCircle size={11} /> : <ArrowDownCircle size={11} />}
         <span>{isSurge ? "放量" : "缩量"}</span>
-        <span className="text-gray-500 font-mono">×{cumulative}</span>
+        <span className="text-stone-500 font-mono">×{cumulative}</span>
       </span>
 
       {/* 环比幅度 */}
@@ -116,7 +116,7 @@ export function VolumeBadge({
         <span className={`font-mono text-[11px] font-semibold ${pctColor}`}>
           {pctSign}{absPct.toFixed(1)}%
         </span>
-        <span className="text-gray-400 font-mono text-[10px]">
+        <span className="text-stone-400 font-mono text-[10px]">
           ({pctSign}{fmtVol(change ?? 0)})
         </span>
       </div>
@@ -165,7 +165,7 @@ export function OIBadge({
       }`}>
         {isInc ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
         <span>{isInc ? "增仓" : "减仓"}</span>
-        <span className="text-gray-500 font-mono">×{cumulative}</span>
+        <span className="text-stone-500 font-mono">×{cumulative}</span>
       </span>
 
       {/* 环比幅度：变化量 + 百分比 */}
@@ -173,13 +173,13 @@ export function OIBadge({
         <span className={`font-mono text-[11px] font-semibold ${pctColor}`}>
           {pctSign}{absPct.toFixed(2)}%
         </span>
-        <span className="text-gray-400 font-mono text-[10px]">
+        <span className="text-stone-400 font-mono text-[10px]">
           ({pctSign}{fmtOI(change)})
         </span>
       </div>
 
       {/* 当前持仓量 */}
-      <span className="text-gray-400 font-mono text-[10px] pl-1">
+      <span className="text-stone-400 font-mono text-[10px] pl-1">
         持仓 {fmtOI(value)}手
       </span>
     </div>
@@ -190,7 +190,7 @@ export function OIBadge({
 export function PriceCell({ price, change }: { price: number; change: number }) {
   const isUp = change > 0;
   const isDown = change < 0;
-  const color = isUp ? "text-red-600" : isDown ? "text-emerald-600" : "text-gray-400";
+  const color = isUp ? "text-red-600" : isDown ? "text-emerald-600" : "text-stone-400";
 
   return (
     <div className="text-right">

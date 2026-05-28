@@ -1,20 +1,20 @@
 @import "tailwindcss";
 
 :root {
-  --bg-page: #f4f5f7;
+  --bg-page: #faf8f5;
   --bg-card: #ffffff;
-  --bg-hover: #f0f1f3;
-  --bg-header: #f8f9fb;
-  --border-subtle: #e5e7eb;
-  --border-active: #d1d5db;
-  --text-primary: #111827;
-  --text-secondary: #6b7280;
-  --text-muted: #9ca3af;
-  --accent: #2563eb;
-  --accent-soft: rgba(37, 99, 235, 0.08);
-  --accent-glow: rgba(37, 99, 235, 0.04);
-  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.03);
-  --shadow-elevated: 0 4px 12px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --bg-hover: #f5f0eb;
+  --bg-header: #f7f4f0;
+  --border-subtle: #e8e3dc;
+  --border-active: #d6cec4;
+  --text-primary: #1c1917;
+  --text-secondary: #78716c;
+  --text-muted: #a8a29e;
+  --accent: #d97706;
+  --accent-soft: rgba(217, 119, 6, 0.08);
+  --accent-glow: rgba(217, 119, 6, 0.04);
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.03), 0 1px 3px rgba(0, 0, 0, 0.02);
+  --shadow-elevated: 0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
 }
 
 html {
@@ -30,20 +30,17 @@ body {
   line-height: 1.6;
 }
 
-/* ── 排版层级 ────────────────────────────── */
 h1, h2, h3, h4 {
   font-family: var(--font-sans), "Inter", system-ui, sans-serif;
   letter-spacing: -0.015em;
   line-height: 1.25;
 }
 
-/* 数据区域保留等宽字体 */
 .font-mono, [class*="font-mono"], table, .tabular-nums {
   font-family: var(--font-mono), "JetBrains Mono", "Cascadia Code", "Fira Code", monospace;
   font-variant-numeric: tabular-nums;
 }
 
-/* ── 链接和交互 ──────────────────────────── */
 a, button {
   transition: all 0.2s ease;
 }
@@ -54,57 +51,15 @@ a:focus-visible, button:focus-visible {
   border-radius: 4px;
 }
 
-/* ── 自定义滚动条 ────────────────────────── */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: var(--bg-page);
-}
-::-webkit-scrollbar-thumb {
-  background: var(--border-active);
-  border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: var(--text-muted);
-}
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-page); }
+::-webkit-scrollbar-thumb { background: var(--border-active); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
-/* ── 表格优化 ────────────────────────────── */
 .overflow-x-auto {
   scrollbar-width: thin;
   scrollbar-color: var(--border-active) var(--bg-page);
 }
 
-thead.sticky th {
-  box-shadow: 0 1px 0 0 var(--border-subtle);
-}
-
-tr {
-  transition: background-color 0.12s ease;
-}
-
-/* ── 卡片通用样式 ────────────────────────── */
-.card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
-  border-radius: 12px;
-  box-shadow: var(--shadow-card);
-}
-
-/* ── 徽章/标签通用 ────────────────────────── */
-.badge-up {
-  background: #fef2f2;
-  color: #dc2626;
-  border: 1px solid #fecaca;
-}
-.badge-down {
-  background: #ecfdf5;
-  color: #059669;
-  border: 1px solid #a7f3d0;
-}
-.badge-neutral {
-  background: #f9fafb;
-  color: #6b7280;
-  border: 1px solid #e5e7eb;
-}
+thead.sticky th { box-shadow: 0 1px 0 0 var(--border-subtle); }
+tr { transition: background-color 0.12s ease; }

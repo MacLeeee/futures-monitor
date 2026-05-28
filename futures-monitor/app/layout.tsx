@@ -16,7 +16,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "期货品种监控 | Futures Monitor",
-  description: "30分钟周期期货品种状态监控 Dashboard — 均线、MACD、成交量、持仓量",
+  description: "30分钟周期期货品种状态监控 Dashboard",
 };
 
 export default function RootLayout({
@@ -26,7 +26,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN">
-      <body className={`${jetbrainsMono.variable} ${inter.variable} font-sans bg-[#f4f5f7] text-gray-900 antialiased`}>
+      <body className={`${jetbrainsMono.variable} ${inter.variable} font-sans bg-[#faf8f5] text-stone-900 antialiased`}>
         {children}
       </body>
     </html>

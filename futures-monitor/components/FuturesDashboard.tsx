@@ -115,22 +115,22 @@ export default function FuturesDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f4f5f7] text-gray-900 font-sans">
+    <div className="min-h-screen bg-[#faf8f5] text-stone-900 font-sans">
       <div className="max-w-screen-2xl mx-auto p-4 space-y-4">
 
         {/* ── 顶栏 ───────────────── */}
-        <header className="flex items-center gap-3 pb-3 border-b border-gray-200">
-          <Zap size={18} className="text-blue-600" />
-          <span className="text-sm font-bold tracking-tight text-blue-600">
+        <header className="flex items-center gap-3 pb-3 border-b border-stone-200">
+          <Zap size={18} className="text-amber-600" />
+          <span className="text-sm font-bold tracking-tight text-amber-600">
             期货监控
           </span>
-          <span className="text-[10px] text-gray-400">30min</span>
+          <span className="text-[10px] text-stone-400">30min</span>
 
           <div className="flex-1" />
 
           <Link
             href="/gold"
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md font-medium transition-all text-gray-500 hover:text-blue-500 hover:bg-blue-50/70"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md font-medium transition-all text-stone-500 hover:text-amber-500 hover:bg-amber-50/70"
           >
             <TrendingUp size={12} />
             黄金监控
@@ -182,8 +182,8 @@ export default function FuturesDashboard() {
         ) : (
           <div className="relative">
             {isLoading && (
-              <div className="absolute top-3 right-3 z-30 flex items-center gap-2 px-2.5 py-1 bg-white/95 backdrop-blur border border-gray-200 rounded-md text-xs text-gray-500">
-                <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-pulse" />
+              <div className="absolute top-3 right-3 z-30 flex items-center gap-2 px-2.5 py-1 bg-white/95 backdrop-blur border border-stone-200 rounded-md text-xs text-stone-500">
+                <div className="w-1.5 h-1.5 bg-amber-600 rounded-full animate-pulse" />
                 拉取数据...
               </div>
             )}
@@ -192,7 +192,7 @@ export default function FuturesDashboard() {
         )}
 
         {/* ── 页脚 ────────────────────────────────────── */}
-        <footer className="flex items-center justify-between text-[10px] text-gray-400 pt-4 border-t border-gray-200">
+        <footer className="flex items-center justify-between text-[10px] text-stone-400 pt-4 border-t border-stone-200">
           <div className="flex gap-4">
             <span>AKShare · 新浪财经</span>
             <span>30min K 线</span>
@@ -226,17 +226,17 @@ function DataSourceBanner({ source, updatedAt }: { source: DataSource; updatedAt
 
   if (source === "mock") {
     return (
-      <div className="flex items-center gap-2 px-3 py-2 bg-blue-50/70 border border-blue-200 rounded-md text-xs text-blue-500">
+      <div className="flex items-center gap-2 px-3 py-2 bg-amber-50/70 border border-amber-200 rounded-md text-xs text-amber-500">
         <WifiOff size={12} />
         <span className="font-medium">模拟数据</span>
-        <span className="text-blue-500/60">— 演示模式</span>
+        <span className="text-amber-500/60">— 演示模式</span>
       </div>
     );
   }
 
   return (
-    <div className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-md text-xs text-gray-400">
-      <div className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-pulse" />
+    <div className="flex items-center gap-2 px-3 py-2 bg-white border border-stone-200 rounded-md text-xs text-stone-400">
+      <div className="w-1.5 h-1.5 rounded-full bg-stone-400 animate-pulse" />
       加载数据...
     </div>
   );

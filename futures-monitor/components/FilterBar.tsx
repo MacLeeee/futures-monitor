@@ -33,7 +33,7 @@ export default function FilterBar({
 }: FilterBarProps) {
   return (
     <div className="flex items-center gap-3 flex-wrap">
-      <div className="flex items-center gap-1.5 text-xs text-gray-500">
+      <div className="flex items-center gap-1.5 text-xs text-stone-500">
         <Filter size={12} />
         筛选:
       </div>
@@ -46,8 +46,8 @@ export default function FilterBar({
             onClick={() => onCategoryChange(cat)}
             className={`px-2.5 py-1 text-xs rounded border transition-all ${
               selectedCategory === cat
-                ? "bg-blue-100/60 border-blue-600 text-blue-700 font-semibold"
-                : "bg-gray-100 border-gray-300 text-gray-400 hover:border-gray-400 hover:text-gray-700"
+                ? "bg-amber-100/60 border-amber-600 text-amber-700 font-semibold"
+                : "bg-stone-100 border-stone-300 text-stone-400 hover:border-stone-400 hover:text-stone-700"
             }`}
           >
             {cat}
@@ -55,7 +55,7 @@ export default function FilterBar({
         ))}
       </div>
 
-      <div className="w-px h-4 bg-gray-200" />
+      <div className="w-px h-4 bg-stone-200" />
 
       {/* 均线状态筛选 */}
       <div className="flex gap-1">
@@ -65,8 +65,8 @@ export default function FilterBar({
             onClick={() => onMAStatusChange(s.value)}
             className={`px-2.5 py-1 text-xs rounded border transition-all ${
               selectedMAStatus === s.value
-                ? "bg-gray-200 border-gray-500 text-white font-semibold"
-                : "bg-gray-100 border-gray-300 text-gray-400 hover:border-gray-400"
+                ? "bg-stone-200 border-gray-500 text-white font-semibold"
+                : "bg-stone-100 border-stone-300 text-stone-400 hover:border-stone-400"
             }`}
           >
             {s.label}
@@ -75,8 +75,8 @@ export default function FilterBar({
       </div>
 
       {/* 过滤结果计数 */}
-      <span className="ml-auto text-xs text-gray-400 font-mono">
-        显示 <span className="text-gray-400 font-semibold">{filteredCount}</span> / {totalCount} 个品种
+      <span className="ml-auto text-xs text-stone-400 font-mono">
+        显示 <span className="text-stone-400 font-semibold">{filteredCount}</span> / {totalCount} 个品种
       </span>
     </div>
   );

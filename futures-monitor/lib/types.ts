@@ -183,6 +183,7 @@ export type GoldRegime =
   | "Rates-Dollar Bearish Gold"
   | "Clean Bullish Gold"
   | "Reflation Gold"
+  | "Defensive Gold"
   | "Fiscal / Debasement Hedge"
   | "Bullish Price Override"
   | "Bearish Price Override"
@@ -194,10 +195,16 @@ export interface GoldStructureFlags {
   vwap_reclaim: boolean;
   vwap_reject: boolean;
   near_fib_618: boolean;
+  near_key_fib?: boolean;
+  bull_sweep?: boolean;
+  bear_sweep?: boolean;
+  double_bottom?: boolean;
+  double_top?: boolean;
   above_vwap: boolean;
   below_vwap: boolean;
   higher_low: boolean;
   lower_high: boolean;
+  insufficient_data?: boolean;
 }
 
 export interface GoldBusData {
@@ -217,6 +224,21 @@ export interface GoldBusData {
     flags: GoldStructureFlags;
   };
   advice: string;
+  combo_advice?: string;
+  regime_detail?: {
+    dominant_theme: string;
+    bull_max: number;
+    bear_max: number;
+    score_fiscal_hedge: number;
+    score_debasement: number;
+    score_real_yield_relief: number;
+    score_reflation: number;
+    score_defensive_gold: number;
+    score_rates_dollar_bear: number;
+    score_cash_liquidation: number;
+    score_gold_rate_pressure: number;
+    score_dollar_pressure: number;
+  };
   error?: string;
   etf_snapshot?: {
     prices: Record<string, number>;

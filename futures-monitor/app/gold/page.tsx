@@ -21,6 +21,7 @@ const REGIME_COLORS: Record<GoldRegime, { bg: string; border: string; text: stri
   "Rates-Dollar Bearish Gold": { bg: "bg-orange-950/70", border: "border-orange-700", text: "text-orange-400", bar: "bg-orange-500" },
   "Clean Bullish Gold":        { bg: "bg-emerald-950/70", border: "border-emerald-700", text: "text-emerald-400", bar: "bg-emerald-500" },
   "Reflation Gold":            { bg: "bg-amber-950/70",  border: "border-amber-700",  text: "text-amber-400",  bar: "bg-amber-500" },
+  "Defensive Gold":            { bg: "bg-indigo-950/70", border: "border-indigo-700", text: "text-indigo-400", bar: "bg-indigo-500" },
   "Fiscal / Debasement Hedge": { bg: "bg-purple-950/70", border: "border-purple-700", text: "text-purple-400", bar: "bg-purple-500" },
   "Bullish Price Override":    { bg: "bg-cyan-950/70",   border: "border-cyan-700",   text: "text-cyan-400",   bar: "bg-cyan-500" },
   "Bearish Price Override":    { bg: "bg-pink-950/70",   border: "border-pink-700",   text: "text-pink-400",   bar: "bg-pink-500" },
@@ -238,6 +239,14 @@ export default function GoldPage() {
               <span className="text-[10px] text-gray-500 uppercase tracking-wider">Gold Regime</span>
             </div>
             <div className={`text-xl font-bold mb-2 ${regimeStyle.text}`}>{data.regime}</div>
+            {data.regime_detail && (
+              <div className="mb-2 flex items-center gap-3 text-[10px]">
+                <span className="text-gray-500">主逻辑:</span>
+                <span className="text-gray-300 font-mono">{data.regime_detail.dominant_theme}</span>
+                <span className="text-emerald-600">Bull ↑{data.regime_detail.bull_max}</span>
+                <span className="text-red-600">Bear ↓{data.regime_detail.bear_max}</span>
+              </div>
+            )}
             <p className="text-xs text-gray-400 leading-relaxed">{data.regime_guide}</p>
             <div className="mt-3 pt-3 border-t border-gray-800/60">
               <span className="text-[9px] text-gray-600 uppercase">Regime 判定逻辑</span>
@@ -299,6 +308,9 @@ export default function GoldPage() {
               <TrendChip label="4h" sign={trend["4h"]} />
             </div>
             <div className="mt-3 pt-3 border-t border-gray-800/60">
+              {data.combo_advice && (
+                <p className="text-[10px] text-gray-400 mb-2">📋 {data.combo_advice}</p>
+              )}
               <p className="text-[10px] text-gray-600">
                 基于 GLD 在 15m/1h/4h 窗口的涨跌 (阈 ±0.10%)。<br/>
                 Bull/Bear 信号需与 Regime 方向一致才构成有效共振。
@@ -319,9 +331,13 @@ export default function GoldPage() {
             <div className="flex flex-wrap gap-1.5">
               <Flag active={struct.flags.vwap_reclaim} label="VWAP↑" desc="价格突破均价" />
               <Flag active={struct.flags.vwap_reject} label="VWAP↓" desc="价格跌破均价" />
-              <Flag active={struct.flags.near_fib_618} label="Fib.618" desc="接近黄金分割" />
-              <Flag active={struct.flags.higher_low} label="Higher Low" desc="低点抬升" />
-              <Flag active={struct.flags.lower_high} label="Lower High" desc="高点降低" />
+              <Flag active={struct.flags.near_key_fib ?? struct.flags.near_fib_618} label="KeyFib" desc="接近关键斐波" />
+              <Flag active={struct.flags.bull_sweep} label="BullSweep" desc="多头扫损" />
+              <Flag active={struct.flags.bear_sweep} label="BearSweep" desc="空头扫损" />
+              <Flag active={struct.flags.double_bottom} label="DoubleBtm" desc="双底" />
+              <Flag active={struct.flags.double_top} label="DoubleTop" desc="双顶" />
+              <Flag active={struct.flags.higher_low} label="HL" desc="低点抬升" />
+              <Flag active={struct.flags.lower_high} label="LH" desc="高点降低" />
             </div>
           </div>
         </div>

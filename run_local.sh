@@ -31,8 +31,8 @@ run_once() {
     log "▶ 开始抓取 $(python3 -c 'from datetime import datetime; from zoneinfo import ZoneInfo; print(datetime.now(ZoneInfo("Asia/Shanghai")).strftime("%Y-%m-%d %H:%M"))')"
 
     # ── 1. 期货数据 ──────────────────────────────────────────
-    # FORCE_FETCH=1：本地模式不受交易时间守卫限制，由用户手动控制开关
-    FORCE_FETCH=1 python3 "$SCRIPT"
+    # 不设 FORCE_FETCH，由 fetch_and_calc.py 内的 is_trading_time() 守卫控制
+    python3 "$SCRIPT"
     log "  ✓ 期货数据抓取完成"
 
     # ── 2. 黄金宝宝巴士 ──────────────────────────────────────

@@ -1,51 +1,81 @@
 @import "tailwindcss";
 
 :root {
-  --background: #030712;
-  --foreground: #e5e7eb;
+  --bg-primary: #08080c;
+  --bg-card: #0f1016;
+  --bg-hover: #161720;
+  --border-subtle: #1e1f2a;
+  --border-active: #2a2b36;
+  --text-primary: #e4e4ec;
+  --text-secondary: #9090a0;
+  --text-muted: #585868;
+  --accent: #d97706;
+  --accent-soft: rgba(217, 119, 6, 0.15);
+  --accent-glow: rgba(217, 119, 6, 0.08);
 }
 
 html {
   color-scheme: dark;
+  scroll-behavior: smooth;
 }
 
 body {
-  background-color: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-mono), "Cascadia Code", "Fira Code", "SF Mono", monospace;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* 自定义滚动条（深色主题） */
+/* ── 排版层级 ────────────────────────────── */
+h1, h2, h3, h4 {
+  font-family: var(--font-sans), "Inter", system-ui, sans-serif;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+/* 数据区域保留等宽字体 */
+.font-mono, [class*="font-mono"], table, .tabular-nums {
+  font-family: var(--font-mono), "JetBrains Mono", "Cascadia Code", "Fira Code", monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── 链接和交互 ──────────────────────────── */
+a, button {
+  transition: all 0.2s ease;
+}
+
+a:focus-visible, button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ── 自定义滚动条 ────────────────────────── */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
-
 ::-webkit-scrollbar-track {
-  background: #111827;
+  background: var(--bg-primary);
 }
-
 ::-webkit-scrollbar-thumb {
-  background: #374151;
+  background: var(--border-active);
   border-radius: 3px;
 }
-
 ::-webkit-scrollbar-thumb:hover {
-  background: #4b5563;
+  background: var(--text-muted);
 }
 
-/* 表格横向滚动优化 */
+/* ── 表格优化 ────────────────────────────── */
 .overflow-x-auto {
   scrollbar-width: thin;
-  scrollbar-color: #374151 #111827;
+  scrollbar-color: var(--border-active) var(--bg-primary);
 }
 
-/* 固定表头阴影 */
 thead.sticky th {
-  box-shadow: 0 1px 0 0 #374151;
+  box-shadow: 0 1px 0 0 var(--border-subtle);
 }
 
-/* 行高亮动画 */
 tr {
   transition: background-color 0.15s ease;
 }

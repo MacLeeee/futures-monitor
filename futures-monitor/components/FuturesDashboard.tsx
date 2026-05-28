@@ -1,7 +1,8 @@
 "use client";
 // ============================================================
-// 主 Dashboard 容器组件
-// 管理数据状态、自动刷新、筛选逻辑
+// 主 Dashboard 容器 — Redesign v2
+// 字体: Inter (标题) + JetBrains Mono (数据)
+// 配色: 统一琥珀金 accent
 // ============================================================
 
 import React, { useState, useEffect, useCallback } from "react";
@@ -13,10 +14,9 @@ import SignalPanel from "./SignalPanel";
 import DipBuyPanel from "./DipBuyPanel";
 import CurrentPositions from "./CurrentPositions";
 import RegimePanel from "./RegimePanel";
-import { AlertCircle, WifiOff, Database, Activity, CalendarDays, TrendingUp } from "lucide-react";
+import { AlertCircle, WifiOff, Database, Activity, CalendarDays, TrendingUp, Zap } from "lucide-react";
 import Link from "next/link";
 
-// 30 分钟自动刷新；日K 不自动刷新（每日复盘即可）
 const AUTO_REFRESH_INTERVAL = 30 * 60 * 1000;
 type Timeframe = "30min" | "daily";
 
@@ -27,15 +27,12 @@ function getDataUrl(tf: Timeframe): string {
   return tf === "daily" ? `${base}/data_daily.json` : `${base}/data.json`;
 }
 
-// 兼容旧版 data.json（crossStatus/spreadStatus/region → sign/rapidExpanding）
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function normalizeMacd(data: any[]): FuturesStatus[] {
   return data.map((d) => {
     if (d.macd && d.macd.sign === undefined) {
-      // 旧字段：region "水上"→positive, 其余→negative
       const oldRegion: string = d.macd.region ?? "";
       d.macd.sign = oldRegion === "水上" ? "positive" : "negative";
-      // 旧字段：spreadStatus "Expanding"→走扩
       d.macd.rapidExpanding = d.macd.spreadStatus === "Expanding";
       d.macd.expansionRate = d.macd.rapidExpanding ? 1.0 : 0.0;
     }
@@ -43,7 +40,6 @@ function normalizeMacd(data: any[]): FuturesStatus[] {
   });
 }
 
-// 数据来源类型
 type DataSource = "akshare" | "mock" | "github-actions" | null;
 
 export default function FuturesDashboard() {
@@ -58,7 +54,6 @@ export default function FuturesDashboard() {
   const [remoteUpdatedAt, setRemoteUpdatedAt] = useState<string | null>(null);
   const [positions, setPositions] = useState<Position[]>([]);
 
-  // 筛选状态
   const [selectedCategory, setSelectedCategory] = useState("全部");
   const [selectedMAStatus, setSelectedMAStatus] = useState("全部");
 
@@ -82,7 +77,6 @@ export default function FuturesDashboard() {
     }
   }, [timeframe]);
 
-  // 加载持仓数据
   const loadPositions = useCallback(async () => {
     try {
       const isLocal = typeof window !== "undefined" && window.location.port !== "";
@@ -92,111 +86,100 @@ export default function FuturesDashboard() {
       if (!res.ok) return;
       const json: PositionsData = await res.json();
       setPositions(json.positions ?? []);
-    } catch {
-      // 持仓数据不影响主界面，静默失败
-    }
+    } catch { /* 静默 */ }
   }, []);
 
-  // 初始加载
-  useEffect(() => {
-    loadData();
-    loadPositions();
-  }, [loadData, loadPositions]);
+  useEffect(() => { loadData(); loadPositions(); }, [loadData, loadPositions]);
 
-  // 自动刷新定时器（30 分钟触发一次）
   useEffect(() => {
     if (!autoRefresh) return;
     const timer = setInterval(loadData, AUTO_REFRESH_INTERVAL);
     return () => clearInterval(timer);
   }, [autoRefresh, loadData]);
 
-  // 倒计时更新（每秒）
   useEffect(() => {
     if (!autoRefresh) return;
-    const tick = setInterval(() => {
-      setNextRefreshIn((prev) => Math.max(0, prev - 1000));
-    }, 1000);
+    const tick = setInterval(() => setNextRefreshIn((p) => Math.max(0, p - 1000)), 1000);
     return () => clearInterval(tick);
   }, [autoRefresh, lastRefresh]);
 
-  // 切换周期 Tab
   const handleTimeframeChange = useCallback((tf: Timeframe) => {
-    setTimeframe(tf);
-    setData([]);
-    loadData(tf);
+    setTimeframe(tf); setData([]); loadData(tf);
   }, [loadData]);
 
-  // 手动刷新时重置倒计时
   const handleManualRefresh = useCallback(() => {
-    setNextRefreshIn(AUTO_REFRESH_INTERVAL);
-    loadData(timeframe);
+    setNextRefreshIn(AUTO_REFRESH_INTERVAL); loadData(timeframe);
   }, [loadData, timeframe]);
 
-  // 筛选逻辑
   useEffect(() => {
     let result = data;
-    if (selectedCategory !== "全部") {
-      result = result.filter((d) => d.category === selectedCategory);
-    }
-    if (selectedMAStatus !== "全部") {
-      result = result.filter((d) => d.ma.status === selectedMAStatus);
-    }
+    if (selectedCategory !== "全部") result = result.filter((d) => d.category === selectedCategory);
+    if (selectedMAStatus !== "全部") result = result.filter((d) => d.ma.status === selectedMAStatus);
     setFilteredData(result);
   }, [data, selectedCategory, selectedMAStatus]);
 
-  // 格式化倒计时
   const formatCountdown = (ms: number) => {
-    const totalSec = Math.ceil(ms / 1000);
-    const m = Math.floor(totalSec / 60);
-    const s = totalSec % 60;
+    const m = Math.floor(ms / 60000);
+    const s = Math.ceil((ms % 60000) / 1000);
     return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100 p-4 font-mono">
-      <div className="max-w-screen-2xl mx-auto space-y-3">
+    <div className="min-h-screen bg-[#08080c] text-[#e4e4ec] font-sans">
+      <div className="max-w-screen-2xl mx-auto p-4 space-y-4">
 
-        {/* 周期切换 Tab */}
-        <div className="flex gap-2 items-center border-b border-gray-800 pb-2">
-          <button
-            onClick={() => handleTimeframeChange("30min")}
-            className={`flex items-center gap-1.5 px-4 py-1.5 text-xs rounded border transition-colors ${
-              timeframe === "30min"
-                ? "bg-cyan-900/60 text-cyan-300 border-cyan-700"
-                : "text-gray-500 border-gray-800 hover:text-gray-300 hover:border-gray-600"
-            }`}
-          >
-            <Activity size={12} />
-            30分钟 · 实时
-          </button>
-          <button
-            onClick={() => handleTimeframeChange("daily")}
-            className={`flex items-center gap-1.5 px-4 py-1.5 text-xs rounded border transition-colors ${
-              timeframe === "daily"
-                ? "bg-purple-900/60 text-purple-300 border-purple-700"
-                : "text-gray-500 border-gray-800 hover:text-gray-300 hover:border-gray-600"
-            }`}
-          >
-            <CalendarDays size={12} />
-            日K · 复盘
-          </button>
-          {timeframe === "daily" && (
-            <span className="ml-2 text-[10px] text-gray-600">日K数据每次运行脚本时同步更新，无自动推送</span>
-          )}
+        {/* ── 顶栏：Logo + 导航 + 切换 ───────────────── */}
+        <header className="flex items-center gap-3 pb-3 border-b border-[#1e1f2a]">
+          <Zap size={18} className="text-amber-500" />
+          <span className="text-sm font-bold tracking-tight text-amber-500">
+            期货监控
+          </span>
+          <span className="text-[10px] text-[#585868]">v2</span>
+
+          <div className="flex items-center gap-1.5 ml-6">
+            <button
+              onClick={() => handleTimeframeChange("30min")}
+              className={`px-3 py-1.5 text-xs rounded-md font-medium transition-all ${
+                timeframe === "30min"
+                  ? "bg-amber-500/15 text-amber-400 ring-1 ring-amber-500/30"
+                  : "text-[#9090a0] hover:text-[#e4e4ec] hover:bg-[#161720]"
+              }`}
+            >
+              <Activity size={11} className="inline mr-1" />
+              30分钟
+            </button>
+            <button
+              onClick={() => handleTimeframeChange("daily")}
+              className={`px-3 py-1.5 text-xs rounded-md font-medium transition-all ${
+                timeframe === "daily"
+                  ? "bg-amber-500/15 text-amber-400 ring-1 ring-amber-500/30"
+                  : "text-[#9090a0] hover:text-[#e4e4ec] hover:bg-[#161720]"
+              }`}
+            >
+              <CalendarDays size={11} className="inline mr-1" />
+              日K
+            </button>
+          </div>
+
           <div className="flex-1" />
+
           <Link
             href="/gold"
-            className="flex items-center gap-1.5 px-4 py-1.5 text-xs rounded border transition-colors text-gray-500 border-gray-800 hover:text-yellow-400 hover:border-yellow-700"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md font-medium transition-all text-[#9090a0] hover:text-amber-400 hover:bg-amber-500/10"
           >
             <TrendingUp size={12} />
             黄金监控
           </Link>
-        </div>
 
-        {/* 实盘/模拟数据状态横幅 */}
+          {timeframe === "daily" && (
+            <span className="text-[10px] text-[#585868] ml-2">日K随脚本同步更新</span>
+          )}
+        </header>
+
+        {/* ── 数据源状态 ─────────────────────────────── */}
         <DataSourceBanner source={dataSource} updatedAt={remoteUpdatedAt} />
 
-        {/* 头部：概览统计 + 刷新控制 */}
+        {/* ── 概览栏 ──────────────────────────────────── */}
         <DashboardHeader
           data={data}
           lastRefresh={lastRefresh}
@@ -208,7 +191,7 @@ export default function FuturesDashboard() {
           timeframe={timeframe}
         />
 
-        {/* 筛选工具栏 */}
+        {/* ── 筛选栏 ──────────────────────────────────── */}
         <FilterBar
           selectedCategory={selectedCategory}
           selectedMAStatus={selectedMAStatus}
@@ -218,52 +201,50 @@ export default function FuturesDashboard() {
           filteredCount={filteredData.length}
         />
 
-        {/* 突破交易信号面板 */}
+        {/* ── 信号面板 ────────────────────────────────── */}
         <SignalPanel data={data} />
-
-        {/* 抄底信号面板 */}
         <DipBuyPanel data={data} />
-
-        {/* 市场状态面板（趋势/震荡 + 箱体信号） */}
         <RegimePanel data={data} />
 
-        {/* 当前持仓面板（仅30min实盘模式显示） */}
+        {/* ── 持仓 ────────────────────────────────────── */}
         {timeframe === "30min" && (
           <CurrentPositions
             positions={positions}
-            currentPrices={Object.fromEntries(
-              data.map((d) => [d.symbol, d.price])
-            )}
+            currentPrices={Object.fromEntries(data.map((d) => [d.symbol, d.price]))}
           />
         )}
 
-
-        {/* 主数据表格 */}
+        {/* ── 数据表格 ────────────────────────────────── */}
         {isLoading && data.length === 0 ? (
-          <LoadingState />
+          <div className="space-y-2">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="h-10 bg-[#0f1016] rounded-md animate-pulse"
+                style={{ opacity: 1 - i * 0.08 }} />
+            ))}
+          </div>
         ) : (
           <div className="relative">
             {isLoading && (
-              <div className="absolute top-2 right-2 z-30 flex items-center gap-1.5 px-2 py-1 bg-gray-900/90 border border-gray-700 rounded text-xs text-gray-400">
-                <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse" />
-                正在拉取 AKShare 数据...
+              <div className="absolute top-3 right-3 z-30 flex items-center gap-2 px-2.5 py-1 bg-[#0f1016]/95 backdrop-blur border border-[#1e1f2a] rounded-md text-xs text-[#9090a0]">
+                <div className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse" />
+                拉取数据...
               </div>
             )}
             <FuturesTable data={filteredData} />
           </div>
         )}
 
-        {/* 底部说明 */}
-        <footer className="flex items-center justify-between text-[10px] text-gray-700 pt-2 border-t border-gray-800">
+        {/* ── 页脚 ────────────────────────────────────── */}
+        <footer className="flex items-center justify-between text-[10px] text-[#585868] pt-4 border-t border-[#1e1f2a]">
           <div className="flex gap-4">
-            <span>数据源: AKShare 期货分钟行情</span>
-            <span>周期: 30min K 线</span>
-            <span>MA20/60 · MACD(12,26,9) · Vol·MA5 · OI·MA5</span>
+            <span>AKShare · 新浪财经</span>
+            <span>30min K 线</span>
+            <span>MA20/60 · MACD · Vol · OI</span>
           </div>
-          <div className="flex gap-4">
-            <LegendItem color="bg-red-500" label="上涨/上行/增仓" />
-            <LegendItem color="bg-green-500" label="下跌/下行/减仓" />
-            <LegendItem color="bg-gray-500" label="持平/静默" />
+          <div className="flex gap-3">
+            <Legend color="bg-red-500" label="上涨/上行" />
+            <Legend color="bg-emerald-500" label="下跌/下行" />
+            <Legend color="bg-[#585868]" label="持平" />
           </div>
         </footer>
       </div>
@@ -271,90 +252,48 @@ export default function FuturesDashboard() {
   );
 }
 
-// 数据来源横幅
-function DataSourceBanner({
-  source,
-  updatedAt,
-}: {
-  source: DataSource;
-  updatedAt: string | null;
-}) {
-  // 格式化 ISO 时间为本地时间
+// ── 数据源横幅 ──────────────────────────────────────────────
+
+function DataSourceBanner({ source, updatedAt }: { source: DataSource; updatedAt: string | null }) {
   const fmtTime = (iso: string | null) => {
     if (!iso) return "";
-    try {
-      return new Date(iso).toLocaleString("zh-CN", {
-        month: "2-digit", day: "2-digit",
-        hour: "2-digit", minute: "2-digit",
-      });
-    } catch { return ""; }
+    try { return new Date(iso).toLocaleString("zh-CN", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }); }
+    catch { return ""; }
   };
 
-  if (source === "github-actions") {
+  if (source === "github-actions" || source === "akshare") {
     return (
-      <div className="flex items-center gap-2 px-3 py-2 bg-emerald-950/50 border border-emerald-800/60 rounded text-xs text-emerald-400">
-        <Database size={13} />
-        <span className="font-semibold">实盘数据</span>
-        <span className="text-emerald-600">
-          — GitHub Actions 定时抓取 · 新浪财经接口
-        </span>
-        {updatedAt && (
-          <span className="ml-auto text-emerald-700 font-mono">
-            数据时间: {fmtTime(updatedAt)}
-          </span>
-        )}
-      </div>
-    );
-  }
-
-  if (source === "akshare") {
-    return (
-      <div className="flex items-center gap-2 px-3 py-2 bg-emerald-950/50 border border-emerald-800/60 rounded text-xs text-emerald-400">
-        <Database size={13} />
-        <span className="font-semibold">实盘数据</span>
-        <span className="text-emerald-600">— AKShare 本地服务已连接</span>
+      <div className="flex items-center gap-2 px-3 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-md text-xs text-emerald-400">
+        <Database size={12} />
+        <span className="font-medium">实盘数据</span>
+        <span className="text-emerald-400/60">— 数据源已连接</span>
+        {updatedAt && <span className="ml-auto text-emerald-400/40 font-mono text-[10px]">{fmtTime(updatedAt)}</span>}
       </div>
     );
   }
 
   if (source === "mock") {
     return (
-      <div className="flex items-center gap-2 px-3 py-2 bg-amber-950/60 border border-amber-700 rounded text-xs text-amber-400">
-        <WifiOff size={13} />
-        <span className="font-semibold">模拟数据模式</span>
-        <span className="text-amber-600 flex-1">
-          — 未连接数据源，当前为演示用 Mock 数据
-        </span>
+      <div className="flex items-center gap-2 px-3 py-2 bg-amber-500/10 border border-amber-500/20 rounded-md text-xs text-amber-400">
+        <WifiOff size={12} />
+        <span className="font-medium">模拟数据</span>
+        <span className="text-amber-400/60">— 演示模式</span>
       </div>
     );
   }
 
   return (
-    <div className="flex items-center gap-2 px-3 py-2 bg-gray-900 border border-gray-800 rounded text-xs text-gray-500">
-      <div className="w-2 h-2 rounded-full bg-gray-600 animate-pulse" />
-      正在加载数据...
+    <div className="flex items-center gap-2 px-3 py-2 bg-[#0f1016] border border-[#1e1f2a] rounded-md text-xs text-[#585868]">
+      <div className="w-1.5 h-1.5 rounded-full bg-[#585868] animate-pulse" />
+      加载数据...
     </div>
   );
 }
 
-function LoadingState() {
+function Legend({ color, label }: { color: string; label: string }) {
   return (
-    <div className="space-y-2">
-      {Array.from({ length: 10 }).map((_, i) => (
-        <div
-          key={i}
-          className="h-12 bg-gray-900 rounded border border-gray-800 animate-pulse"
-          style={{ opacity: 1 - i * 0.08 }}
-        />
-      ))}
-    </div>
-  );
-}
-
-function LegendItem({ color, label }: { color: string; label: string }) {
-  return (
-    <span className="flex items-center gap-1">
-      <span className={`w-2 h-2 rounded-full ${color}`} />
+    <span className="flex items-center gap-1.5">
+      <span className={`w-1.5 h-1.5 rounded-full ${color}`} />
       {label}
     </span>
   );

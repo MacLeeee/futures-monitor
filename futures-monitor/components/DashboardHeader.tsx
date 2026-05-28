@@ -1,10 +1,10 @@
 "use client";
 // ============================================================
-// Dashboard 头部组件 - 状态概览、刷新控制、市场时钟
+// 概览栏 — Redesign v2
 // ============================================================
 
 import React, { useEffect, useState } from "react";
-import { Activity, RefreshCw, Clock, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { RefreshCw, Clock, TrendingUp, TrendingDown, Minus, BarChart3 } from "lucide-react";
 import { FuturesStatus } from "@/lib/types";
 
 interface DashboardHeaderProps {
@@ -28,168 +28,107 @@ export default function DashboardHeader({
   nextRefreshIn,
   timeframe = "30min",
 }: DashboardHeaderProps) {
-  // 初始值为 null，避免 SSR 与客户端水合时的时间不一致（Hydration mismatch）
   const [now, setNow] = useState<Date | null>(null);
 
   useEffect(() => {
-    setNow(new Date()); // 仅在客户端挂载后才初始化
+    setNow(new Date());
     const timer = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  // 统计各均线状态数量
   const upCount = data.filter((d) => d.ma.status === "Upward").length;
   const downCount = data.filter((d) => d.ma.status === "Downward").length;
   const silentCount = data.filter((d) => d.ma.status === "Silent").length;
-
-  // 放量统计
   const surgeCount = data.filter((d) => d.volume.status === "Surge").length;
-  // 增仓统计
   const oiIncCount = data.filter((d) => d.openInterest.status === "Increasing").length;
-  // 金叉区品种（diff-dea > 0）
   const goldenCross = data.filter((d) => d.macd.sign === "positive").length;
 
   const formatTime = (d: Date) =>
     `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}:${String(d.getSeconds()).padStart(2, "0")}`;
 
   return (
-    <header className="flex flex-col gap-3 mb-4">
-      {/* 顶部标题栏 */}
+    <div className="space-y-3">
+      {/* 状态栏: 刷新 + 时钟 */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <Activity className="text-blue-400" size={20} />
-            <h1 className="text-lg font-bold text-white tracking-tight">
-              期货品种监控
-              <span className="ml-2 text-xs font-normal text-gray-500 tracking-widest">
-                FUTURES MONITOR · {timeframe === "daily" ? "DAILY" : "30MIN"}
-              </span>
-            </h1>
-          </div>
-          {/* 实时时钟 */}
-          <div className="flex items-center gap-1.5 px-3 py-1 bg-gray-900 border border-gray-700 rounded font-mono text-sm text-gray-300">
-            <Clock size={13} className="text-gray-500" />
-            {/* suppressHydrationWarning + 仅客户端渲染时钟，防止 SSR mismatch */}
-            <span suppressHydrationWarning>
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-[#0f1016] rounded-md border border-[#1e1f2a]">
+            <Clock size={12} className="text-[#9090a0]" />
+            <span className="text-xs font-mono text-[#9090a0]" suppressHydrationWarning>
               {now ? formatTime(now) : "--:--:--"}
             </span>
           </div>
+          <span className="text-[10px] text-[#585868] font-mono" suppressHydrationWarning>
+            更新于 {now ? formatTime(lastRefresh) : "--:--:--"}
+          </span>
         </div>
 
-        {/* 操作按钮组 */}
         <div className="flex items-center gap-2">
-          <span className="text-xs text-gray-600 font-mono" suppressHydrationWarning>
-            最后更新: {now ? formatTime(lastRefresh) : "--:--:--"}
-          </span>
-          <button
-            onClick={onToggleAutoRefresh}
-            className={`px-3 py-1.5 text-xs rounded border transition-all ${
-              autoRefresh
-                ? "bg-blue-900/60 border-blue-600 text-blue-300"
-                : "bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500"
-            }`}
-          >
-            {autoRefresh
-              ? nextRefreshIn
-                ? `● 自动刷新 ${nextRefreshIn}`
-                : "● 自动刷新 30min"
-              : "○ 自动刷新 30min"}
-          </button>
+          {timeframe === "30min" && (
+            <button
+              onClick={onToggleAutoRefresh}
+              className={`px-3 py-1.5 text-xs rounded-md font-medium transition-all ${
+                autoRefresh
+                  ? "bg-amber-500/15 text-amber-400 ring-1 ring-amber-500/30"
+                  : "text-[#585868] hover:text-[#9090a0]"
+              }`}
+            >
+              {autoRefresh ? `● ${nextRefreshIn ?? "自动"}` : "○ 暂停"}
+            </button>
+          )}
           <button
             onClick={onManualRefresh}
             disabled={isLoading}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-gray-800 border border-gray-700 rounded text-gray-300 hover:bg-gray-700 hover:border-gray-500 transition-all disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-[#0f1016] border border-[#1e1f2a] rounded-md text-[#9090a0] hover:text-[#e4e4ec] hover:border-[#2a2b36] transition-all disabled:opacity-50"
           >
-            <RefreshCw size={12} className={isLoading ? "animate-spin" : ""} />
+            <RefreshCw size={11} className={isLoading ? "animate-spin" : ""} />
             刷新
           </button>
         </div>
       </div>
 
-      {/* 市场统计概览栏 */}
+      {/* 统计卡片 */}
       <div className="grid grid-cols-6 gap-2">
-        <StatCard
-          label="均线上行"
-          value={upCount}
-          total={data.length}
-          color="text-red-400"
-          bg="bg-red-950/30 border-red-800/40"
-          Icon={TrendingUp}
-        />
-        <StatCard
-          label="均线下行"
-          value={downCount}
-          total={data.length}
-          color="text-green-400"
-          bg="bg-green-950/30 border-green-800/40"
-          Icon={TrendingDown}
-        />
-        <StatCard
-          label="均线静默"
-          value={silentCount}
-          total={data.length}
-          color="text-gray-400"
-          bg="bg-gray-800/50 border-gray-700/40"
-          Icon={Minus}
-        />
-        <StatCard
-          label="放量品种"
-          value={surgeCount}
-          total={data.length}
-          color="text-orange-400"
-          bg="bg-orange-950/30 border-orange-800/40"
-        />
-        <StatCard
-          label="增仓品种"
-          value={oiIncCount}
-          total={data.length}
-          color="text-amber-400"
-          bg="bg-amber-950/30 border-amber-800/40"
-        />
-        <StatCard
-          label="水上金叉"
-          value={goldenCross}
-          total={data.length}
-          color="text-red-300"
-          bg="bg-red-950/40 border-red-700/50"
-        />
+        <StatCard label="均线上行" value={upCount} total={data.length} accent="emerald" Icon={TrendingUp} />
+        <StatCard label="均线下行" value={downCount} total={data.length} accent="red" Icon={TrendingDown} />
+        <StatCard label="均线静默" value={silentCount} total={data.length} accent="muted" Icon={Minus} />
+        <StatCard label="放量品种" value={surgeCount} total={data.length} accent="amber" Icon={BarChart3} />
+        <StatCard label="增仓品种" value={oiIncCount} total={data.length} accent="amber" Icon={TrendingUp} />
+        <StatCard label="水上金叉" value={goldenCross} total={data.length} accent="sky" Icon={TrendingUp} />
       </div>
-    </header>
+    </div>
   );
 }
 
+const ACCENT_MAP = {
+  emerald: { text: "text-emerald-400", bg: "bg-emerald-400", cardBg: "bg-emerald-500/5" },
+  red:    { text: "text-red-400",    bg: "bg-red-400",    cardBg: "bg-red-500/5" },
+  amber:  { text: "text-amber-400",  bg: "bg-amber-400",  cardBg: "bg-amber-500/5" },
+  sky:    { text: "text-sky-400",    bg: "bg-sky-400",    cardBg: "bg-sky-500/5" },
+  muted:  { text: "text-[#585868]",  bg: "bg-[#585868]",  cardBg: "bg-[#0f1016]" },
+};
+
 function StatCard({
-  label,
-  value,
-  total,
-  color,
-  bg,
-  Icon,
+  label, value, total, accent, Icon,
 }: {
-  label: string;
-  value: number;
-  total: number;
-  color: string;
-  bg: string;
+  label: string; value: number; total: number; accent: keyof typeof ACCENT_MAP;
   Icon?: React.ElementType;
 }) {
+  const a = ACCENT_MAP[accent];
   const pct = total > 0 ? Math.round((value / total) * 100) : 0;
+
   return (
-    <div className={`rounded border px-3 py-2 ${bg}`}>
-      <div className="flex items-center justify-between mb-1">
-        <span className="text-[10px] text-gray-500 tracking-wide">{label}</span>
-        {Icon && <Icon size={11} className={color} />}
+    <div className={`rounded-lg px-3 py-2.5 ${a.cardBg} transition-colors hover:bg-opacity-100`}>
+      <div className="flex items-center justify-between mb-1.5">
+        <span className="text-[10px] text-[#585868] font-medium tracking-wide uppercase">{label}</span>
+        {Icon && <Icon size={11} className={a.text} />}
       </div>
       <div className="flex items-baseline gap-1">
-        <span className={`text-xl font-bold font-mono ${color}`}>{value}</span>
-        <span className="text-gray-600 text-xs font-mono">/{total}</span>
+        <span className={`text-xl font-bold font-mono tracking-tight ${a.text}`}>{value}</span>
+        <span className="text-[#585868] text-[10px] font-mono">/ {total}</span>
       </div>
-      {/* 进度条 */}
-      <div className="mt-1.5 h-0.5 bg-gray-800 rounded-full overflow-hidden">
-        <div
-          className={`h-full rounded-full transition-all duration-500 ${color.replace("text-", "bg-")}`}
-          style={{ width: `${pct}%` }}
-        />
+      <div className="mt-2 h-0.5 bg-[#1e1f2a] rounded-full overflow-hidden">
+        <div className={`h-full rounded-full ${a.bg} transition-all duration-700`}
+          style={{ width: `${pct}%` }} />
       </div>
     </div>
   );

@@ -970,22 +970,13 @@ def tg_send(token: str, chat_id: str, text: str, label: str = "") -> None:
 
 
 def tg_send_all(text: str) -> None:
-    """向所有配置的 Telegram Bot 发送同一条消息。"""
-    bots = [
-        (os.environ.get("TELEGRAM_BOT_TOKEN",   ""),
-         os.environ.get("TELEGRAM_CHAT_ID",     ""),
-         "Bot1"),
-        (os.environ.get("TELEGRAM_BOT_TOKEN_2", ""),
-         os.environ.get("TELEGRAM_CHAT_ID_2",   ""),
-         "Bot2"),
-    ]
-    sent = 0
-    for token, chat_id, label in bots:
-        if token and chat_id:
-            tg_send(token, chat_id, text, label)
-            sent += 1
-    if sent == 0:
-        print("[TG] 未配置任何 Bot Token，跳过推送")
+    """向 Bot1 发送消息。"""
+    token   = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+    chat_id = os.environ.get("TELEGRAM_CHAT_ID", "")
+    if token and chat_id:
+        tg_send(token, chat_id, text, "Bot1")
+    else:
+        print("[TG] 未配置 Bot Token，跳过推送")
 
 
 def build_breakout_message(data: list[dict], bj_time: str) -> str | None:

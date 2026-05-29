@@ -1,6 +1,6 @@
 "use client";
 // ============================================================
-// 概览栏 — Redesign v2
+// 概览栏 — v3 紧凑版：时钟 + 刷新 + 统计 pills
 // ============================================================
 
 import React, { useEffect, useState } from "react";
@@ -45,87 +45,71 @@ export default function DashboardHeader({
     `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}:${String(d.getSeconds()).padStart(2, "0")}`;
 
   return (
-    <div className="space-y-3">
-      {/* 状态栏: 刷新 + 时钟 */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-white rounded-md border border-stone-200">
-            <Clock size={12} className="text-stone-500" />
-            <span className="text-xs font-mono text-stone-500" suppressHydrationWarning>
-              {now ? formatTime(now) : "--:--:--"}
-            </span>
-          </div>
-          <span className="text-[10px] text-stone-400 font-mono" suppressHydrationWarning>
-            更新于 {now ? formatTime(lastRefresh) : "--:--:--"}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={onToggleAutoRefresh}
-            className={`px-3 py-1.5 text-xs rounded-md font-medium transition-all ${
-              autoRefresh
-                ? "bg-amber-50/90 text-amber-500 ring-1 ring-amber-300/50"
-                : "text-stone-400 hover:text-stone-500"
-            }`}
-          >
-            {autoRefresh ? `● ${nextRefreshIn ?? "自动"}` : "○ 暂停"}
-          </button>
-          <button
-            onClick={onManualRefresh}
-            disabled={isLoading}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-white border border-stone-200 rounded-md text-stone-500 hover:text-stone-900 hover:border-stone-300 transition-all disabled:opacity-50"
-          >
-            <RefreshCw size={11} className={isLoading ? "animate-spin" : ""} />
-            刷新
-          </button>
-        </div>
+    <div className="flex items-center gap-3 flex-wrap">
+      {/* 时钟 */}
+      <div className="flex items-center gap-2 px-2.5 py-1.5 bg-white rounded-md border border-stone-200">
+        <Clock size={12} className="text-stone-500" />
+        <span className="text-xs font-mono text-stone-500" suppressHydrationWarning>
+          {now ? formatTime(now) : "--:--:--"}
+        </span>
       </div>
 
-      {/* 统计卡片 */}
-      <div className="grid grid-cols-6 gap-2">
-        <StatCard label="均线上行" value={upCount} total={data.length} accent="emerald" Icon={TrendingUp} />
-        <StatCard label="均线下行" value={downCount} total={data.length} accent="red" Icon={TrendingDown} />
-        <StatCard label="均线静默" value={silentCount} total={data.length} accent="muted" Icon={Minus} />
-        <StatCard label="放量品种" value={surgeCount} total={data.length} accent="amber" Icon={BarChart3} />
-        <StatCard label="增仓品种" value={oiIncCount} total={data.length} accent="amber" Icon={TrendingUp} />
-        <StatCard label="水上金叉" value={goldenCross} total={data.length} accent="sky" Icon={TrendingUp} />
+      {/* 统计 pills */}
+      <div className="flex items-center gap-1.5 flex-wrap">
+        <StatPill label="上行" value={upCount} accent="emerald" Icon={TrendingUp} />
+        <StatPill label="下行" value={downCount} accent="red" Icon={TrendingDown} />
+        <StatPill label="静默" value={silentCount} accent="muted" Icon={Minus} />
+        <span className="text-stone-200 mx-0.5">|</span>
+        <StatPill label="放量" value={surgeCount} accent="amber" Icon={BarChart3} />
+        <StatPill label="增仓" value={oiIncCount} accent="amber" />
+        <StatPill label="金叉" value={goldenCross} accent="sky" />
       </div>
+
+      {/* 右侧：更新信息 + 刷新按钮 */}
+      <div className="flex-1" />
+      <span className="text-[10px] text-stone-400 font-mono" suppressHydrationWarning>
+        更新 {now ? formatTime(lastRefresh) : "--:--:--"}
+      </span>
+      <button
+        onClick={onToggleAutoRefresh}
+        className={`px-2.5 py-1 text-[10px] rounded-md font-medium transition-all ${
+          autoRefresh
+            ? "bg-amber-50/90 text-amber-500 ring-1 ring-amber-300/50"
+            : "text-stone-400 hover:text-stone-500"
+        }`}
+      >
+        {autoRefresh ? `● ${nextRefreshIn ?? ""}` : "○ 暂停"}
+      </button>
+      <button
+        onClick={onManualRefresh}
+        disabled={isLoading}
+        className="flex items-center gap-1 px-2.5 py-1 text-[10px] bg-white border border-stone-200 rounded-md text-stone-500 hover:text-stone-900 hover:border-stone-300 transition-all disabled:opacity-50"
+      >
+        <RefreshCw size={10} className={isLoading ? "animate-spin" : ""} />
+        刷新
+      </button>
     </div>
   );
 }
 
-const ACCENT_MAP = {
-  emerald: { text: "text-emerald-600", bg: "bg-emerald-400", cardBg: "bg-emerald-50/60" },
-  red:    { text: "text-red-600",    bg: "bg-red-400",    cardBg: "bg-red-500/5" },
-  amber:  { text: "text-amber-500",  bg: "bg-amber-500",  cardBg: "bg-amber-50/40" },
-  sky:    { text: "text-sky-600",    bg: "bg-sky-400",    cardBg: "bg-sky-500/5" },
-  muted:  { text: "text-stone-400",  bg: "bg-stone-400",  cardBg: "bg-white" },
+const ACCENT = {
+  emerald: "text-emerald-500 bg-emerald-50 border-emerald-200",
+  red:     "text-red-500 bg-red-50 border-red-200",
+  amber:   "text-amber-500 bg-amber-50 border-amber-200",
+  sky:     "text-sky-500 bg-sky-50 border-sky-200",
+  muted:   "text-stone-400 bg-stone-100 border-stone-200",
 };
 
-function StatCard({
-  label, value, total, accent, Icon,
+function StatPill({
+  label, value, accent, Icon,
 }: {
-  label: string; value: number; total: number; accent: keyof typeof ACCENT_MAP;
+  label: string; value: number; accent: keyof typeof ACCENT;
   Icon?: React.ElementType;
 }) {
-  const a = ACCENT_MAP[accent];
-  const pct = total > 0 ? Math.round((value / total) * 100) : 0;
-
   return (
-    <div className={`rounded-lg px-3 py-2.5 border border-stone-200 shadow-sm ${a.cardBg} transition-colors hover:shadow-md`}>
-      <div className="flex items-center justify-between mb-1.5">
-        <span className="text-[10px] text-stone-400 font-medium tracking-wide uppercase">{label}</span>
-        {Icon && <Icon size={11} className={a.text} />}
-      </div>
-      <div className="flex items-baseline gap-1">
-        <span className={`text-xl font-bold font-mono tracking-tight ${a.text}`}>{value}</span>
-        <span className="text-stone-400 text-[10px] font-mono">/ {total}</span>
-      </div>
-      <div className="mt-2 h-0.5 bg-stone-200 rounded-full overflow-hidden">
-        <div className={`h-full rounded-full ${a.bg} transition-all duration-700`}
-          style={{ width: `${pct}%` }} />
-      </div>
-    </div>
+    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded border text-[10px] font-medium font-mono ${ACCENT[accent]}`}>
+      {Icon && <Icon size={10} />}
+      {label} <span className="font-bold">{value}</span>
+    </span>
   );
 }

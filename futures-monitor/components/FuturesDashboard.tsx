@@ -1,6 +1,7 @@
 "use client";
 // ============================================================
-// 主 Dashboard 容器 — 浅色专业版
+// 主 Dashboard 容器 — v3 紧凑版
+// 布局：顶栏 → 数据源 → 统计pills → 信号(合并) → 持仓 → 筛选+表格
 // ============================================================
 
 import React, { useState, useEffect, useCallback } from "react";
@@ -8,8 +9,7 @@ import { FuturesStatus, Position, PositionsData } from "@/lib/types";
 import DashboardHeader from "./DashboardHeader";
 import FuturesTable from "./FuturesTable";
 import FilterBar from "./FilterBar";
-import SignalPanel from "./SignalPanel";
-import DipBuyPanel from "./DipBuyPanel";
+import SignalTabs from "./SignalTabs";
 import CurrentPositions from "./CurrentPositions";
 import { Database, WifiOff, TrendingUp, Zap } from "lucide-react";
 import Link from "next/link";
@@ -116,10 +116,10 @@ export default function FuturesDashboard() {
 
   return (
     <div className="min-h-screen bg-[#faf8f5] text-stone-900 font-sans">
-      <div className="max-w-screen-2xl mx-auto p-4 space-y-4">
+      <div className="max-w-screen-2xl mx-auto p-4 space-y-3">
 
         {/* ── 顶栏 ───────────────── */}
-        <header className="flex items-center gap-3 pb-3 border-b border-stone-200">
+        <header className="flex items-center gap-3 pb-2 border-b border-stone-200">
           <Zap size={18} className="text-amber-600" />
           <span className="text-sm font-bold tracking-tight text-amber-600">
             期货监控
@@ -140,7 +140,7 @@ export default function FuturesDashboard() {
         {/* ── 数据源状态 ─────────────────────────────── */}
         <DataSourceBanner source={dataSource} updatedAt={remoteUpdatedAt} />
 
-        {/* ── 概览栏 ──────────────────────────────────── */}
+        {/* ── 概览栏（紧凑 pills） ───────────────────── */}
         <DashboardHeader
           data={data}
           lastRefresh={lastRefresh}
@@ -151,48 +151,48 @@ export default function FuturesDashboard() {
           nextRefreshIn={autoRefresh ? formatCountdown(nextRefreshIn) : null}
         />
 
-        {/* ── 筛选栏 ──────────────────────────────────── */}
-        <FilterBar
-          selectedCategory={selectedCategory}
-          selectedMAStatus={selectedMAStatus}
-          onCategoryChange={setSelectedCategory}
-          onMAStatusChange={setSelectedMAStatus}
-          totalCount={data.length}
-          filteredCount={filteredData.length}
-        />
+        {/* ── 信号面板（突破/回踩 tab 合并，无信号自动隐藏） */}
+        <SignalTabs data={data} />
 
-        {/* ── 信号面板 ────────────────────────────────── */}
-        <SignalPanel data={data} />
-        <DipBuyPanel data={data} />
-
-        {/* ── 持仓 ────────────────────────────────────── */}
+        {/* ── 持仓（带浮盈汇总） ─────────────────────── */}
         <CurrentPositions
           positions={positions}
           currentPrices={Object.fromEntries(data.map((d) => [d.symbol, d.price]))}
         />
 
-        {/* ── 数据表格 ────────────────────────────────── */}
-        {isLoading && data.length === 0 ? (
-          <div className="space-y-2">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="h-10 bg-white rounded-md animate-pulse"
-                style={{ opacity: 1 - i * 0.08 }} />
-            ))}
-          </div>
-        ) : (
-          <div className="relative">
-            {isLoading && (
-              <div className="absolute top-3 right-3 z-30 flex items-center gap-2 px-2.5 py-1 bg-white/95 backdrop-blur border border-stone-200 rounded-md text-xs text-stone-500">
-                <div className="w-1.5 h-1.5 bg-amber-600 rounded-full animate-pulse" />
-                拉取数据...
-              </div>
-            )}
-            <FuturesTable data={filteredData} />
-          </div>
-        )}
+        {/* ── 筛选栏 + 表格 ─────────────────────────── */}
+        <div className="space-y-2">
+          <FilterBar
+            selectedCategory={selectedCategory}
+            selectedMAStatus={selectedMAStatus}
+            onCategoryChange={setSelectedCategory}
+            onMAStatusChange={setSelectedMAStatus}
+            totalCount={data.length}
+            filteredCount={filteredData.length}
+          />
+
+          {isLoading && data.length === 0 ? (
+            <div className="space-y-2">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="h-10 bg-white rounded-md animate-pulse"
+                  style={{ opacity: 1 - i * 0.08 }} />
+              ))}
+            </div>
+          ) : (
+            <div className="relative">
+              {isLoading && (
+                <div className="absolute top-3 right-3 z-30 flex items-center gap-2 px-2.5 py-1 bg-white/95 backdrop-blur border border-stone-200 rounded-md text-xs text-stone-500">
+                  <div className="w-1.5 h-1.5 bg-amber-600 rounded-full animate-pulse" />
+                  拉取数据...
+                </div>
+              )}
+              <FuturesTable data={filteredData} />
+            </div>
+          )}
+        </div>
 
         {/* ── 页脚 ────────────────────────────────────── */}
-        <footer className="flex items-center justify-between text-[10px] text-stone-400 pt-4 border-t border-stone-200">
+        <footer className="flex items-center justify-between text-[10px] text-stone-400 pt-3 border-t border-stone-200">
           <div className="flex gap-4">
             <span>AKShare · 新浪财经</span>
             <span>30min K 线</span>
@@ -215,7 +215,7 @@ function DataSourceBanner({ source, updatedAt }: { source: DataSource; updatedAt
 
   if (source === "github-actions" || source === "akshare") {
     return (
-      <div className="flex items-center gap-2 px-3 py-2 bg-emerald-50/80 border border-emerald-500/20 rounded-md text-xs text-emerald-600">
+      <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50/80 border border-emerald-500/20 rounded-md text-xs text-emerald-600">
         <Database size={12} />
         <span className="font-medium">实盘数据</span>
         <span className="text-emerald-600/60">— 数据源已连接</span>
@@ -226,7 +226,7 @@ function DataSourceBanner({ source, updatedAt }: { source: DataSource; updatedAt
 
   if (source === "mock") {
     return (
-      <div className="flex items-center gap-2 px-3 py-2 bg-amber-50/70 border border-amber-200 rounded-md text-xs text-amber-500">
+      <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50/70 border border-amber-200 rounded-md text-xs text-amber-500">
         <WifiOff size={12} />
         <span className="font-medium">模拟数据</span>
         <span className="text-amber-500/60">— 演示模式</span>
@@ -235,7 +235,7 @@ function DataSourceBanner({ source, updatedAt }: { source: DataSource; updatedAt
   }
 
   return (
-    <div className="flex items-center gap-2 px-3 py-2 bg-white border border-stone-200 rounded-md text-xs text-stone-400">
+    <div className="flex items-center gap-2 px-3 py-1.5 bg-white border border-stone-200 rounded-md text-xs text-stone-400">
       <div className="w-1.5 h-1.5 rounded-full bg-stone-400 animate-pulse" />
       加载数据...
     </div>

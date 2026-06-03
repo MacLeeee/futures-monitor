@@ -9,15 +9,16 @@
 #
 # 两类信号：
 #   突破信号: 30min MA排列方向 + 15min MACD扩口 + 15min放量 [+ 15min增仓]
-#   回踩信号: 30min MA60锚定多空 + 价格回踩MA20/MA60 ±0.5% + 15min MACD方向缩窄 + 15min放量
+#   回踩信号: 30min MA60锚定多空 + 价格回踩MA20/MA60 + 15min MACD方向扩口 + 15min放量
 #
 # 输出: futures-monitor/public/data.json       (30min+15min)
 #       futures-monitor/public/data_daily.json (日K 复盘)
 # ============================================================
 
+from __future__ import annotations
+
 import json
 import os
-import socket
 import sys
 import urllib.request
 import urllib.parse
@@ -37,9 +38,6 @@ except ModuleNotFoundError:  # pragma: no cover
 
 # Python 3.11+ 有 datetime.UTC；为兼容 3.8/3.9/3.10 统一使用 timezone.utc
 UTC = timezone.utc
-
-# 全局 Socket 超时：20秒无响应则抛异常（防止 Sina API 挂死产生僵尸进程）
-socket.setdefaulttimeout(20)
 
 import numpy as np
 import pandas as pd
@@ -501,7 +499,18 @@ def calc_box_signal(close: float, donchian: dict, regime: dict,
     return None
 
 
-_BOUNCE_TOL = 1.5   # 回踩阈值：右侧入场时价格已从支撑反弹，允许距均线最大 1.5%
+_BOUNCE_TOL = 1.5          # 回踩阈值上限：右侧入场时价格已从支撑反弹，允许距均线最大 1.5%
+_PULLBACK_ATR_FACTOR = 0.8 # 回踩阈值按 ATR 自适应，避免高/低波动品种共用固定百分比
+_MIN_RISK_PCT = 0.15       # 新开仓最小初始风险距离，低于该比例视为噪声过近
+_MIN_PRICE_GAP_PCT = 0.01  # 止损必须在入场价正确一侧，至少留出 0.01% 保护距离
+
+
+def _adaptive_bounce_tol(close: float, atr: float = 0.0) -> float:
+    """回踩右侧确认距离：不超过固定 1.5%，同时按当前 ATR 收缩。"""
+    if close > 0 and atr > 0:
+        atr_pct = atr / close * 100
+        return max(0.30, min(_BOUNCE_TOL, _PULLBACK_ATR_FACTOR * atr_pct))
+    return _BOUNCE_TOL
 
 def calc_breakout_signal(
     ma_30m: dict,
@@ -584,6 +593,9 @@ def calc_pullback_signal(
     macd_15m: dict,
     vol_15m: dict,
     regime: dict | None = None,
+    donchian: dict | None = None,
+    atr: float = 0.0,
+    oi_15m: dict | None = None,
 ) -> dict | None:
     """
     回踩信号（右侧入场）：
@@ -596,9 +608,10 @@ def calc_pullback_signal(
       ③ 斜率最小阈值：slope20 ≥ 0.05% / slope60 ≥ 0.02%，走平均线不触发
 
     做多回踩（右侧）: close > MA60(30m) → 回踩支撑后，MACD 金叉 + 扩口 → 确认第二波上涨启动
-      - 价格在支撑均线上方 0~1.5%（已反弹区域），或轻微跌穿 0.3%（wick）
+      - 价格在支撑均线上方 0~min(1.5%, 0.8ATR)（已反弹区域），或轻微跌穿 0.3%（wick）
     做空反抽（右侧）: close < MA60(30m) → 反抽阻力后，MACD 死叉 + 扩口 → 确认第二波下跌启动
-      - 价格在阻力均线下方 0~1.5%（已回落区域），或轻微突破 0.3%（wick）
+      - 价格在阻力均线下方 0~min(1.5%, 0.8ATR)（已回落区域），或轻微突破 0.3%（wick）
+      - 空头额外要求趋势方向 bearish、价格位于唐奇安中轴下方、并伴随增仓确认
     """
     ma20 = ma_30m.get("ma20")
     ma60 = ma_30m.get("ma60")
@@ -653,7 +666,7 @@ def calc_pullback_signal(
     # 做多：close 在 support 下方最多 0.3%（仅允许wick轻微跌穿）~ 上方最多 1.5%（已反弹区域）
     # 做空：close 在 resist  上方最多 0.3%（仅允许wick轻微突破）~ 下方最多 1.5%（已回落区域）
     _APPROACH_TOL = 0.30  # 穿越容忍：允许超过均线方向 %（wick容忍）
-    # _BOUNCE_TOL 来自模块全局，目前为 1.5%
+    bounce_tol = _adaptive_bounce_tol(close, atr)
 
     if bullish:
         # 多头回踩右侧入场：价格已从支撑反弹，MACD 回归金叉区 + 快速扩口 → 第二波启动确认
@@ -669,10 +682,10 @@ def calc_pullback_signal(
 
         dist_pct = (close - support_val) / support_val * 100   # 正=上方，负=下方
 
-        # 价格在支撑均线附近：close ∈ [support*(1-0.3%), support*(1+1.5%)]
+        # 价格在支撑均线附近：close ∈ [support*(1-0.3%), support*(1+bounce_tol)]
         # 下方 0.3%：允许wick轻微跌穿支撑后反弹
-        # 上方 1.5%：右侧确认时价格已反弹，允许距支撑最多 1.5%
-        if not (support_val * (1 - _APPROACH_TOL / 100) <= close <= support_val * (1 + _BOUNCE_TOL / 100)):
+        # 上方 bounce_tol：右侧确认时价格已反弹，过远则放弃追入
+        if not (support_val * (1 - _APPROACH_TOL / 100) <= close <= support_val * (1 + bounce_tol / 100)):
             return None
 
         return {
@@ -684,6 +697,7 @@ def calc_pullback_signal(
             "slopeType":  slope_type,
             "ma20":       round(ma20, 2),
             "ma60":       round(ma60, 2),
+            "bounceTol":  round(bounce_tol, 3),
         }
     else:
         # 空头反抽右侧入场：价格已从阻力回落，MACD 回归死叉区 + 快速扩口 → 第二波下跌确认
@@ -691,6 +705,15 @@ def calc_pullback_signal(
                    and macd_15m.get("rapidExpanding", False))
         if not macd_ok:
             return None
+
+        # 空头回踩历史表现弱，额外要求大结构与资金方向同时支持下行。
+        if regime is not None and regime.get("direction") != "bearish":
+            return None
+        if donchian and donchian.get("basis", 0) > 0 and close >= donchian["basis"]:
+            return None
+        if oi_15m is not None and oi_15m.get("status") != "Increasing":
+            return None
+
         # 阻力均线选择
         if slope_type == "declining":
             target, resist_val = "MA20", ma20
@@ -699,10 +722,10 @@ def calc_pullback_signal(
 
         dist_pct = (resist_val - close) / resist_val * 100   # 正=下方，负=上方
 
-        # 价格在阻力均线附近：close ∈ [resist*(1-1.5%), resist*(1+0.3%)]
-        # 下方 1.5%：右侧确认时价格已回落，允许距阻力最多 1.5%
+        # 价格在阻力均线附近：close ∈ [resist*(1-bounce_tol%), resist*(1+0.3%)]
+        # 下方 bounce_tol：右侧确认时价格已回落，过远则放弃追空
         # 上方 0.3%：允许wick轻微突破阻力后回落
-        if not (resist_val * (1 - _BOUNCE_TOL / 100) <= close <= resist_val * (1 + _APPROACH_TOL / 100)):
+        if not (resist_val * (1 - bounce_tol / 100) <= close <= resist_val * (1 + _APPROACH_TOL / 100)):
             return None
 
         return {
@@ -714,6 +737,7 @@ def calc_pullback_signal(
             "slopeType":  slope_type,
             "ma20":       round(ma20, 2),
             "ma60":       round(ma60, 2),
+            "bounceTol":  round(bounce_tol, 3),
         }
 
 
@@ -749,11 +773,9 @@ def calc_macd(df: pd.DataFrame) -> dict:
     avg_abs_delta = float(np.mean(prev_deltas)) if prev_deltas else 0.0
 
     # 当前棒扩口：expansionRate > 1.2（略高于 1.0 基线，排除刚刚勉强触发的弱信号）
-    # 前一棒也需扩口（prev_delta > 0）：两根连续扩口，过滤单根脉冲急冲
     _EXPANSION_RATE_MIN = 1.2
     rapid_expanding = bool(
         current_delta > 0
-        and prev_delta > 0                                                   # 前一根也在扩口
         and (avg_abs_delta == 0 or current_delta > avg_abs_delta * _EXPANSION_RATE_MIN)
     )
     expansion_rate = round(current_delta / avg_abs_delta, 2) if avg_abs_delta > 0 else (1.0 if current_delta > 0 else 0.0)
@@ -911,7 +933,8 @@ def process_symbol(args: tuple) -> dict | None:
                                                      regime=regime, donchian=donchian, close=close,
                                                      trigger_open=round(float(df_15m["open"].iloc[-1]), 2),
                                                      atr=atr),
-            "pullbackSignal":  calc_pullback_signal(close, ma_30m, macd_15m, vol_15m, regime),
+            "pullbackSignal":  calc_pullback_signal(close, ma_30m, macd_15m, vol_15m, regime,
+                                                    donchian=donchian, atr=atr, oi_15m=oi_15m),
             "marketRegime":    regime,
             "boxSignal":       box_sig,
         }
@@ -970,13 +993,22 @@ def tg_send(token: str, chat_id: str, text: str, label: str = "") -> None:
 
 
 def tg_send_all(text: str) -> None:
-    """向 Bot1 发送消息。"""
-    token   = os.environ.get("TELEGRAM_BOT_TOKEN", "")
-    chat_id = os.environ.get("TELEGRAM_CHAT_ID", "")
-    if token and chat_id:
-        tg_send(token, chat_id, text, "Bot1")
-    else:
-        print("[TG] 未配置 Bot Token，跳过推送")
+    """向所有配置的 Telegram Bot 发送同一条消息。"""
+    bots = [
+        (os.environ.get("TELEGRAM_BOT_TOKEN",   ""),
+         os.environ.get("TELEGRAM_CHAT_ID",     ""),
+         "Bot1"),
+        (os.environ.get("TELEGRAM_BOT_TOKEN_2", ""),
+         os.environ.get("TELEGRAM_CHAT_ID_2",   ""),
+         "Bot2"),
+    ]
+    sent = 0
+    for token, chat_id, label in bots:
+        if token and chat_id:
+            tg_send(token, chat_id, text, label)
+            sent += 1
+    if sent == 0:
+        print("[TG] 未配置任何 Bot Token，跳过推送")
 
 
 def build_breakout_message(data: list[dict], bj_time: str) -> str | None:
@@ -1057,11 +1089,11 @@ def build_pullback_message(data: list[dict], bj_time: str) -> str | None:
     lines = [f"<b>🎯 回踩信号</b>  {bj_time}", sep]
 
     if longs:
-        lines.append("🔵 <b>做多回踩</b>（30m MA60上方 · 价格贴近支撑 · 15m死叉缩窄 · 放量）")
+        lines.append("🔵 <b>做多回踩</b>（30m MA60上方 · 价格在支撑上方≤1.5% · 15m金叉扩口 · 放量）")
         lines.extend(fmt_item(d, "↩") for d in longs)
     if shorts:
         if longs: lines.append("")
-        lines.append("🟠 <b>做空反抽</b>（30m MA60下方 · 价格贴近阻力 · 15m金叉缩窄 · 放量）")
+        lines.append("🟠 <b>做空反抽</b>（30m MA60下方 · 价格在阻力下方≤1.5% · 15m死叉扩口 · 放量）")
         lines.extend(fmt_item(d, "↪") for d in shorts)
 
     lines.append(sep)
@@ -1294,15 +1326,8 @@ def main():
     with ThreadPoolExecutor(max_workers=4) as pool:
         futures = {pool.submit(process_symbol, s): s for s in SYMBOLS}
         for fut in as_completed(futures):
-            try:
-                r = fut.result(timeout=90)
-                if r: results.append(r)
-            except TimeoutError:
-                (name, cat, code) = futures[fut]
-                print(f"  [TIMEOUT] {name}({code}) 超时90s，跳过", file=sys.stderr)
-            except Exception as e:
-                (name, cat, code) = futures[fut]
-                print(f"  [SKIP] {name}({code}): {e}", file=sys.stderr)
+            r = fut.result()
+            if r: results.append(r)
 
     # ── Step 2: 抓取日K（仅在收盘后23:00-23:15执行，其余时间跳过，避免API挂死产生僵尸）──
     _now_bj_daily = datetime.now(ZoneInfo("Asia/Shanghai"))
@@ -1315,15 +1340,8 @@ def main():
         with ThreadPoolExecutor(max_workers=4) as pool:
             futs = {pool.submit(process_symbol_daily, s): s for s in SYMBOLS}
             for fut in as_completed(futs):
-                try:
-                    r = fut.result(timeout=60)
-                    if r: daily_results_pre.append(r)
-                except TimeoutError:
-                    (name, cat, code) = futs[fut]
-                    print(f"  [TIMEOUT-D] {name}({code}) 超时60s，跳过", file=sys.stderr)
-                except Exception as e:
-                    (name, cat, code) = futs[fut]
-                    print(f"  [SKIP-D] {name}({code}): {e}", file=sys.stderr)
+                r = fut.result()
+                if r: daily_results_pre.append(r)
     else:
         print(f"[DAILY] 非收盘窗口({_now_bj_daily.strftime('%H:%M')})，跳过日K抓取")
 
@@ -1471,11 +1489,12 @@ def _can_open(positions: list[dict], symbol: str, direction: str,
 
 def _open_position(symbol: str, direction: str, signal_type: str,
                    entry_price: float, atr: float,
-                   prev_low: float, prev_high: float) -> dict:
+                   prev_low: float, prev_high: float) -> dict | None:
     """
     创建新持仓记录。
     止损：做多 = max(入场价-2ATR, 前K低点-1ATR)；做空 = min(入场价+2ATR, 前K高点+1ATR)
-    止盈：2:1 固定风险回报（TP距离 = 2 × 止损距离）
+    风险保护：止损必须位于入场价正确一侧，且初始风险不得过小。
+    止盈目标：2:1 风险回报，达到 2R 后进入移动止损。
     """
     bj_time = datetime.now(ZoneInfo("Asia/Shanghai")).strftime("%Y-%m-%d %H:%M")
     uid     = datetime.now(ZoneInfo("Asia/Shanghai")).strftime("%Y%m%d%H%M%S")
@@ -1485,15 +1504,24 @@ def _open_position(symbol: str, direction: str, signal_type: str,
         # 方案1: 入场价 - 2×ATR
         # 方案2: 前一根K线低点 - 1×ATR
         stop_loss = max(entry_price - 2 * atr, prev_low - 1 * atr)
+        max_sl = entry_price * (1 - _MIN_PRICE_GAP_PCT / 100)
+        stop_loss = min(stop_loss, max_sl)
         risk      = entry_price - stop_loss
     else:
         # 两种方案取较小值（价格较低 = 止损距离较小 = 更保守地控制风险）
         # 方案1: 入场价 + 2×ATR
         # 方案2: 前一根K线高点 + 1×ATR
         stop_loss = min(entry_price + 2 * atr, prev_high + 1 * atr)
+        min_sl = entry_price * (1 + _MIN_PRICE_GAP_PCT / 100)
+        stop_loss = max(stop_loss, min_sl)
         risk      = stop_loss - entry_price
 
-    risk      = max(risk, 0.0001)   # 防止除零
+    min_risk = entry_price * _MIN_RISK_PCT / 100
+    if risk < min_risk:
+        print(f"[POS] 跳过 {symbol} {direction} {signal_type}: "
+              f"初始风险过小 risk={risk:.4f} < {min_risk:.4f}")
+        return None
+
     take_profit = (entry_price + 2 * risk) if direction == "long" else (entry_price - 2 * risk)
 
     return {
@@ -1505,8 +1533,13 @@ def _open_position(symbol: str, direction: str, signal_type: str,
         "entryPrice":  round(entry_price, 4),
         "atr":         round(atr, 4),
         "stopLoss":    round(stop_loss, 4),
+        "initialStopLoss": round(stop_loss, 4),
         "takeProfit":  round(take_profit, 4),
         "riskDist":    round(risk, 4),
+        "initialRiskDist": round(risk, 4),
+        "trailingActive": False,
+        "breakEvenMoved": False,
+        "exitReason":  None,                 # initial_sl | fixed_tp | trailing_sl
         "status":      "open",               # open | closed_sl | closed_tp
         "exitTime":    None,
         "exitPrice":   None,
@@ -1521,9 +1554,10 @@ def _check_and_close(positions: list[dict],
     轮查所有 open 持仓：
     - 初始止损：触及 stopLoss 则止损出
     - 移动止损（Trailing Stop）：
-        激活条件: 做多 price >= entry + 2×ATR  /  做空 price <= entry - 2×ATR
+        1R 后先把止损推到入场价附近保护本金
+        激活条件: 做多 price >= entry + 2R  /  做空 price <= entry - 2R
         激活后每根K线更新止损 = prev_close ± 2×ATR（只向有利方向移动）
-        触发移动止损出场记录为 closed_tp
+        触发移动止损出场记录为 closed_tp，并用 exitReason 标记 trailing_sl
     """
     bj_time = datetime.now(ZoneInfo("Asia/Shanghai")).strftime("%Y-%m-%d %H:%M")
     for pos in positions:
@@ -1546,14 +1580,25 @@ def _check_and_close(positions: list[dict],
         entry      = pos["entryPrice"]
         sl         = pos["stopLoss"]
         trailing   = pos.get("trailingActive", False)  # 是否已进入移动止损模式
+        risk_ref   = pos.get("initialRiskDist") or pos.get("riskDist") or abs(entry - sl)
+        if risk_ref <= 0:
+            continue
 
         if direction == "long":
-            # ── 移动止损激活检查（用最高价判断是否已盈利足够）──
-            if not trailing and cur_atr > 0 and cur_high >= entry + 2 * cur_atr:
+            # ── 1R 先推保本，2R 后启用移动止损 ─────────────────
+            if not pos.get("breakEvenMoved") and cur_high >= entry + risk_ref:
+                new_sl = round(entry, 4)
+                if new_sl > sl:
+                    pos["stopLoss"] = new_sl
+                    sl = new_sl
+                pos["breakEvenMoved"] = True
+
+            if not trailing and cur_high >= entry + 2 * risk_ref:
                 trailing = True
                 pos["trailingActive"] = True
+                pos["trailingActivatedAt"] = bj_time
                 print(f"[POS] {pos['id']} 移动止损激活 @ high={cur_high:.4f} "
-                      f"(entry+2ATR={entry + 2*cur_atr:.4f})")
+                      f"(entry+2R={entry + 2*risk_ref:.4f})")
 
             # ── 移动止损更新（每根K线往上推进）──────────────
             if trailing and cur_atr > 0:
@@ -1564,16 +1609,23 @@ def _check_and_close(positions: list[dict],
 
             # ── 出场判断（用最低价触碰止损）─────────────────
             hit_sl = cur_low <= sl
-            # 未进入移动止损时，仍保留固定止盈兜底（用最高价触碰止盈）
-            hit_tp = (not trailing) and cur_high >= pos["takeProfit"]
+            # 无法计算 ATR 时，保留固定止盈兜底
+            hit_tp = (not trailing) and cur_atr <= 0 and cur_high >= pos["takeProfit"]
 
         else:  # short
-            # ── 移动止损激活检查（用最低价判断是否已盈利足够）──
-            if not trailing and cur_atr > 0 and cur_low <= entry - 2 * cur_atr:
+            if not pos.get("breakEvenMoved") and cur_low <= entry - risk_ref:
+                new_sl = round(entry, 4)
+                if new_sl < sl:
+                    pos["stopLoss"] = new_sl
+                    sl = new_sl
+                pos["breakEvenMoved"] = True
+
+            if not trailing and cur_low <= entry - 2 * risk_ref:
                 trailing = True
                 pos["trailingActive"] = True
+                pos["trailingActivatedAt"] = bj_time
                 print(f"[POS] {pos['id']} 移动止损激活 @ low={cur_low:.4f} "
-                      f"(entry-2ATR={entry - 2*cur_atr:.4f})")
+                      f"(entry-2R={entry - 2*risk_ref:.4f})")
 
             if trailing and cur_atr > 0:
                 new_sl = round(prev_close + 2 * cur_atr, 4)
@@ -1583,17 +1635,26 @@ def _check_and_close(positions: list[dict],
 
             # ── 出场判断（用最高价触碰止损）─────────────────
             hit_sl = cur_high >= sl
-            # 未进入移动止损时，仍保留固定止盈兜底（用最低价触碰止盈）
-            hit_tp = (not trailing) and cur_low <= pos["takeProfit"]
+            # 无法计算 ATR 时，保留固定止盈兜底
+            hit_tp = (not trailing) and cur_atr <= 0 and cur_low <= pos["takeProfit"]
 
         if hit_sl or hit_tp:
-            # 移动止损触发视为止盈；初始止损触发视为止损
-            if hit_tp or (hit_sl and trailing):
+            if hit_tp:
                 exit_px        = pos["takeProfit"] if hit_tp else sl
                 pos["status"]  = "closed_tp"
+                pos["exitReason"] = "fixed_tp"
+            elif hit_sl and trailing:
+                exit_px        = sl
+                pos["status"]  = "closed_tp"
+                pos["exitReason"] = "trailing_sl"
+            elif hit_sl and pos.get("breakEvenMoved"):
+                exit_px        = sl
+                pos["status"]  = "closed_sl"
+                pos["exitReason"] = "break_even_sl"
             else:
                 exit_px        = sl
                 pos["status"]  = "closed_sl"
+                pos["exitReason"] = "initial_sl"
 
             pos["exitTime"]  = bj_time
             pos["exitPrice"] = round(exit_px, 4)
@@ -1637,8 +1698,9 @@ def _manage_positions(merged: list[dict]) -> None:
             if _can_open(positions, symbol, direction):
                 pos = _open_position(symbol, direction, sig_type,
                                      close, atr, prev_low, prev_high)
-                positions.append(pos)
-                print(f"[POS] 新建 {pos['id']}  SL={pos['stopLoss']}  TP={pos['takeProfit']}")
+                if pos:
+                    positions.append(pos)
+                    print(f"[POS] 新建 {pos['id']}  SL={pos['stopLoss']}  TP={pos['takeProfit']}")
 
     _save_positions(positions)
     print(f"[POS] 持仓更新完成，共 {len(positions)} 笔，"

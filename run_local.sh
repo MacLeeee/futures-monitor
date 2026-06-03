@@ -16,9 +16,9 @@ DATA_DIR="$REPO_DIR/futures-monitor/public"
 INTERVAL=900   # 15 分钟（秒）——与 15min K线周期一致
 
 # ── Telegram（可选）──────────────────────────────────────
-# Bot 1（原有）
-: "${TELEGRAM_BOT_TOKEN:=8052508202:***}"
-: "${TELEGRAM_CHAT_ID:=6414409185}"
+# Bot 1（猪猪敷 @fffuuu66_bot → 频道「敷敷分身」）
+: "${TELEGRAM_BOT_TOKEN:=8501597756:AAHo43voiOJO5Ym1QuXn7rG_KEasytlgks0}"
+: "${TELEGRAM_CHAT_ID:=-1003817682386}"
 # Bot 2（Hajimibot @jimiikunbot）
 : "${TELEGRAM_BOT_TOKEN_2:=8704990040:***}"
 : "${TELEGRAM_CHAT_ID_2:=8760058696}"

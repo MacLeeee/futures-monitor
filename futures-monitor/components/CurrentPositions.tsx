@@ -82,7 +82,7 @@ function PositionChip({ pos, floatPts }: { pos: Position; floatPts: number }) {
   return (
     <span
       className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[10px] ${borderColor} ${bgColor}`}
-      title={`入场 ${pos.entryPrice.toFixed(2)}  SL ${pos.stopLoss.toFixed(2)}  TP ${pos.takeProfit.toFixed(2)}  ${pos.entryTime}`}
+      title={`入场 ${pos.entryPrice.toFixed(2)}  当前SL ${pos.stopLoss.toFixed(2)}  初始SL ${pos.initialStopLoss?.toFixed(2) ?? pos.stopLoss.toFixed(2)}  ${pos.trailingActive ? "移动止损" : pos.breakEvenMoved ? "保本" : "初始"}  ${pos.entryTime}`}
     >
       <span className={`font-bold ${dirColor}`}>
         {isLong ? "▲" : "▼"}

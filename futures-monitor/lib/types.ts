@@ -20,7 +20,7 @@ export interface BreakoutSignal {
   oiConfirmed: boolean;      // 15min 持仓量增仓（或有加分项）
 }
 
-// 回踩信号：30min MA60 锚定方向 + 价格从正确方向回踩均线 + 15min MACD缩窄 + 15min放量
+// 回踩信号：30min MA60 锚定方向 + 价格从正确方向回踩均线 + 15min MACD扩口 + 15min放量
 export interface PullbackSignal {
   type: "long" | "short";   // 做多回踩（从上方） / 做空反抽（从下方）
   target: "MA20" | "MA60";  // 回踩/反抽的目标均线
@@ -30,6 +30,7 @@ export interface PullbackSignal {
   slopeType: MaSlopeType;    // 30min MA20 斜率类型
   ma20: number;              // 30min MA20 当前值
   ma60: number;              // 30min MA60 当前值
+  bounceTol: number;         // 自适应回踩容忍阈值%（按 ATR 收缩）
 }
 
 export interface FuturesStatus {
@@ -127,6 +128,7 @@ export interface BoxSignal {
 export type PositionStatus = "open" | "closed_sl" | "closed_tp";
 export type PositionDirection = "long" | "short";
 export type SignalType = "breakout" | "pullback";
+export type ExitReason = "initial_sl" | "break_even_sl" | "trailing_sl" | "fixed_tp";
 
 export interface Position {
   id: string;
@@ -136,9 +138,15 @@ export interface Position {
   entryTime: string;          // "2026-03-30 13:33"
   entryPrice: number;
   atr: number;
-  stopLoss: number;
+  stopLoss: number;           // 当前止损价（可能被移动止损 / 保本更新）
+  initialStopLoss: number;    // 初始止损价（入场时设定，不变）
   takeProfit: number;
-  riskDist: number;           // |entry - stopLoss|
+  riskDist: number;           // 当前风险距离 = |entry - stopLoss|
+  initialRiskDist: number;   // 初始风险距离（入场时设定）
+  trailingActive: boolean;    // 是否已进入移动止损模式
+  breakEvenMoved: boolean;   // 是否已推过保本（1R 后止损移至入场价）
+  trailingActivatedAt?: string; // 移动止损激活时间 "2026-04-07 14:30"
+  exitReason: ExitReason | null; // 出场原因
   status: PositionStatus;
   exitTime: string | null;
   exitPrice: number | null;

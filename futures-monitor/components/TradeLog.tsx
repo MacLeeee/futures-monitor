@@ -579,8 +579,9 @@ export default function TradeLog() {
                   <th className="px-3 py-2.5 text-right">每手保证金</th>
                   <th className="px-3 py-2.5 text-right">手数</th>
                   <th className="px-3 py-2.5 text-right">入场价</th>
-                  <th className="px-3 py-2.5 text-right">止损</th>
-                  <th className="px-3 py-2.5 text-right">止盈目标</th>
+                  <th className="px-3 py-2.5 text-right">当前止损</th>
+                  <th className="px-3 py-2.5 text-right">初始止损</th>
+                  <th className="px-3 py-2.5 text-center">风控状态</th>
                   <th className="px-3 py-2.5 text-left whitespace-nowrap">入场时间</th>
                 </tr>
               </thead>
@@ -589,6 +590,18 @@ export default function TradeLog() {
                   const [mult, mgnRate, unit] = getSpec(pos.symbol);
                   const mpl = pos.entryPrice * mult * mgnRate;
                   const lots = Math.max(1, Math.floor(MARGIN_PER_TRADE / mpl));
+                  // 风控状态判定
+                  const riskLabel = pos.trailingActive
+                    ? "移动止损"
+                    : pos.breakEvenMoved
+                      ? "保本"
+                      : "初始";
+                  const riskColor = pos.trailingActive
+                    ? "text-sky-600 bg-sky-900/20"
+                    : pos.breakEvenMoved
+                      ? "text-yellow-600 bg-yellow-900/20"
+                      : "text-stone-400 bg-stone-100";
+                  const slMoved = pos.stopLoss !== pos.initialStopLoss;
                   return (
                     <tr key={pos.id}
                       className="border-b border-stone-200 hover:bg-stone-100/40 transition-colors">
@@ -603,8 +616,15 @@ export default function TradeLog() {
                       </td>
                       <td className="px-3 py-2 text-right text-stone-300">{lots}</td>
                       <td className="px-3 py-2 text-right text-stone-300">{pos.entryPrice.toFixed(2)}</td>
-                      <td className="px-3 py-2 text-right text-red-600/80">{pos.stopLoss.toFixed(2)}</td>
-                      <td className="px-3 py-2 text-right text-emerald-600/80">{pos.takeProfit.toFixed(2)}</td>
+                      <td className={`px-3 py-2 text-right font-medium ${slMoved ? "text-sky-600" : "text-red-600/80"}`}>
+                        {pos.stopLoss.toFixed(2)}
+                      </td>
+                      <td className="px-3 py-2 text-right text-stone-400">{pos.initialStopLoss?.toFixed(2) ?? pos.stopLoss.toFixed(2)}</td>
+                      <td className="px-3 py-2 text-center">
+                        <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${riskColor}`}>
+                          {riskLabel}
+                        </span>
+                      </td>
                       <td className="px-3 py-2 text-stone-400 whitespace-nowrap">{pos.entryTime}</td>
                     </tr>
                   );

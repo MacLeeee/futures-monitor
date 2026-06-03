@@ -1041,12 +1041,12 @@ def tg_send_all(text: str) -> None:
 
 def build_breakout_message(data: list[dict], bj_time: str) -> str | None:
     """
-    突破信号推送格式：
+    突破检测推送格式（转入 pending 等待 30m KD 冷却）：
     ─────────────────────────────────
-    📊 突破信号 03-24 10:00
+    ⚡ 突破检测 03-24 10:00
     ─────────────────────────────────
-    🔴 做多：黄金 +0.8%  铜 +0.5%
-    🟢 做空：原油 -1.2%
+    🔴 做多检测：黄金 +0.8%  铜 +0.5%
+    🟢 做空检测：原油 -1.2%
     📈 均线新突破：白银↗  棉花↘
     ─────────────────────────────────
     """
@@ -1062,17 +1062,24 @@ def build_breakout_message(data: list[dict], bj_time: str) -> str | None:
         sig = d.get("breakoutSignal") or {}
         chg = f"+{d['change']:.2f}%" if d["change"] >= 0 else f"{d['change']:.2f}%"
         oi  = " +OI" if sig.get("oiConfirmed") else ""
-        return f"  {arrow}{d['symbol']} {chg}  MA×{d['ma']['cumulative']} 15mMACD×{d['macd']['cumulative']}{oi}"
+        # 突破K实体50%触发位
+        open_ = d.get("curOpen")
+        close_ = d.get("price")
+        level_str = ""
+        if open_ and close_:
+            level = (open_ + close_) / 2
+            level_str = f"  触发位{level:.2f}"
+        return f"  {arrow}{d['symbol']} {chg}  MA×{d['ma']['cumulative']} 15mMACD×{d['macd']['cumulative']}{oi}{level_str}"
 
     sep = "─" * 24
-    lines = [f"<b>📊 突破信号</b>  {bj_time}",  sep]
+    lines = [f"<b>⚡ 突破检测</b>  {bj_time}",  sep]
 
     if longs:
-        lines.append("🔴 <b>做多</b>（30m上行 · 15m金叉扩口 · 放量）")
+        lines.append("🔴 <b>做多检测</b>（30m上行 · 15m金叉扩口 · 放量 · 等待KD冷却）")
         lines.extend(fmt_item(d, "▲") for d in longs)
     if shorts:
         if longs: lines.append("")
-        lines.append("🟢 <b>做空</b>（30m下行 · 15m死叉扩口 · 放量）")
+        lines.append("🟢 <b>做空检测</b>（30m下行 · 15m死叉扩口 · 放量 · 等待KD冷却）")
         lines.extend(fmt_item(d, "▼") for d in shorts)
 
     if ma_first_up or ma_first_dn:
@@ -1085,6 +1092,8 @@ def build_breakout_message(data: list[dict], bj_time: str) -> str | None:
             chg = f"{d['change']:.2f}%"
             lines.append(f"  ↘ {d['symbol']} {chg} 下行第1根")
 
+    lines.append("")
+    lines.append("💡 已转入 pending · 等待 30m KD 冷却确认（最多12根K）")
     lines.append(sep)
     return "\n".join(lines)
 
@@ -1427,7 +1436,7 @@ def main():
     if messages:
         tg_send_all("\n\n".join(messages))
     else:
-        print("[TG] 无突破/回踩/状态切换信号，不推送")
+        print("[TG] 无突破检测/回踩/状态切换信号，不推送")
 
     # ── 持仓管理（检查止损止盈 + 新建信号持仓）──
     _manage_positions(merged)

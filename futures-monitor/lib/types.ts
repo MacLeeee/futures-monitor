@@ -18,6 +18,7 @@ export interface BreakoutSignal {
   macdSign: "positive" | "negative";
   expansionRate: number;     // 15min MACD 走扩倍率
   oiConfirmed: boolean;      // 15min 持仓量增仓（或有加分项）
+  boxBreakout: boolean;      // 震荡行情下同步突破箱体边沿
 }
 
 // 回踩信号：30min MA60 锚定方向 + 价格从正确方向回踩均线 + 15min MACD扩口 + 15min放量
@@ -37,9 +38,23 @@ export interface FuturesStatus {
   symbol: string;         // 品种名称，如 "苯乙烯"
   category: string;       // 板块分类
   timeframe: "30min";
+  triggerTf: string;      // 触发层时间框架 "15m" | "30m↓"
   lastUpdate: string;     // 最后更新时间
-  price: number;          // 当前价格
+  barTime: string;        // 当前 30m K 线时间 "2026-06-03 14:00:00"
+  price: number;          // 当前价格（收盘价）
+  curOpen: number;        // 当前 30m K 线开盘价
   change: number;         // 涨跌幅 %
+  atr: number;            // 14周期 ATR
+  curLow: number;         // 当前K最低价
+  curHigh: number;        // 当前K最高价
+  prevLow: number;        // 前一根K最低价
+  prevHigh: number;       // 前一根K最高价
+  prevClose: number;      // 前一根K收盘价
+  kdj30: {                // 30m KDJ 指标（突破后KD冷却确认用）
+    k: number;
+    d: number;
+    j: number;
+  };
   ma: {
     status: MaStatus;
     cumulative: number;        // 连续持续 K 线数
@@ -147,6 +162,14 @@ export interface Position {
   breakEvenMoved: boolean;   // 是否已推过保本（1R 后止损移至入场价）
   trailingActivatedAt?: string; // 移动止损激活时间 "2026-04-07 14:30"
   exitReason: ExitReason | null; // 出场原因
+  breakoutConfirm?: {         // 突破信号经KD冷却后确认开仓的详情
+    breakoutTime: string;     // 突破K时间
+    breakoutOpen: number;     // 突破K开盘价
+    breakoutClose: number;    // 突破K收盘价
+    triggerLevel: number;     // 突破K实体50%位置
+    barsWaited: number;       // 等待K线数
+    confirmRule: string;      // 确认规则名称
+  };
   status: PositionStatus;
   exitTime: string | null;
   exitPrice: number | null;
@@ -159,6 +182,27 @@ export interface PositionsData {
   openCount: number;
   totalCount: number;
   positions: Position[];
+}
+
+// ── 突破待确认 ─────────────────────────────────────────────────
+
+export interface PendingBreakout {
+  id: string;                 // "黄金-long-2026-06-03 14:00:00"
+  symbol: string;
+  direction: PositionDirection;
+  breakoutTime: string;       // 突破K时间
+  breakoutOpen: number;       // 突破K开盘价
+  breakoutClose: number;      // 突破K收盘价
+  triggerLevel: number;       // 突破K实体50%位置
+  lastCheckedBarTime: string; // 上次检查的K线时间
+  barsWaited: number;         // 已等待K线数
+  maxWaitBars: number;        // 最大等待K线数
+}
+
+export interface PendingBreakoutsData {
+  updatedAt: string;
+  count: number;
+  pending: PendingBreakout[];
 }
 
 // 板块分组，用于表格分组渲染

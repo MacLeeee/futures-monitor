@@ -71,6 +71,7 @@ ROOT            = Path(__file__).parent.parent
 OUTPUT          = ROOT / "futures-monitor" / "public" / "data.json"
 OUTPUT_DAILY    = ROOT / "futures-monitor" / "public" / "data_daily.json"
 POSITIONS_FILE  = ROOT / "futures-monitor" / "public" / "positions.json"
+PENDING_BREAKOUTS_FILE = ROOT / "futures-monitor" / "public" / "pending_breakouts.json"
 
 # ── 品种定义 ─────────────────────────────────────────────────
 SYMBOLS = [
@@ -243,6 +244,27 @@ def calc_atr(df: pd.DataFrame, period: int = 14) -> float:
         (low  - prev_close).abs(),
     ], axis=1).max(axis=1)
     return round(float(tr.iloc[-period:].mean()), 4)
+
+
+def calc_kdj(df: pd.DataFrame, period: int = 9) -> dict:
+    """KDJ 指标，用于突破后等待动能冷却的二次确认。"""
+    n = len(df)
+    if n < period:
+        return {"k": 50.0, "d": 50.0, "j": 50.0}
+    low_n = df["low"].astype(float).rolling(period).min()
+    high_n = df["high"].astype(float).rolling(period).max()
+    close = df["close"].astype(float)
+    denom = (high_n - low_n).replace(0, np.nan)
+    rsv = (close - low_n) / denom * 100
+    k = rsv.ewm(alpha=1 / 3, adjust=False).mean()
+    d = k.ewm(alpha=1 / 3, adjust=False).mean()
+    j = 3 * k - 2 * d
+
+    def val(s: pd.Series, default: float = 50.0) -> float:
+        x = float(s.iloc[-1])
+        return round(x, 4) if not np.isnan(x) else default
+
+    return {"k": val(k), "d": val(d), "j": val(j)}
 
 
 # ══════════════════════════════════════════════════════════════
@@ -898,6 +920,9 @@ def process_symbol(args: tuple) -> dict | None:
 
         close = round(last, 2)
         atr        = calc_atr(df_30m)
+        kdj_30m    = calc_kdj(df_30m)
+        bar_time   = str(df_30m["time"].iloc[-1])
+        cur_open   = round(float(df_30m["open"].iloc[-1]),  4)
         cur_low    = round(float(df_30m["low"].iloc[-1]),   4)
         cur_high   = round(float(df_30m["high"].iloc[-1]),  4)
         prev_low   = round(float(df_30m["low"].iloc[-2]),   4) if len(df_30m) >= 2 else close
@@ -917,14 +942,17 @@ def process_symbol(args: tuple) -> dict | None:
             "timeframe":       "30min",
             "triggerTf":       tf_label,
             "lastUpdate":      datetime.now().strftime("%H:%M:%S"),
+            "barTime":         bar_time,
             "price":           close,
             "change":          change,
             "atr":             atr,
+            "curOpen":         cur_open,
             "curLow":          cur_low,
             "curHigh":         cur_high,
             "prevLow":         prev_low,
             "prevHigh":        prev_high,
             "prevClose":       prev_close,
+            "kdj30":           kdj_30m,
             "ma":              ma_30m,
             "macd":            macd_15m,
             "volume":          vol_15m,
@@ -1423,6 +1451,73 @@ def _load_positions() -> list[dict]:
     return []
 
 
+def _load_pending_breakouts() -> list[dict]:
+    """读取等待 KD 冷却确认的突破事件。"""
+    if PENDING_BREAKOUTS_FILE.exists():
+        try:
+            return json.loads(PENDING_BREAKOUTS_FILE.read_text("utf-8")).get("pending", [])
+        except Exception:
+            return []
+    return []
+
+
+def _save_pending_breakouts(pending: list[dict]) -> None:
+    pending.sort(key=lambda x: x.get("breakoutTime", ""))
+    data = {
+        "updatedAt": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%S.000Z"),
+        "count": len(pending),
+        "pending": pending,
+    }
+    PENDING_BREAKOUTS_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=2), "utf-8")
+
+
+def _has_pending_breakout(pending: list[dict], symbol: str, direction: str) -> bool:
+    return any(
+        p.get("symbol") == symbol and p.get("direction") == direction
+        for p in pending
+    )
+
+
+def _make_pending_breakout(d: dict, direction: str) -> dict | None:
+    """把原始突破信号转成等待 30m KD 冷却的事件。"""
+    symbol = d.get("symbol")
+    close = d.get("price") or d.get("close")
+    open_ = d.get("curOpen")
+    bar_time = d.get("barTime") or datetime.now(ZoneInfo("Asia/Shanghai")).strftime("%Y-%m-%d %H:%M:%S")
+    if not symbol or not close or not open_:
+        return None
+
+    trigger_level = (float(open_) + float(close)) / 2
+    return {
+        "id": f"{symbol}-{direction}-{bar_time}",
+        "symbol": symbol,
+        "direction": direction,
+        "breakoutTime": bar_time,
+        "breakoutOpen": round(float(open_), 4),
+        "breakoutClose": round(float(close), 4),
+        "triggerLevel": round(trigger_level, 4),  # 突破K实体50%位置
+        "lastCheckedBarTime": bar_time,
+        "barsWaited": 0,
+        "maxWaitBars": 12,
+    }
+
+
+def _confirm_pending_breakout(pending: dict, d: dict) -> bool:
+    """30m KD 冷却 + 价格守住突破K实体50%位置。"""
+    close = d.get("price") or d.get("close")
+    kdj = d.get("kdj30") or {}
+    if not close or not kdj:
+        return False
+    k = kdj.get("k", 50.0)
+    d_val = kdj.get("d", 50.0)
+    level = pending.get("triggerLevel")
+    if level is None:
+        return False
+    if pending.get("direction") == "long":
+        return k < 80 and d_val < 80 and close >= level
+    return k > 20 and d_val > 20 and close <= level
+
+
 def _dedup_positions(positions: list[dict]) -> list[dict]:
     """
     去除两类重复持仓：
@@ -1670,16 +1765,60 @@ def _manage_positions(merged: list[dict]) -> None:
     """
     主入口：
     1. 检查现有 open 持仓是否触及 SL/TP
-    2. 扫描当次信号，新建持仓记录
+    2. 突破信号先进入 pending，等待 30m KD 冷却后二次确认
+    3. 回踩信号仍即时新建持仓
     3. 写回 positions.json
     """
     positions   = _load_positions()
+    pending     = _load_pending_breakouts()
     current_map = {d["symbol"]: d for d in merged}
 
     # ── Step A: 检查现有持仓 ──────────────────────────────────
     positions = _check_and_close(positions, current_map)
 
-    # ── Step B: 根据当次信号新建持仓 ──────────────────────────
+    # ── Step B: 检查等待中的突破事件，只在首次确认时开一笔 ────────
+    next_pending: list[dict] = []
+    for p in pending:
+        symbol = p.get("symbol")
+        direction = p.get("direction", "long")
+        d = current_map.get(symbol)
+        if not d:
+            next_pending.append(p)
+            continue
+
+        bar_time = d.get("barTime")
+        if bar_time and bar_time != p.get("lastCheckedBarTime"):
+            p["barsWaited"] = int(p.get("barsWaited", 0)) + 1
+            p["lastCheckedBarTime"] = bar_time
+
+        if int(p.get("barsWaited", 0)) > int(p.get("maxWaitBars", 12)):
+            print(f"[PENDING] {p.get('id')} 过期，未等到KD冷却确认")
+            continue
+
+        close = d.get("price") or d.get("close")
+        atr = d.get("atr", 0.0)
+        prev_low = d.get("prevLow", close or 0.0)
+        prev_high = d.get("prevHigh", close or 0.0)
+        if close and atr and _confirm_pending_breakout(p, d) and _can_open(positions, symbol, direction):
+            pos = _open_position(symbol, direction, "breakout", close, atr, prev_low, prev_high)
+            if pos:
+                pos["breakoutConfirm"] = {
+                    "breakoutTime": p.get("breakoutTime"),
+                    "breakoutOpen": p.get("breakoutOpen"),
+                    "breakoutClose": p.get("breakoutClose"),
+                    "triggerLevel": p.get("triggerLevel"),
+                    "barsWaited": p.get("barsWaited", 0),
+                    "confirmRule": "30m_kd_cool_hold_body50",
+                }
+                positions.append(pos)
+                print(f"[PENDING] {p.get('id')} 确认开仓 {pos['id']}  "
+                      f"SL={pos['stopLoss']}  TP={pos['takeProfit']}")
+                continue
+
+        next_pending.append(p)
+    pending = next_pending
+
+    # ── Step C: 新突破信号转 pending；回踩信号即时开仓 ───────────
     for d in merged:
         symbol     = d["symbol"]
         close      = d.get("price") or d.get("close")
@@ -1690,21 +1829,30 @@ def _manage_positions(merged: list[dict]) -> None:
         if not close or not atr:
             continue
 
-        for sig_key, sig_type in [("breakoutSignal", "breakout"), ("pullbackSignal", "pullback")]:
-            sig = d.get(sig_key)
-            if not sig:
-                continue
-            direction = sig.get("type", "long")   # "long" | "short"
+        bo_sig = d.get("breakoutSignal")
+        if bo_sig:
+            direction = bo_sig.get("type", "long")
+            if _can_open(positions, symbol, direction) and not _has_pending_breakout(pending, symbol, direction):
+                event = _make_pending_breakout(d, direction)
+                if event:
+                    pending.append(event)
+                    print(f"[PENDING] 新增突破等待 {event['id']} "
+                          f"level={event['triggerLevel']} maxBars={event['maxWaitBars']}")
+
+        pb_sig = d.get("pullbackSignal")
+        if pb_sig:
+            direction = pb_sig.get("type", "long")
             if _can_open(positions, symbol, direction):
-                pos = _open_position(symbol, direction, sig_type,
-                                     close, atr, prev_low, prev_high)
+                pos = _open_position(symbol, direction, "pullback", close, atr, prev_low, prev_high)
                 if pos:
                     positions.append(pos)
                     print(f"[POS] 新建 {pos['id']}  SL={pos['stopLoss']}  TP={pos['takeProfit']}")
 
     _save_positions(positions)
+    _save_pending_breakouts(pending)
     print(f"[POS] 持仓更新完成，共 {len(positions)} 笔，"
-          f"其中 open={sum(1 for p in positions if p['status']=='open')}")
+          f"其中 open={sum(1 for p in positions if p['status']=='open')}，"
+          f"pending_breakout={len(pending)}")
 
 
 def _merge_positions_union(local_path: Path) -> None:
@@ -1793,6 +1941,7 @@ def _git_push():
         "futures-monitor/public/data.json",
         "futures-monitor/public/data_daily.json",
         "futures-monitor/public/positions.json",
+        "futures-monitor/public/pending_breakouts.json",
     ]
 
     code, out = run(["git", "add"] + data_files)

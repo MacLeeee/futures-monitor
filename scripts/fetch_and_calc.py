@@ -1348,6 +1348,47 @@ def build_strategy_message(data: list[dict], bj_time: str) -> str | None:
     return "\n".join(lines)
 
 
+def build_position_opened_message(new_positions: list[dict], bj_time: str) -> str | None:
+    """
+    开仓确认推送格式：
+    ─────────────────────────────────
+    ✅ 已开仓 03-24 14:30
+    ─────────────────────────────────
+    🔴 突破确认做多：黄金 3028.50
+    🟢 回踩做空：    原油 612.30
+    ─────────────────────────────────
+    """
+    if not new_positions:
+        return None
+
+    def fmt_pos(pos: dict) -> str:
+        direction   = pos.get("direction", "long")
+        arrow       = "▲" if direction == "long" else "▼"
+        signal_type = pos.get("signalType", "")
+        sig_label   = "突破确认" if signal_type == "breakout" else "回踩"
+        action      = "做多" if direction == "long" else "做空"
+        entry       = pos.get("entryPrice", 0)
+        sl          = pos.get("stopLoss", 0)
+        # 突破确认额外信息
+        bc = pos.get("breakoutConfirm")
+        wait_str = f"  等{bc['barsWaited']}K" if bc else ""
+        return f"  {arrow}{pos['symbol']} {action} @{entry:.2f}  SL{sl:.2f}{wait_str}"
+
+    sep = "─" * 24
+    lines: list[str] = [f"<b>✅ 已开仓</b>  {bj_time}", sep]
+
+    longs  = [p for p in new_positions if p.get("direction") == "long"]
+    shorts = [p for p in new_positions if p.get("direction") == "short"]
+
+    if longs:
+        lines.extend(fmt_pos(p) for p in longs)
+    if shorts:
+        lines.extend(fmt_pos(p) for p in shorts)
+
+    lines.append(sep)
+    return "\n".join(lines)
+
+
 # ── 主流程 ────────────────────────────────────────────────────
 def main():
     # 非交易时段不抓取、不写文件、不提交，避免空刷；手动触发时可设 FORCE_FETCH=1 强制执行
@@ -1421,7 +1462,10 @@ def main():
     else:
         print("[DAILY] 无日K数据写入", file=sys.stderr)
 
-    # ── Telegram 推送（仅30min+15min信号，日K不推）──
+    # ── 持仓管理（检查止损止盈 + 新建信号持仓，返回本轮新开仓）──
+    new_opened = _manage_positions(merged)
+
+    # ── Telegram 推送 ──
     bj_time = datetime.now(ZoneInfo("Asia/Shanghai")).strftime("%m-%d %H:%M")
     messages = []
     bo_msg = build_breakout_message(merged, bj_time)
@@ -1433,13 +1477,13 @@ def main():
     rg_msg = build_regime_message(merged, bj_time, prev_map)
     if rg_msg:
         messages.append(rg_msg)
+    ok_msg = build_position_opened_message(new_opened, bj_time)
+    if ok_msg:
+        messages.append(ok_msg)
     if messages:
         tg_send_all("\n\n".join(messages))
     else:
-        print("[TG] 无突破检测/回踩/状态切换信号，不推送")
-
-    # ── 持仓管理（检查止损止盈 + 新建信号持仓）──
-    _manage_positions(merged)
+        print("[TG] 无信号，不推送")
 
     # ── Git Push（仅本地/服务器运行时；GitHub Actions 由 workflow 自行处理）──
     if not os.environ.get("GITHUB_ACTIONS"):
@@ -1770,17 +1814,20 @@ def _check_and_close(positions: list[dict],
     return positions
 
 
-def _manage_positions(merged: list[dict]) -> None:
+def _manage_positions(merged: list[dict]) -> list[dict]:
     """
     主入口：
     1. 检查现有 open 持仓是否触及 SL/TP
     2. 突破信号先进入 pending，等待 30m KD 冷却后二次确认
     3. 回踩信号仍即时新建持仓
     3. 写回 positions.json
+
+    返回: 本轮新开仓的持仓记录列表（供推送使用）
     """
     positions   = _load_positions()
     pending     = _load_pending_breakouts()
     current_map = {d["symbol"]: d for d in merged}
+    new_opened: list[dict] = []   # 本轮新开仓（供推送）
 
     # ── Step A: 检查现有持仓 ──────────────────────────────────
     positions = _check_and_close(positions, current_map)
@@ -1820,6 +1867,7 @@ def _manage_positions(merged: list[dict]) -> None:
                     "confirmRule": "30m_kd_cool_hold_body50",
                 }
                 positions.append(pos)
+                new_opened.append(pos)
                 print(f"[PENDING] {p.get('id')} 确认开仓 {pos['id']}  "
                       f"SL={pos['stopLoss']}  TP={pos['takeProfit']}")
                 continue
@@ -1855,13 +1903,16 @@ def _manage_positions(merged: list[dict]) -> None:
                 pos = _open_position(symbol, direction, "pullback", close, atr, prev_low, prev_high)
                 if pos:
                     positions.append(pos)
+                    new_opened.append(pos)
                     print(f"[POS] 新建 {pos['id']}  SL={pos['stopLoss']}  TP={pos['takeProfit']}")
 
     _save_positions(positions)
     _save_pending_breakouts(pending)
     print(f"[POS] 持仓更新完成，共 {len(positions)} 笔，"
           f"其中 open={sum(1 for p in positions if p['status']=='open')}，"
-          f"pending_breakout={len(pending)}")
+          f"pending_breakout={len(pending)}，"
+          f"本轮新开={len(new_opened)}")
+    return new_opened
 
 
 def _merge_positions_union(local_path: Path) -> None:

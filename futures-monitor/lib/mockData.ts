@@ -25,6 +25,7 @@ export const FUTURES_SYMBOLS: { symbol: string; category: string; basePrice: num
   { symbol: "镍", category: "有色", basePrice: 128000 },
   { symbol: "锡", category: "有色", basePrice: 250000 },
   { symbol: "碳酸锂", category: "有色", basePrice: 95000 },
+  { symbol: "氧化铝", category: "有色", basePrice: 4300 },
   // 黑色
   { symbol: "铁矿石", category: "黑色", basePrice: 820 },
   { symbol: "螺纹钢", category: "黑色", basePrice: 3400 },
@@ -132,9 +133,19 @@ function buildFuturesStatus(
     symbol,
     category,
     timeframe: "30min",
+    triggerTf: "15m",
     lastUpdate: `${hh}:${mm}:${ss}`,
+    barTime: `${hh}:${mm}:00`,
     price,
+    curOpen: Math.round(price * 0.998 * 100) / 100,
     change: Math.round(change * 100) / 100,
+    atr: Math.round(price * 0.015 * 100) / 100,
+    curLow: Math.round(price * 0.994 * 100) / 100,
+    curHigh: Math.round(price * 1.003 * 100) / 100,
+    prevLow: Math.round(price * 0.995 * 100) / 100,
+    prevHigh: Math.round(price * 1.002 * 100) / 100,
+    prevClose: Math.round(prevClose * 100) / 100,
+    kdj30: { k: 50, d: 50, j: 50 },
     ma: { ...maResult, slope60Pct: maResult.slope20Pct * 0.6 },  // mock: MA60斜率约为MA20的60%
     // mock 中 macd/volume/oi 字段模拟 15min 数据（结构相同）
     macd: {
@@ -169,7 +180,7 @@ function buildFuturesStatus(
 // 趋势分配：让不同品种有不同状态，增加 Mock 多样性
 const trendMap: Record<string, "up" | "down" | "sideways"> = {
   黄金: "up", 白银: "up", 铜: "up", 铝: "sideways", 镍: "down",
-  锡: "up", 碳酸锂: "down", 铁矿石: "down", 螺纹钢: "down",
+  锡: "up", 碳酸锂: "down", 氧化铝: "sideways", 铁矿石: "down", 螺纹钢: "down",
   焦煤: "sideways", 锰硅: "sideways", 硅铁: "up",
   生猪: "down", 玉米: "sideways", 棉花: "up", 白糖: "up",
   豆油: "up", 菜油: "up", 棕榈油: "sideways",

@@ -85,11 +85,14 @@ def variety_of(key: str) -> str | None:
 
 
 def fetch_all_rank_tables(date: str) -> dict[str, pd.DataFrame]:
-    """抓取四所+广期所排名表，返回 {原始键: DataFrame}。"""
+    """抓取四所+广期所排名表，返回 {原始键: DataFrame}。
+    每个交易所调用有独立超时保护（15s），超时/失败不阻塞其余交易所。"""
+    import threading
+
     fetchers = [
         ("SHFE",  lambda: ak.get_shfe_rank_table(date=date)),
-        ("DCE",   lambda: ak.get_dce_rank_table(date=date)),
-        ("CZCE",  lambda: ak.get_czce_rank_table(date=date)),
+        ("DCE",   lambda: ak.futures_dce_position_rank(date=date)),
+        ("CZCE",  lambda: ak.get_rank_table_czce(date=date)),
         ("CFFEX", lambda: ak.get_cffex_rank_table(date=date)),
     ]
     # 广期所（碳酸锂）：不同版本接口名不同，尽力而为
@@ -98,18 +101,41 @@ def fetch_all_rank_tables(date: str) -> dict[str, pd.DataFrame]:
 
     tables: dict[str, pd.DataFrame] = {}
     for ex, fn in fetchers:
-        try:
-            res = fn()
-            if isinstance(res, dict):
-                for k, df in res.items():
-                    if isinstance(df, pd.DataFrame) and len(df):
-                        tables[f"{ex}:{k}"] = df
-            elif isinstance(res, pd.DataFrame) and len(res):
-                tables[f"{ex}:all"] = res
-            n_tables = len(res) if isinstance(res, dict) else (1 if isinstance(res, pd.DataFrame) and len(res) else 0)
-            print(f"[{ex}] {n_tables} 张表")
-        except Exception as e:
-            print(f"[WARN] {ex} 抓取失败: {e}", file=sys.stderr)
+        result_holder: list = []
+        exc_holder: list = []
+
+        def _worker():
+            try:
+                result_holder.append(fn())
+            except Exception as e:
+                exc_holder.append(e)
+
+        t = threading.Thread(target=_worker, daemon=True)
+        t.start()
+        t.join(timeout=15)
+
+        if t.is_alive():
+            print(f"[WARN] {ex} 超时(>15s)，跳过", file=sys.stderr)
+            continue
+        if exc_holder:
+            print(f"[WARN] {ex} 抓取失败: {exc_holder[0]}", file=sys.stderr)
+            continue
+
+        res = result_holder[0]
+        if isinstance(res, dict):
+            for k, df in res.items():
+                if isinstance(df, pd.DataFrame) and len(df):
+                    tables[f"{ex}:{k}"] = df
+        elif isinstance(res, pd.DataFrame) and len(res):
+            tables[f"{ex}:all"] = res
+        elif isinstance(res, list):
+            # DCE 备选接口可能返回 list[DataFrame]
+            for i, df in enumerate(res):
+                if isinstance(df, pd.DataFrame) and len(df):
+                    tables[f"{ex}:{i}"] = df
+
+        n_tables = len(res) if isinstance(res, (dict, list)) else (1 if isinstance(res, pd.DataFrame) and len(res) else 0)
+        print(f"[{ex}] {n_tables} 张表")
     return tables
 
 

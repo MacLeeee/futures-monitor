@@ -50,11 +50,13 @@ except ImportError:
 
 # 中国期货交易时段（北京时间）
 # 窗口比实际交易时间各宽约 5 分钟，确保 :25/:55 的 cron 也能通过守卫
-TRADING_WINDOWS = [
-    (time(8, 50), time(11, 40)),
-    (time(13, 20), time(15, 10)),
-    (time(20, 50), time(23, 40)),
-]
+def _get_trading_windows() -> list:
+    th = _p()["trading_hours"]
+    return [
+        (time(*map(int, th["morning"][0].split(":"))),  time(*map(int, th["morning"][1].split(":")))),
+        (time(*map(int, th["afternoon"][0].split(":"))), time(*map(int, th["afternoon"][1].split(":")))),
+        (time(*map(int, th["night"][0].split(":"))),     time(*map(int, th["night"][1].split(":")))),
+    ]
 
 def is_trading_time() -> bool:
     tz = ZoneInfo("Asia/Shanghai")
@@ -62,7 +64,7 @@ def is_trading_time() -> bool:
     if now_bj.weekday() >= 5:
         return False
     t = now_bj.time()
-    for s, e in TRADING_WINDOWS:
+    for s, e in _get_trading_windows():
         if s <= t <= e:
             return True
     return False
@@ -72,6 +74,51 @@ OUTPUT          = ROOT / "futures-monitor" / "public" / "data.json"
 OUTPUT_DAILY    = ROOT / "futures-monitor" / "public" / "data_daily.json"
 POSITIONS_FILE  = ROOT / "futures-monitor" / "public" / "positions.json"
 PENDING_BREAKOUTS_FILE = ROOT / "futures-monitor" / "public" / "pending_breakouts.json"
+PARAMS_FILE     = ROOT / "strategy_params.json"
+
+# ── 参数加载 ─────────────────────────────────────────────────
+_params_cache: dict | None = None
+
+
+def _load_params() -> dict:
+    """加载策略参数配置。首次调用从 strategy_params.json 读取并缓存。
+    若文件不存在或格式错误，回退到内置默认值（与 v1.0 完全一致）。
+    返回的 dict 可直接用点分键访问，如 PARAMS["pullback"]["bounce_tol_pct"]。
+    """
+    global _params_cache
+    if _params_cache is not None:
+        return _params_cache
+    try:
+        if PARAMS_FILE.exists():
+            _params_cache = json.loads(PARAMS_FILE.read_text("utf-8"))
+            print(f"[PARAMS] 已加载: {PARAMS_FILE} (v{_params_cache.get('version','?')})")
+            return _params_cache
+    except Exception as e:
+        print(f"[PARAMS] 加载失败 ({e})，使用内置默认值", file=sys.stderr)
+    _params_cache = {
+        "version": "1.0",
+        "pullback": {"bounce_tol_pct": 1.5, "atr_factor": 0.8, "adaptive_min_pct": 0.30,
+                      "approach_tol_pct": 0.30, "min_slope20_pct": 0.05, "min_slope60_pct": 0.02,
+                      "ma_entanglement_threshold_pct": 0.15},
+        "breakout": {"body_atr_ratio_min": 1.0, "donchian_tolerance_pct": 0.1,
+                      "kd_cooling": {"long_k_max": 80, "long_d_max": 80, "short_k_min": 20, "short_d_min": 20}},
+        "macd": {"fast": 12, "slow": 26, "signal": 9, "expansion_rate_min": 1.2, "expansion_lookback_bars": 10},
+        "volume": {"surge_ma_mult": 1.5, "ma_window": 10},
+        "risk": {"min_risk_pct": 0.15, "min_price_gap_pct": 0.01, "stop_loss_atr_entry": 2,
+                  "stop_loss_atr_prev_bar": 1, "take_profit_risk_ratio": 2, "breakeven_r": 1,
+                  "trailing_activate_r": 2, "trailing_atr_mult": 2},
+        "position": {"cooldown_minutes": 60, "max_wait_bars": 12},
+        "trading_hours": {"morning": ["08:50", "11:40"], "afternoon": ["13:20", "15:10"],
+                           "night": ["20:50", "23:40"], "daily_k_window": ["23:00", "23:15"]},
+        "fetch": {"max_workers": 4, "kline_rows": 200, "request_delay_seconds": 0.8, "max_retries": 3},
+    }
+    return _params_cache
+
+
+def _p() -> dict:
+    """快捷访问：_p()['pullback']['bounce_tol_pct']"""
+    return _load_params()
+
 
 # ── 品种定义 ─────────────────────────────────────────────────
 SYMBOLS = [
@@ -114,7 +161,9 @@ SYMBOLS = [
 ]
 
 # ── K 线获取 ──────────────────────────────────────────────────
-def fetch_klines(code: str, rows: int = 200, _retries: int = 3) -> pd.DataFrame:
+def fetch_klines(code: str, rows: int | None = None, _retries: int | None = None) -> pd.DataFrame:
+    if rows is None: rows = _p()["fetch"]["kline_rows"]
+    if _retries is None: _retries = _p()["fetch"]["max_retries"]
     import time as _time
     last_err: Exception = RuntimeError("未知错误")
     for attempt in range(1, _retries + 1):
@@ -132,7 +181,9 @@ def fetch_klines(code: str, rows: int = 200, _retries: int = 3) -> pd.DataFrame:
                 _time.sleep(2 * attempt)  # 2s, 4s 退避后重试
     raise last_err
 
-def fetch_klines_15m(code: str, rows: int = 200, _retries: int = 3) -> pd.DataFrame:
+def fetch_klines_15m(code: str, rows: int | None = None, _retries: int | None = None) -> pd.DataFrame:
+    if rows is None: rows = _p()["fetch"]["kline_rows"]
+    if _retries is None: _retries = _p()["fetch"]["max_retries"]
     """获取 15 分钟 K 线数据，供 MACD/量/OI 触发层使用。"""
     import time as _time
     last_err: Exception = RuntimeError("未知错误")
@@ -151,7 +202,8 @@ def fetch_klines_15m(code: str, rows: int = 200, _retries: int = 3) -> pd.DataFr
                 _time.sleep(2 * attempt)
     raise last_err
 
-def fetch_klines_daily(code: str, rows: int = 200) -> pd.DataFrame:
+def fetch_klines_daily(code: str, rows: int | None = None) -> pd.DataFrame:
+    if rows is None: rows = _p()["fetch"]["kline_rows"]
     """获取日K线数据（近 rows 根），使用 Sina 主力合约历史接口。"""
     from datetime import date, timedelta
     end_d   = date.today().strftime("%Y%m%d")
@@ -522,17 +574,18 @@ def calc_box_signal(close: float, donchian: dict, regime: dict,
     return None
 
 
-_BOUNCE_TOL = 1.5          # 回踩阈值上限：右侧入场时价格已从支撑反弹，允许距均线最大 1.5%
-_PULLBACK_ATR_FACTOR = 0.8 # 回踩阈值按 ATR 自适应，避免高/低波动品种共用固定百分比
-_MIN_RISK_PCT = 0.15       # 新开仓最小初始风险距离，低于该比例视为噪声过近
-_MIN_PRICE_GAP_PCT = 0.01  # 止损必须在入场价正确一侧，至少留出 0.01% 保护距离
+_params_module = _load_params()  # 模块加载时初始化
+_BOUNCE_TOL          = _params_module["pullback"]["bounce_tol_pct"]          # 回踩阈值上限
+_PULLBACK_ATR_FACTOR = _params_module["pullback"]["atr_factor"]               # 回踩ATR自适应因子
+_MIN_RISK_PCT        = _params_module["risk"]["min_risk_pct"]                 # 最小初始风险
+_MIN_PRICE_GAP_PCT   = _params_module["risk"]["min_price_gap_pct"]            # 止损最小保护距离
 
 
 def _adaptive_bounce_tol(close: float, atr: float = 0.0) -> float:
     """回踩右侧确认距离：不超过固定 1.5%，同时按当前 ATR 收缩。"""
     if close > 0 and atr > 0:
         atr_pct = atr / close * 100
-        return max(0.30, min(_BOUNCE_TOL, _PULLBACK_ATR_FACTOR * atr_pct))
+        return max(_p()["pullback"]["adaptive_min_pct"], min(_BOUNCE_TOL, _PULLBACK_ATR_FACTOR * atr_pct))
     return _BOUNCE_TOL
 
 def calc_breakout_signal(
@@ -578,7 +631,7 @@ def calc_breakout_signal(
     # 抓起爆点要求方向性足够强，实体小于 1 ATR 说明力度不足
     if trigger_open > 0 and atr > 0 and close > 0:
         body = abs(close - trigger_open)
-        if body / atr <= 1.0:
+        if body / atr <= _p()["breakout"]["body_atr_ratio_min"]:
             return None
 
     # ── 震荡行情附加：必须同时突破箱体边沿 ─────────────────────
@@ -591,11 +644,12 @@ def calc_breakout_signal(
         basis = donchian.get("basis", 0)
         if upper > lower > 0:
             if is_long:
-                # 做多：价格须已站上箱体上沿（允许 0.1% 容差，防止恰好卡边）
-                box_breakout = close >= upper * (1 - 0.001)
+                # 做多：价格须已站上箱体上沿（允许 donchian_tolerance_pct% 容差，防止恰好卡边）
+                _dtol = _p()["breakout"]["donchian_tolerance_pct"] / 100
+                box_breakout = close >= upper * (1 - _dtol)
             else:
                 # 做空：价格须已跌破箱体下沿
-                box_breakout = close <= lower * (1 + 0.001)
+                box_breakout = close <= lower * (1 + _dtol)
         if not box_breakout:
             return None   # 震荡中未突破箱体，不触发
 
@@ -663,7 +717,7 @@ def calc_pullback_signal(
     # 空头反抽：MA20 必须在 MA60 下方（标准空头排列）
     # 纠缠：MA20 与 MA60 间距 < 0.15% → 均线交织，趋势不明，跳过
     ma_gap_pct = abs(ma20 - ma60) / ma60 * 100
-    if ma_gap_pct < 0.15:
+    if ma_gap_pct < _p()["pullback"]["ma_entanglement_threshold_pct"]:
         return None   # 均线纠缠，不触发
     if bullish and ma20 <= ma60:
         return None   # 价格在MA60上方但均线倒排，趋势不可信
@@ -672,8 +726,8 @@ def calc_pullback_signal(
 
     # ── 过滤③：斜率最小阈值 ─────────────────────────────────────
     # slope20/60 是3根K线内的累计变化%，< 0.05% 视为走平
-    _MIN_SLOPE20 = 0.05   # MA20 至少 3根内涨/跌 0.05%
-    _MIN_SLOPE60 = 0.02   # MA60 趋势惯性足，阈值较低
+    _MIN_SLOPE20 = _p()["pullback"]["min_slope20_pct"]
+    _MIN_SLOPE60 = _p()["pullback"]["min_slope60_pct"]
     if bullish and not (slope20 >= _MIN_SLOPE20 and slope60 >= _MIN_SLOPE60):
         return None
     if bearish and not (slope20 <= -_MIN_SLOPE20 and slope60 <= -_MIN_SLOPE60):
@@ -688,7 +742,7 @@ def calc_pullback_signal(
     # 右侧入场阈值：价格已从支撑/阻力反弹，允许在均线附近 ±幅度内触发
     # 做多：close 在 support 下方最多 0.3%（仅允许wick轻微跌穿）~ 上方最多 1.5%（已反弹区域）
     # 做空：close 在 resist  上方最多 0.3%（仅允许wick轻微突破）~ 下方最多 1.5%（已回落区域）
-    _APPROACH_TOL = 0.30  # 穿越容忍：允许超过均线方向 %（wick容忍）
+    _APPROACH_TOL = _p()["pullback"]["approach_tol_pct"]
     bounce_tol = _adaptive_bounce_tol(close, atr)
 
     if bullish:
@@ -785,7 +839,7 @@ def calc_macd(df: pd.DataFrame) -> dict:
             break
 
     # ── 快速走扩：|hist| 逐根变化速率 vs 近 10 期均值 ──
-    LOOKBACK = 10
+    LOOKBACK = _p()["macd"]["expansion_lookback_bars"]
     hist_abs = hist.abs()
     start = max(1, n - LOOKBACK)
     deltas = [float(hist_abs.iloc[i]) - float(hist_abs.iloc[i - 1]) for i in range(start, n)]
@@ -796,7 +850,7 @@ def calc_macd(df: pd.DataFrame) -> dict:
     avg_abs_delta = float(np.mean(prev_deltas)) if prev_deltas else 0.0
 
     # 当前棒扩口：expansionRate > 1.2（略高于 1.0 基线，排除刚刚勉强触发的弱信号）
-    _EXPANSION_RATE_MIN = 1.2
+    _EXPANSION_RATE_MIN = _p()["macd"]["expansion_rate_min"]
     rapid_expanding = bool(
         current_delta > 0
         and (avg_abs_delta == 0 or current_delta > avg_abs_delta * _EXPANSION_RATE_MIN)
@@ -820,7 +874,7 @@ def calc_volume(df: pd.DataFrame) -> dict:
 
     # 量MA10：以倒数第2~11根（排除当前可能未完结K线）计算均量
     # 先算均量，供放量判断函数使用
-    vol_ma_window = 10
+    vol_ma_window = _p()["volume"]["ma_window"]
     if n > vol_ma_window + 1:
         vol_ma = float(v.iloc[-(vol_ma_window + 2):-2].mean())   # 排除最新两根，取稳定均值
     elif n > 2:
@@ -830,10 +884,10 @@ def calc_volume(df: pd.DataFrame) -> dict:
 
     # 放量判断：环比放量（v[i] > v[i-1]），或绝对量超过均量 1.5 倍（开盘段/放量启动也能被捕捉）
     # 场景：开盘第2棒可能量略少于第1棒，但绝对量远高于历史均量，仍应视为放量
-    _SURGE_MA_MULT = 1.5
+    _SURGE_MA_MULT = _p()["volume"]["surge_ma_mult"]
     def st(i):
         env_surge = i >= 1 and v.iloc[i] > v.iloc[i - 1]          # 环比放量
-        abs_surge = vol_ma > 0 and v.iloc[i] > vol_ma * _SURGE_MA_MULT  # 绝对量超均量1.5倍
+        abs_surge = vol_ma > 0 and v.iloc[i] > vol_ma * _SURGE_MA_MULT
         return "Surge" if (env_surge or abs_surge) else "Shrink"
 
     cur = st(n - 1)
@@ -900,7 +954,7 @@ def process_symbol(args: tuple) -> dict | None:
     try:
         df_30m = fetch_klines(code)
         # 短暂间隔，避免对同一品种连续请求触发新浪限流
-        _time_module.sleep(0.8)
+        _time_module.sleep(_p()["fetch"]["request_delay_seconds"])
         try:
             df_15m = fetch_klines_15m(code)
             tf_label = "15m"
@@ -1402,7 +1456,7 @@ def main():
     # 4 个 worker 并发，整体约 4 个品种同时请求，不易触发新浪限流
     print(f"[{datetime.now(UTC).isoformat()}Z] Fetching {len(SYMBOLS)} symbols (30min+15min)...")
     results = []
-    with ThreadPoolExecutor(max_workers=4) as pool:
+    with ThreadPoolExecutor(max_workers=_p()["fetch"]["max_workers"]) as pool:
         futures = {pool.submit(process_symbol, s): s for s in SYMBOLS}
         for fut in as_completed(futures):
             r = fut.result()
@@ -1410,13 +1464,14 @@ def main():
 
     # ── Step 2: 抓取日K（仅在收盘后23:00-23:15执行，其余时间跳过，避免API挂死产生僵尸）──
     _now_bj_daily = datetime.now(ZoneInfo("Asia/Shanghai"))
-    _daily_window   = (time(23, 0), time(23, 15))
+    _dk = _p()["trading_hours"]["daily_k_window"]
+    _daily_window   = (time(*map(int, _dk[0].split(":"))), time(*map(int, _dk[1].split(":"))))
     _do_daily       = (_daily_window[0] <= _now_bj_daily.time() <= _daily_window[1])
     daily_results_pre: list[dict] = []
     if _do_daily:
         print("[DAILY] 收盘窗口(23:00-23:15)，开始抓取日K数据...")
         _time_module.sleep(2)
-        with ThreadPoolExecutor(max_workers=4) as pool:
+        with ThreadPoolExecutor(max_workers=_p()["fetch"]["max_workers"]) as pool:
             futs = {pool.submit(process_symbol_daily, s): s for s in SYMBOLS}
             for fut in as_completed(futs):
                 r = fut.result()
@@ -1552,7 +1607,7 @@ def _make_pending_breakout(d: dict, direction: str) -> dict | None:
         "triggerLevel": round(trigger_level, 4),  # 突破K实体50%位置
         "lastCheckedBarTime": bar_time,
         "barsWaited": 0,
-        "maxWaitBars": 12,
+        "maxWaitBars": _p()["position"]["max_wait_bars"],
     }
 
 
@@ -1567,9 +1622,10 @@ def _confirm_pending_breakout(pending: dict, d: dict) -> bool:
     level = pending.get("triggerLevel")
     if level is None:
         return False
+    _kd = _p()["breakout"]["kd_cooling"]
     if pending.get("direction") == "long":
-        return k < 80 and d_val < 80 and close >= level
-    return k > 20 and d_val > 20 and close <= level
+        return k < _kd["long_k_max"] and d_val < _kd["long_d_max"] and close >= level
+    return k > _kd["short_k_min"] and d_val > _kd["short_d_min"] and close <= level
 
 
 def _dedup_positions(positions: list[dict]) -> list[dict]:
@@ -1619,7 +1675,9 @@ def _save_positions(positions: list[dict]) -> None:
 
 
 def _can_open(positions: list[dict], symbol: str, direction: str,
-              cooldown_min: int = 60) -> bool:
+              cooldown_min: int | None = None) -> bool:
+    if cooldown_min is None:
+        cooldown_min = _p()["position"]["cooldown_minutes"]
     """同一品种+方向在 cooldown_min 分钟内已有开仓则跳过（防止同一信号重复入场）。"""
     now = datetime.now(ZoneInfo("Asia/Shanghai"))
     for p in positions:
@@ -1650,17 +1708,19 @@ def _open_position(symbol: str, direction: str, signal_type: str,
 
     if direction == "long":
         # 两种方案取较大值（价格较高 = 止损距离较小 = 更保守地控制风险）
-        # 方案1: 入场价 - 2×ATR
-        # 方案2: 前一根K线低点 - 1×ATR
-        stop_loss = max(entry_price - 2 * atr, prev_low - 1 * atr)
+        # 方案1: 入场价 - stop_loss_atr_entry×ATR
+        # 方案2: 前一根K线低点 - stop_loss_atr_prev_bar×ATR
+        _sl_entry = _p()["risk"]["stop_loss_atr_entry"]
+        _sl_prev  = _p()["risk"]["stop_loss_atr_prev_bar"]
+        stop_loss = max(entry_price - _sl_entry * atr, prev_low - _sl_prev * atr)
         max_sl = entry_price * (1 - _MIN_PRICE_GAP_PCT / 100)
         stop_loss = min(stop_loss, max_sl)
         risk      = entry_price - stop_loss
     else:
         # 两种方案取较小值（价格较低 = 止损距离较小 = 更保守地控制风险）
-        # 方案1: 入场价 + 2×ATR
-        # 方案2: 前一根K线高点 + 1×ATR
-        stop_loss = min(entry_price + 2 * atr, prev_high + 1 * atr)
+        # 方案1: 入场价 + stop_loss_atr_entry×ATR
+        # 方案2: 前一根K线高点 + stop_loss_atr_prev_bar×ATR
+        stop_loss = min(entry_price + _sl_entry * atr, prev_high + _sl_prev * atr)
         min_sl = entry_price * (1 + _MIN_PRICE_GAP_PCT / 100)
         stop_loss = max(stop_loss, min_sl)
         risk      = stop_loss - entry_price
@@ -1671,7 +1731,8 @@ def _open_position(symbol: str, direction: str, signal_type: str,
               f"初始风险过小 risk={risk:.4f} < {min_risk:.4f}")
         return None
 
-    take_profit = (entry_price + 2 * risk) if direction == "long" else (entry_price - 2 * risk)
+    _rr = _p()["risk"]["take_profit_risk_ratio"]
+    take_profit = (entry_price + _rr * risk) if direction == "long" else (entry_price - _rr * risk)
 
     return {
         "id":          f"{symbol}-{direction[0].upper()}-{uid}",
@@ -1735,14 +1796,14 @@ def _check_and_close(positions: list[dict],
 
         if direction == "long":
             # ── 1R 先推保本，2R 后启用移动止损 ─────────────────
-            if not pos.get("breakEvenMoved") and cur_high >= entry + risk_ref:
+            if not pos.get("breakEvenMoved") and cur_high >= entry + _p()["risk"]["breakeven_r"] * risk_ref:
                 new_sl = round(entry, 4)
                 if new_sl > sl:
                     pos["stopLoss"] = new_sl
                     sl = new_sl
                 pos["breakEvenMoved"] = True
 
-            if not trailing and cur_high >= entry + 2 * risk_ref:
+            if not trailing and cur_high >= entry + _p()["risk"]["trailing_activate_r"] * risk_ref:
                 trailing = True
                 pos["trailingActive"] = True
                 pos["trailingActivatedAt"] = bj_time
@@ -1751,7 +1812,7 @@ def _check_and_close(positions: list[dict],
 
             # ── 移动止损更新（每根K线往上推进）──────────────
             if trailing and cur_atr > 0:
-                new_sl = round(prev_close - 2 * cur_atr, 4)
+                new_sl = round(prev_close - _p()["risk"]["trailing_atr_mult"] * cur_atr, 4)
                 if new_sl > sl:   # 只向上移动，绝不下调
                     pos["stopLoss"] = new_sl
                     sl = new_sl
@@ -1762,14 +1823,14 @@ def _check_and_close(positions: list[dict],
             hit_tp = (not trailing) and cur_atr <= 0 and cur_high >= pos["takeProfit"]
 
         else:  # short
-            if not pos.get("breakEvenMoved") and cur_low <= entry - risk_ref:
+            if not pos.get("breakEvenMoved") and cur_low <= entry - _p()["risk"]["breakeven_r"] * risk_ref:
                 new_sl = round(entry, 4)
                 if new_sl < sl:
                     pos["stopLoss"] = new_sl
                     sl = new_sl
                 pos["breakEvenMoved"] = True
 
-            if not trailing and cur_low <= entry - 2 * risk_ref:
+            if not trailing and cur_low <= entry - _p()["risk"]["trailing_activate_r"] * risk_ref:
                 trailing = True
                 pos["trailingActive"] = True
                 pos["trailingActivatedAt"] = bj_time
@@ -1777,7 +1838,7 @@ def _check_and_close(positions: list[dict],
                       f"(entry-2R={entry - 2*risk_ref:.4f})")
 
             if trailing and cur_atr > 0:
-                new_sl = round(prev_close + 2 * cur_atr, 4)
+                new_sl = round(prev_close + _p()["risk"]["trailing_atr_mult"] * cur_atr, 4)
                 if new_sl < sl:   # 只向下移动
                     pos["stopLoss"] = new_sl
                     sl = new_sl

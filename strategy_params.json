@@ -1,0 +1,77 @@
+{
+  "_comment": "期货监控系统 - 策略参数配置。修改参数 → 重启抓取即生效。改前备份此文件以便回滚。",
+  "version": "1.0",
+  "updatedAt": "2026-06-11",
+
+  "pullback": {
+    "_desc": "回踩/反抽信号参数",
+    "bounce_tol_pct": 1.5,
+    "atr_factor": 0.8,
+    "adaptive_min_pct": 0.30,
+    "approach_tol_pct": 0.30,
+    "min_slope20_pct": 0.05,
+    "min_slope60_pct": 0.02,
+    "ma_entanglement_threshold_pct": 0.15
+  },
+
+  "breakout": {
+    "_desc": "突破信号参数",
+    "body_atr_ratio_min": 1.0,
+    "donchian_tolerance_pct": 0.1,
+    "kd_cooling": {
+      "long_k_max": 80,
+      "long_d_max": 80,
+      "short_k_min": 20,
+      "short_d_min": 20
+    }
+  },
+
+  "macd": {
+    "_desc": "MACD 指标参数",
+    "fast": 12,
+    "slow": 26,
+    "signal": 9,
+    "expansion_rate_min": 1.2,
+    "expansion_lookback_bars": 10
+  },
+
+  "volume": {
+    "_desc": "成交量参数",
+    "surge_ma_mult": 1.5,
+    "ma_window": 10
+  },
+
+  "risk": {
+    "_desc": "风控参数",
+    "min_risk_pct": 0.15,
+    "min_price_gap_pct": 0.01,
+    "stop_loss_atr_entry": 2,
+    "stop_loss_atr_prev_bar": 1,
+    "take_profit_risk_ratio": 2,
+    "breakeven_r": 1,
+    "trailing_activate_r": 2,
+    "trailing_atr_mult": 2
+  },
+
+  "position": {
+    "_desc": "持仓管理参数",
+    "cooldown_minutes": 60,
+    "max_wait_bars": 12
+  },
+
+  "trading_hours": {
+    "_desc": "交易时段守卫 (北京时间)",
+    "morning":   ["08:50", "11:40"],
+    "afternoon": ["13:20", "15:10"],
+    "night":     ["20:50", "23:40"],
+    "daily_k_window": ["23:00", "23:15"]
+  },
+
+  "fetch": {
+    "_desc": "数据抓取参数",
+    "max_workers": 4,
+    "kline_rows": 200,
+    "request_delay_seconds": 0.8,
+    "max_retries": 3
+  }
+}

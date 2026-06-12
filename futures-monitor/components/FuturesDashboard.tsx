@@ -230,7 +230,12 @@ export default function FuturesDashboard() {
                   拉取数据...
                 </div>
               )}
-              <FuturesTable data={filteredData} pendingSet={pendingSet} />
+              <FuturesTable
+                data={filteredData}
+                pendingSet={pendingSet}
+                positions={positions}
+                currentPrices={Object.fromEntries(data.map((d) => [d.symbol, d.price]))}
+              />
             </div>
           )}
         </div>

@@ -1,17 +1,11 @@
 "use client";
 // ============================================================
-// 期货监控主表格 — 状态机视图
-// 每品种一行，显示在策略状态机中的位置
-// 替代旧版 MA/MACD/Vol/OI 四列原始指标
+// 期货监控主表格 — 状态机视图 + 行内持仓
 // ============================================================
 
 import React from "react";
-import { FuturesStatus } from "@/lib/types";
+import { FuturesStatus, Position } from "@/lib/types";
 import { PriceCell } from "./StatusBadge";
-import {
-  TrendingUp, TrendingDown, Zap, Target, Clock, AlertTriangle,
-  BarChart3, Circle, Minus
-} from "lucide-react";
 
 // ── 状态定义 ─────────────────────────────────────────────────
 
@@ -22,7 +16,6 @@ interface SymbolState {
   label: string;
   detail: string;
   subDetail: string;
-  // colors
   borderClass: string;
   bgClass: string;
   textClass: string;
@@ -75,7 +68,7 @@ function computeState(
     }
   }
 
-  // ── 优先级 2: 突破待确认（pending）──
+  // ── 优先级 2: 突破待确认 ──
   if (pendingSet.has(row.symbol)) {
     return {
       level: "PENDING",
@@ -88,7 +81,7 @@ function computeState(
     };
   }
 
-  // ── 优先级 3: 接近信号（3/4 满足）──
+  // ── 优先级 3: 接近信号 ──
   const maOk = ma.status === "Upward" || ma.status === "Downward";
   const macdOk = macd.sign === (ma.status === "Upward" ? "positive" : "negative") && macd.rapidExpanding;
   const volOk = vol.status === "Surge";
@@ -125,7 +118,7 @@ function computeState(
       level: "TRENDING",
       label: `${emoji} ${dirLabel}`,
       detail: `${rg.score}分 MA×${ma.cumulative} ${macdStr}`,
-      subDetail: `等回踩结构`,
+      subDetail: "等回踩结构",
       borderClass: isBull ? "border-blue-200" : "border-orange-200",
       bgClass: isBull ? "bg-blue-50/30" : "bg-orange-50/30",
       textClass: isBull ? "text-blue-600" : "text-orange-600",
@@ -150,10 +143,11 @@ function computeState(
 // ── 表格列 ───────────────────────────────────────────────────
 
 const COLUMNS = [
-  { key: "symbol",  label: "品种",     width: "w-24", align: "text-left" },
-  { key: "price",   label: "价格/涨跌", width: "w-28", align: "text-right" },
-  { key: "state",   label: "状态",     width: "flex-1", align: "text-left" },
-  { key: "update",  label: "更新",     width: "w-16", align: "text-right" },
+  { key: "symbol",   label: "品种",       width: "w-20",  align: "text-left" },
+  { key: "price",    label: "价格/涨跌",   width: "w-24",  align: "text-right" },
+  { key: "state",    label: "状态",       width: "flex-1", align: "text-left" },
+  { key: "position", label: "持仓",       width: "w-36",  align: "text-left" },
+  { key: "update",   label: "更新",       width: "w-14",  align: "text-right" },
 ];
 
 // ── 板块色 ───────────────────────────────────────────────────
@@ -185,9 +179,11 @@ const CATEGORY_TEXT: Record<string, string> = {
 interface FuturesTableProps {
   data: FuturesStatus[];
   pendingSet: Set<string>;
+  positions: Position[];
+  currentPrices: Record<string, number>;
 }
 
-export default function FuturesTable({ data, pendingSet }: FuturesTableProps) {
+export default function FuturesTable({ data, pendingSet, positions, currentPrices }: FuturesTableProps) {
   const grouped = React.useMemo(() => {
     const order = ["贵金属", "有色", "黑色", "农产品", "油脂", "能化", "建材", "股指"];
     const map: Record<string, FuturesStatus[]> = {};
@@ -200,7 +196,7 @@ export default function FuturesTable({ data, pendingSet }: FuturesTableProps) {
 
   return (
     <div className="w-full overflow-x-auto rounded-lg border border-stone-200 shadow-sm">
-      <table className="w-full min-w-[600px] border-collapse">
+      <table className="w-full min-w-[700px] border-collapse">
         <thead className="sticky top-0 z-20">
           <tr className="bg-white border-b border-stone-300">
             {COLUMNS.map((col) => (
@@ -221,7 +217,6 @@ export default function FuturesTable({ data, pendingSet }: FuturesTableProps) {
         <tbody>
           {grouped.map(({ cat, items }) => (
             <React.Fragment key={cat}>
-              {/* 板块标题 */}
               <tr className="bg-white/90 border-t border-stone-200">
                 <td
                   colSpan={COLUMNS.length}
@@ -231,9 +226,16 @@ export default function FuturesTable({ data, pendingSet }: FuturesTableProps) {
                   <span className="ml-2 text-stone-400 font-normal">{items.length} 个品种</span>
                 </td>
               </tr>
-              {/* 品种行 */}
               {items.map((row, idx) => (
-                <DataRow key={row.symbol} row={row} idx={idx} cat={cat} pendingSet={pendingSet} />
+                <DataRow
+                  key={row.symbol}
+                  row={row}
+                  idx={idx}
+                  cat={cat}
+                  pendingSet={pendingSet}
+                  position={positions.find((p) => p.symbol === row.symbol && p.status === "open")}
+                  curPrice={currentPrices[row.symbol]}
+                />
               ))}
             </React.Fragment>
           ))}
@@ -245,8 +247,9 @@ export default function FuturesTable({ data, pendingSet }: FuturesTableProps) {
 
 // ── 单行 ─────────────────────────────────────────────────────
 
-function DataRow({ row, idx, cat, pendingSet }: {
+function DataRow({ row, idx, cat, pendingSet, position, curPrice }: {
   row: FuturesStatus; idx: number; cat: string; pendingSet: Set<string>;
+  position?: Position; curPrice?: number;
 }) {
   const borderColor = CATEGORY_COLORS[cat] ?? "border-l-gray-700";
   const st = computeState(row, pendingSet);
@@ -257,6 +260,7 @@ function DataRow({ row, idx, cat, pendingSet }: {
         border-b border-stone-200 transition-colors duration-150
         hover:bg-stone-100
         ${idx % 2 === 0 ? "bg-white" : "bg-stone-50/60"}
+        ${position ? "bg-amber-50/30" : ""}
       `}
     >
       {/* 品种 */}
@@ -283,10 +287,64 @@ function DataRow({ row, idx, cat, pendingSet }: {
         </div>
       </td>
 
+      {/* 持仓 */}
+      <td className="px-2 py-2">
+        {position ? (
+          <PositionCell pos={position} curPrice={curPrice ?? position.entryPrice} />
+        ) : (
+          <span className="text-[10px] text-stone-300">—</span>
+        )}
+      </td>
+
       {/* 更新 */}
-      <td className="px-3 py-2 text-right">
+      <td className="px-2 py-2 text-right">
         <span className="text-[10px] font-mono text-stone-400">{row.lastUpdate}</span>
       </td>
     </tr>
+  );
+}
+
+// ── 行内持仓 ─────────────────────────────────────────────────
+
+function PositionCell({ pos, curPrice }: { pos: Position; curPrice: number }) {
+  const isLong = pos.direction === "long";
+  const pts = isLong ? curPrice - pos.entryPrice : pos.entryPrice - curPrice;
+  const pnlPct = (pts / pos.entryPrice) * 100;
+  const isProfit = pts >= 0;
+
+  const dirEmoji = isLong ? "▲" : "▼";
+  const dirColor = isLong ? "text-emerald-600" : "text-red-600";
+  const pnlColor = isProfit ? "text-emerald-600" : "text-red-600";
+  const pnlSign = isProfit ? "+" : "";
+
+  // 止损状态
+  let slTag = "";
+  let slColor = "text-stone-400";
+  if (pos.trailingActive) {
+    slTag = "移动";
+    slColor = "text-amber-500";
+  } else if (pos.breakEvenMoved) {
+    slTag = "保本";
+    slColor = "text-sky-500";
+  }
+
+  return (
+    <div className="rounded border border-amber-200/60 bg-amber-50/30 px-2 py-1">
+      <div className="flex items-center gap-1 text-[10px]">
+        <span className={`font-bold ${dirColor}`}>{dirEmoji}</span>
+        <span className="text-stone-700 font-mono font-semibold">{pos.entryPrice.toFixed(1)}</span>
+        <span className={`font-mono font-semibold ${pnlColor}`}>
+          {pnlSign}{pnlPct.toFixed(2)}%
+        </span>
+      </div>
+      <div className="flex items-center gap-1.5 text-[9px] text-stone-400 mt-0.5">
+        <span>SL{pos.stopLoss.toFixed(1)}</span>
+        {slTag && (
+          <span className={`font-semibold ${slColor}`}>{slTag}</span>
+        )}
+        <span className="text-stone-300">|</span>
+        <span className={pnlColor}>{pnlSign}{pts.toFixed(1)}pts</span>
+      </div>
+    </div>
   );
 }

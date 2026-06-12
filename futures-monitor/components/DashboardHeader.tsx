@@ -1,14 +1,21 @@
 "use client";
 // ============================================================
-// 概览栏 — v3 紧凑版：时钟 + 刷新 + 统计 pills
+// 概览栏 — v4 状态分布版：时钟 + 状态计数 pills
 // ============================================================
 
 import React, { useEffect, useState } from "react";
-import { RefreshCw, Clock, TrendingUp, TrendingDown, Minus, BarChart3 } from "lucide-react";
-import { FuturesStatus } from "@/lib/types";
+import { RefreshCw, Clock } from "lucide-react";
+
+interface StateCounts {
+  signal: number;
+  pending: number;
+  approaching: number;
+  trending: number;
+  idle: number;
+}
 
 interface DashboardHeaderProps {
-  data: FuturesStatus[];
+  stateCounts: StateCounts;
   lastRefresh: Date;
   autoRefresh: boolean;
   onToggleAutoRefresh: () => void;
@@ -18,7 +25,7 @@ interface DashboardHeaderProps {
 }
 
 export default function DashboardHeader({
-  data,
+  stateCounts,
   lastRefresh,
   autoRefresh,
   onToggleAutoRefresh,
@@ -34,13 +41,6 @@ export default function DashboardHeader({
     return () => clearInterval(timer);
   }, []);
 
-  const upCount = data.filter((d) => d.ma.status === "Upward").length;
-  const downCount = data.filter((d) => d.ma.status === "Downward").length;
-  const silentCount = data.filter((d) => d.ma.status === "Silent").length;
-  const surgeCount = data.filter((d) => d.volume.status === "Surge").length;
-  const oiIncCount = data.filter((d) => d.openInterest.status === "Increasing").length;
-  const goldenCross = data.filter((d) => d.macd.sign === "positive").length;
-
   const formatTime = (d: Date) =>
     `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}:${String(d.getSeconds()).padStart(2, "0")}`;
 
@@ -54,15 +54,17 @@ export default function DashboardHeader({
         </span>
       </div>
 
-      {/* 统计 pills */}
+      {/* 状态分布 pills */}
       <div className="flex items-center gap-1.5 flex-wrap">
-        <StatPill label="上行" value={upCount} accent="emerald" Icon={TrendingUp} />
-        <StatPill label="下行" value={downCount} accent="red" Icon={TrendingDown} />
-        <StatPill label="静默" value={silentCount} accent="muted" Icon={Minus} />
-        <span className="text-stone-200 mx-0.5">|</span>
-        <StatPill label="放量" value={surgeCount} accent="amber" Icon={BarChart3} />
-        <StatPill label="增仓" value={oiIncCount} accent="amber" />
-        <StatPill label="金叉" value={goldenCross} accent="sky" />
+        <StatePill label="🎯 信号" value={stateCounts.signal} active={stateCounts.signal > 0}
+          activeClass="bg-amber-100 border-amber-400 text-amber-700" />
+        <StatePill label="⚫ 冷却" value={stateCounts.pending} active={stateCounts.pending > 0}
+          activeClass="bg-stone-200 border-stone-500 text-stone-700" />
+        <StatePill label="🟡 接近" value={stateCounts.approaching} active={stateCounts.approaching > 0}
+          activeClass="bg-amber-50 border-amber-300 text-amber-600" />
+        <StatePill label="🔵 趋势" value={stateCounts.trending} active={stateCounts.trending > 0}
+          activeClass="bg-blue-50 border-blue-300 text-blue-600" />
+        <StatePill label="⬜ 观望" value={stateCounts.idle} />
       </div>
 
       {/* 右侧：更新信息 + 刷新按钮 */}
@@ -92,23 +94,19 @@ export default function DashboardHeader({
   );
 }
 
-const ACCENT = {
-  emerald: "text-emerald-500 bg-emerald-50 border-emerald-200",
-  red:     "text-red-500 bg-red-50 border-red-200",
-  amber:   "text-amber-500 bg-amber-50 border-amber-200",
-  sky:     "text-sky-500 bg-sky-50 border-sky-200",
-  muted:   "text-stone-400 bg-stone-100 border-stone-200",
-};
-
-function StatPill({
-  label, value, accent, Icon,
+function StatePill({
+  label, value, active, activeClass,
 }: {
-  label: string; value: number; accent: keyof typeof ACCENT;
-  Icon?: React.ElementType;
+  label: string; value: number; active?: boolean;
+  activeClass?: string;
 }) {
+  const isActive = active && value > 0;
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded border text-[10px] font-medium font-mono ${ACCENT[accent]}`}>
-      {Icon && <Icon size={10} />}
+    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded border text-[10px] font-medium font-mono transition-all ${
+      isActive
+        ? activeClass
+        : "text-stone-300 bg-stone-50 border-stone-200"
+    }`}>
       {label} <span className="font-bold">{value}</span>
     </span>
   );

@@ -73,6 +73,20 @@ export default function FuturesDashboard() {
     return "IDLE";
   }, [pendingSet]);
 
+  // ── 状态分布（供 Header pills）──
+  const stateCounts = React.useMemo(() => {
+    const counts = { signal: 0, pending: 0, approaching: 0, trending: 0, idle: 0 };
+    for (const d of data) {
+      const s = getSymbolState(d);
+      if (s === "SIGNAL") counts.signal++;
+      else if (s === "PENDING") counts.pending++;
+      else if (s === "APPROACHING") counts.approaching++;
+      else if (s === "TRENDING") counts.trending++;
+      else counts.idle++;
+    }
+    return counts;
+  }, [data, getSymbolState]);
+
   // ── 数据加载 ──
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -216,7 +230,7 @@ export default function FuturesDashboard() {
 
         {/* ── 概览栏 ───────────────────── */}
         <DashboardHeader
-          data={data}
+          stateCounts={stateCounts}
           lastRefresh={lastRefresh}
           autoRefresh={autoRefresh}
           onToggleAutoRefresh={() => setAutoRefresh((v) => !v)}

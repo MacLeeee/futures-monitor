@@ -1,11 +1,12 @@
 "use client";
 // ============================================================
-// 突破信号内容（从 SignalPanel 提取）
+// 突破信号内容 — H-010 结构位锚定版
+// 确认信号 / 被结构位拦截 / 待观察(缺增仓) / 均线首根变化
 // ============================================================
 
 import React from "react";
 import { FuturesStatus } from "@/lib/types";
-import { TrendingUp, TrendingDown, AlertTriangle } from "lucide-react";
+import { TrendingUp, TrendingDown, AlertTriangle, ShieldOff } from "lucide-react";
 
 const CATEGORY_DOT: Record<string, string> = {
   贵金属: "bg-yellow-400", 有色: "bg-orange-400", 黑色: "bg-stone-400",
@@ -19,17 +20,36 @@ export default function BreakoutContent({ data }: BreakoutContentProps) {
   const longs  = data.filter((d) => d.breakoutSignal?.type === "long");
   const shorts = data.filter((d) => d.breakoutSignal?.type === "short");
 
-  const nearLong = data.filter(
-    (d) => !d.breakoutSignal &&
-      d.ma.status === "Upward" &&
-      d.macd.sign === "positive" && d.macd.rapidExpanding &&
-      d.volume.status === "Surge"
+  // 全条件满足（MA+MACD+量+增仓）但无信号 → 被结构位闸门拦截
+  const blockedLong = data.filter((d) =>
+    !d.breakoutSignal &&
+    d.ma.status === "Upward" &&
+    d.macd.sign === "positive" && d.macd.rapidExpanding &&
+    d.volume.status === "Surge" &&
+    d.openInterest.status === "Increasing"
   );
-  const nearShort = data.filter(
-    (d) => !d.breakoutSignal &&
-      d.ma.status === "Downward" &&
-      d.macd.sign === "negative" && d.macd.rapidExpanding &&
-      d.volume.status === "Surge"
+  const blockedShort = data.filter((d) =>
+    !d.breakoutSignal &&
+    d.ma.status === "Downward" &&
+    d.macd.sign === "negative" && d.macd.rapidExpanding &&
+    d.volume.status === "Surge" &&
+    d.openInterest.status === "Increasing"
+  );
+
+  // 3/4 满足（缺增仓）→ 待观察
+  const nearLong = data.filter((d) =>
+    !d.breakoutSignal &&
+    d.ma.status === "Upward" &&
+    d.macd.sign === "positive" && d.macd.rapidExpanding &&
+    d.volume.status === "Surge" &&
+    d.openInterest.status !== "Increasing"
+  );
+  const nearShort = data.filter((d) =>
+    !d.breakoutSignal &&
+    d.ma.status === "Downward" &&
+    d.macd.sign === "negative" && d.macd.rapidExpanding &&
+    d.volume.status === "Surge" &&
+    d.openInterest.status !== "Increasing"
   );
 
   const maFirstUp = data.filter((d) => d.ma.status === "Upward"   && d.ma.cumulative === 1);
@@ -39,9 +59,9 @@ export default function BreakoutContent({ data }: BreakoutContentProps) {
     <div className="space-y-3">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <BreakoutColumn title="做多突破" direction="long"
-          signals={longs} near={nearLong} />
+          signals={longs} blocked={blockedLong} near={nearLong} />
         <BreakoutColumn title="做空突破" direction="short"
-          signals={shorts} near={nearShort} />
+          signals={shorts} blocked={blockedShort} near={nearShort} />
       </div>
 
       {(maFirstUp.length + maFirstDn.length) > 0 && (
@@ -63,9 +83,9 @@ export default function BreakoutContent({ data }: BreakoutContentProps) {
   );
 }
 
-function BreakoutColumn({ title, direction, signals, near }: {
+function BreakoutColumn({ title, direction, signals, blocked, near }: {
   title: string; direction: "long" | "short";
-  signals: FuturesStatus[]; near: FuturesStatus[];
+  signals: FuturesStatus[]; blocked: FuturesStatus[]; near: FuturesStatus[];
 }) {
   const isLong = direction === "long";
   return (
@@ -78,19 +98,34 @@ function BreakoutColumn({ title, direction, signals, near }: {
       </div>
       {signals.length > 0 ? (
         <div className="space-y-1.5 mb-2">
-          {signals.map((d) => <BreakoutCard key={d.symbol} d={d} isLong={isLong} confirmed />)}
+          {signals.map((d) => <BreakoutCard key={d.symbol} d={d} isLong={isLong} variant="confirmed" />)}
         </div>
       ) : (
         <p className="text-xs text-stone-400 mb-2">暂无满足全条件的品种</p>
       )}
+
+      {/* 被结构位拦截（4/4满足但无信号） */}
+      {blocked.length > 0 && (
+        <>
+          <div className="flex items-center gap-1.5 mb-1 mt-2">
+            <ShieldOff size={10} className="text-stone-500" />
+            <span className="text-[10px] text-stone-500">被结构位拦截（延伸过远/非新鲜突破）</span>
+          </div>
+          <div className="space-y-1">
+            {blocked.map((d) => <BreakoutCard key={d.symbol} d={d} isLong={isLong} variant="blocked" />)}
+          </div>
+        </>
+      )}
+
+      {/* 待观察（仅缺增仓） */}
       {near.length > 0 && (
         <>
-          <div className="flex items-center gap-1.5 mb-1">
+          <div className="flex items-center gap-1.5 mb-1 mt-2">
             <AlertTriangle size={10} className="text-stone-500" />
             <span className="text-[10px] text-stone-500">待观察（仅缺增仓）</span>
           </div>
           <div className="space-y-1">
-            {near.map((d) => <BreakoutCard key={d.symbol} d={d} isLong={isLong} confirmed={false} />)}
+            {near.map((d) => <BreakoutCard key={d.symbol} d={d} isLong={isLong} variant="near" />)}
           </div>
         </>
       )}
@@ -98,17 +133,22 @@ function BreakoutColumn({ title, direction, signals, near }: {
   );
 }
 
-function BreakoutCard({ d, isLong, confirmed }: { d: FuturesStatus; isLong: boolean; confirmed: boolean }) {
+function BreakoutCard({ d, isLong, variant }: {
+  d: FuturesStatus; isLong: boolean;
+  variant: "confirmed" | "blocked" | "near";
+}) {
   const dot    = CATEGORY_DOT[d.category] ?? "bg-stone-500";
   const chgClr = d.change > 0 ? "text-red-600" : d.change < 0 ? "text-emerald-600" : "text-stone-400";
   const sig    = d.breakoutSignal;
 
+  const bgMap = {
+    confirmed: isLong ? "bg-red-50/80 border border-red-200" : "bg-emerald-50/80 border border-emerald-200",
+    blocked:   "bg-stone-100 border border-stone-300/50",
+    near:      "bg-stone-100 border border-stone-300/30",
+  };
+
   return (
-    <div className={`flex items-center justify-between px-2.5 py-1.5 rounded text-xs font-mono ${
-      confirmed
-        ? isLong ? "bg-red-50/80 border border-red-200" : "bg-emerald-50/80 border border-emerald-200"
-        : "bg-stone-100 border border-stone-300/30"
-    }`}>
+    <div className={`flex items-center justify-between px-2.5 py-1.5 rounded text-xs font-mono ${bgMap[variant]}`}>
       <div className="flex items-center gap-1.5">
         <span className={`w-1.5 h-1.5 rounded-full ${dot}`} />
         <span className="font-bold text-stone-900">{d.symbol}</span>
@@ -123,6 +163,9 @@ function BreakoutCard({ d, isLong, confirmed }: { d: FuturesStatus; isLong: bool
         <span className="text-amber-500">
           {sig ? `${sig.expansionRate.toFixed(1)}x` : "MACD"}
         </span>
+        {variant === "blocked" && (
+          <span className="text-stone-400 ml-1">结构拦截</span>
+        )}
         {sig?.oiConfirmed && <span className="text-purple-600 ml-0.5">+OI</span>}
       </div>
     </div>

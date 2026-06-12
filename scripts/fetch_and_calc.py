@@ -1228,11 +1228,26 @@ def tg_send_all(text: str) -> None:
 
 
 def build_breakout_message(data: list[dict], bj_time: str) -> str | None:
-    """突破信号推送 — 仅推送已触发的突破信号（进入pending等KD冷却）。"""
+    """突破/接近信号推送。有信号推信号，没信号推接近。"""
     longs  = [d for d in data if d.get("breakoutSignal") and d["breakoutSignal"]["type"] == "long"]
     shorts = [d for d in data if d.get("breakoutSignal") and d["breakoutSignal"]["type"] == "short"]
 
-    if not longs and not shorts:
+    # 接近信号：3/4满足（缺增仓），且该方向没有真实突破信号
+    def _near(d, is_long):
+        if d.get("breakoutSignal"): return False
+        ma = d.get("ma", {})
+        macd = d.get("macd", {})
+        vol = d.get("volume", {})
+        return (
+            ma.get("status") == ("Upward" if is_long else "Downward")
+            and macd.get("sign") == ("positive" if is_long else "negative")
+            and macd.get("rapidExpanding")
+            and vol.get("status") == "Surge"
+        )
+    near_long  = [d for d in data if _near(d, True)] if not longs else []
+    near_short = [d for d in data if _near(d, False)] if not shorts else []
+
+    if not any([longs, shorts, near_long, near_short]):
         return None
 
     def fmt_bo(d: dict, arrow: str) -> str:
@@ -1243,6 +1258,10 @@ def build_breakout_message(data: list[dict], bj_time: str) -> str | None:
         ext = sig.get("extAtr")
         extra = f" lv{lv} ext{ext}" if lv else ""
         return f"  {arrow}{d['symbol']} {chg} MA×{d['ma']['cumulative']} MACD{sig.get('expansionRate',1):.1f}x{oi}{extra}"
+
+    def fmt_near(d: dict, arrow: str) -> str:
+        chg = f"+{d['change']:.2f}%" if d["change"] >= 0 else f"{d['change']:.2f}%"
+        return f"  {arrow}{d['symbol']} {chg} MA×{d['ma']['cumulative']} MACD{d['macd']['expansionRate']:.1f}x 缺增仓"
 
     sep = "─" * 24
     lines = [f"<b>⚡ 突破信号</b>  {bj_time}", sep]
@@ -1255,8 +1274,15 @@ def build_breakout_message(data: list[dict], bj_time: str) -> str | None:
         lines.append("🟢 <b>做空</b> → pending等KD冷却")
         lines.extend(fmt_bo(d, "▼") for d in shorts)
 
-    lines.append("")
-    lines.append("💡 等30m KD冷却确认（最多12K）")
+    if near_long or near_short:
+        if longs or shorts: lines.append("")
+        lines.append("🟡 <b>接近信号</b>（缺增仓）")
+        lines.extend(fmt_near(d, "▲") for d in near_long)
+        lines.extend(fmt_near(d, "▼") for d in near_short)
+
+    if longs or shorts:
+        lines.append("")
+        lines.append("💡 等30m KD冷却确认（最多12K）")
     lines.append(sep)
     return "\n".join(lines)
 

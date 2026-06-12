@@ -1229,59 +1229,78 @@ def tg_send_all(text: str) -> None:
 
 def build_breakout_message(data: list[dict], bj_time: str) -> str | None:
     """
-    突破检测推送格式（转入 pending 等待 30m KD 冷却）：
-    ─────────────────────────────────
-    ⚡ 突破检测 03-24 10:00
-    ─────────────────────────────────
-    🔴 做多检测：黄金 +0.8%  铜 +0.5%
-    🟢 做空检测：原油 -1.2%
-    📈 均线新突破：白银↗  棉花↘
-    ─────────────────────────────────
+    H-010 突破检测推送（结构位锚定版）：
+    信号 → 被结构拦截 → 均线首根变化（紧凑）
     """
-    longs  = [d for d in data if d.get("breakoutSignal") and d["breakoutSignal"]["type"] == "long"]
-    shorts = [d for d in data if d.get("breakoutSignal") and d["breakoutSignal"]["type"] == "short"]
+    longs   = [d for d in data if d.get("breakoutSignal") and d["breakoutSignal"]["type"] == "long"]
+    shorts  = [d for d in data if d.get("breakoutSignal") and d["breakoutSignal"]["type"] == "short"]
+
+    # 被结构位拦截：4/4条件满足但无信号（被闸门过滤）
+    def _blocked(d, is_long):
+        if d.get("breakoutSignal"):
+            return False
+        ma = d.get("ma", {})
+        macd = d.get("macd", {})
+        vol = d.get("volume", {})
+        oi = d.get("openInterest", {})
+        return (
+            ma.get("status") == ("Upward" if is_long else "Downward")
+            and macd.get("sign") == ("positive" if is_long else "negative")
+            and macd.get("rapidExpanding")
+            and vol.get("status") == "Surge"
+            and oi.get("status") == "Increasing"
+        )
+    blocked_long  = [d for d in data if _blocked(d, True)]
+    blocked_short = [d for d in data if _blocked(d, False)]
+
     ma_first_up = [d for d in data if d["ma"]["status"] == "Upward"   and d["ma"]["cumulative"] == 1]
     ma_first_dn = [d for d in data if d["ma"]["status"] == "Downward" and d["ma"]["cumulative"] == 1]
 
-    if not any([longs, shorts, ma_first_up, ma_first_dn]):
+    if not any([longs, shorts, blocked_long, blocked_short, ma_first_up, ma_first_dn]):
         return None
 
-    def fmt_item(d: dict, arrow: str) -> str:
+    def fmt_bo(d: dict, arrow: str) -> str:
         sig = d.get("breakoutSignal") or {}
         chg = f"+{d['change']:.2f}%" if d["change"] >= 0 else f"{d['change']:.2f}%"
         oi  = " +OI" if sig.get("oiConfirmed") else ""
-        # 突破K实体50%触发位
-        open_ = d.get("curOpen")
-        close_ = d.get("price")
-        level_str = ""
-        if open_ and close_:
-            level = (open_ + close_) / 2
-            level_str = f"  触发位{level:.2f}"
-        return f"  {arrow}{d['symbol']} {chg}  MA×{d['ma']['cumulative']} 15mMACD×{d['macd']['cumulative']}{oi}{level_str}"
+        lv  = sig.get("level")
+        ext = sig.get("extAtr")
+        extra = f" lv{lv} ext{ext}" if lv else ""
+        return f"  {arrow}{d['symbol']} {chg} MA×{d['ma']['cumulative']} MACD{sig.get('expansionRate',1):.1f}x{oi}{extra}"
 
-    sep = "─" * 24
-    lines = [f"<b>⚡ 突破检测</b>  {bj_time}",  sep]
+    def fmt_blocked(d: dict) -> str:
+        chg = f"+{d['change']:.2f}%" if d["change"] >= 0 else f"{d['change']:.2f}%"
+        return f"  🛡 {d['symbol']} {chg} MA×{d['ma']['cumulative']} MACD{d['macd'].get('expansionRate',1):.1f}x 结构拦截"
+
+    sep = "─" * 28
+    lines = [f"<b>⚡ 突破检测</b>  {bj_time}", sep]
 
     if longs:
-        lines.append("🔴 <b>做多检测</b>（30m上行 · 15m金叉扩口 · 放量 · 等待KD冷却）")
-        lines.extend(fmt_item(d, "▲") for d in longs)
+        lines.append("🔴 <b>做多突破</b> → pending等KD冷却")
+        lines.extend(fmt_bo(d, "▲") for d in longs)
     if shorts:
         if longs: lines.append("")
-        lines.append("🟢 <b>做空检测</b>（30m下行 · 15m死叉扩口 · 放量 · 等待KD冷却）")
-        lines.extend(fmt_item(d, "▼") for d in shorts)
+        lines.append("🟢 <b>做空突破</b> → pending等KD冷却")
+        lines.extend(fmt_bo(d, "▼") for d in shorts)
+
+    if blocked_long or blocked_short:
+        if longs or shorts: lines.append("")
+        lines.append("🛡 <b>被结构拦截</b>（全条件满足·延伸过远/非新鲜突破→等回踩接）")
+        lines.extend(fmt_blocked(d) for d in blocked_long + blocked_short)
 
     if ma_first_up or ma_first_dn:
-        lines.append("")
-        lines.append("📈 <b>均线首根变化</b>（新方向）")
-        for d in ma_first_up:
-            chg = f"+{d['change']:.2f}%"
-            lines.append(f"  ↗ {d['symbol']} {chg} 上行第1根")
-        for d in ma_first_dn:
-            chg = f"{d['change']:.2f}%"
-            lines.append(f"  ↘ {d['symbol']} {chg} 下行第1根")
+        if longs or shorts or blocked_long or blocked_short:
+            lines.append("")
+        up_names   = " ".join(d["symbol"] for d in ma_first_up)
+        dn_names   = " ".join(d["symbol"] for d in ma_first_dn)
+        parts = []
+        if up_names: parts.append(f"↗ {up_names}")
+        if dn_names: parts.append(f"↘ {dn_names}")
+        lines.append(f"📈 均线首根: {'  '.join(parts)}")
 
-    lines.append("")
-    lines.append("💡 已转入 pending · 等待 30m KD 冷却确认（最多12根K）")
+    if longs or shorts:
+        lines.append("")
+        lines.append("💡 已转入 pending · 等 30m KD 冷却（最多12K）")
     lines.append(sep)
     return "\n".join(lines)
 
@@ -1380,7 +1399,7 @@ def build_regime_message(data: list[dict], bj_time: str,
             score = d.get("marketRegime", {}).get("score", "?")
             items.append(f"{d['symbol']}{arrow}({score}分)")
         lines.append(f"📊 <b>震荡→趋势</b>: {' '.join(items)}")
-        lines.append("  💡 可关注突破策略（顺势）或回踩策略入场机会")
+        lines.append("  💡 关注突破策略入场机会")
 
     if to_ranging:
         items = [
@@ -1586,6 +1605,45 @@ def build_position_opened_message(new_positions: list[dict], bj_time: str) -> st
 
 
 # ── 主流程 ────────────────────────────────────────────────────
+
+def _compute_state_counts(data: list[dict]) -> dict:
+    """状态分布（供推送摘要）。"""
+    import json
+    pending_syms: set = set()
+    if PENDING_BREAKOUTS_FILE.exists():
+        try:
+            pending_syms = {p["symbol"] for p in
+                            json.loads(PENDING_BREAKOUTS_FILE.read_text("utf-8")).get("pending", [])}
+        except Exception:
+            pass
+    counts = {"signal": 0, "pending": 0, "approach": 0, "trending": 0, "idle": 0, "total": 0}
+    for d in data:
+        counts["total"] += 1
+        bo = d.get("breakoutSignal")
+        pb = d.get("pullbackSignal")
+        if bo or pb:
+            counts["signal"] += 1
+        elif d["symbol"] in pending_syms:
+            counts["pending"] += 1
+        else:
+            ma = d.get("ma", {})
+            macd = d.get("macd", {})
+            vol = d.get("volume", {})
+            oi = d.get("openInterest", {})
+            ma_ok = ma.get("status") in ("Upward", "Downward")
+            macd_ok = (macd.get("sign") == ("positive" if ma.get("status") == "Upward" else "negative")
+                       and macd.get("rapidExpanding"))
+            vol_ok = vol.get("status") == "Surge"
+            oi_ok = oi.get("status") == "Increasing"
+            if [ma_ok, macd_ok, vol_ok, oi_ok].count(True) >= 3:
+                counts["approach"] += 1
+            elif d.get("marketRegime", {}).get("regime") == "trending" and ma_ok:
+                counts["trending"] += 1
+            else:
+                counts["idle"] += 1
+    return counts
+
+
 def main():
     # 非交易时段不抓取、不写文件、不提交，避免空刷；手动触发时可设 FORCE_FETCH=1 强制执行
     if os.environ.get("FORCE_FETCH") != "1" and not is_trading_time():
@@ -1665,6 +1723,18 @@ def main():
     # ── Telegram 推送 ──
     bj_time = datetime.now(ZoneInfo("Asia/Shanghai")).strftime("%m-%d %H:%M")
     messages = []
+
+    # 状态分布摘要（一行）
+    state_counts = _compute_state_counts(merged)
+    if state_counts["total"] > 0:
+        parts = []
+        if state_counts["signal"]:   parts.append(f"🎯{state_counts['signal']}")
+        if state_counts["pending"]:  parts.append(f"⚫{state_counts['pending']}")
+        if state_counts["approach"]: parts.append(f"🟡{state_counts['approach']}")
+        parts.append(f"🔵{state_counts['trending']}")
+        parts.append(f"⬜{state_counts['idle']}")
+        messages.append(f"<b>📊 期货监控</b> {bj_time}  {' '.join(parts)}")
+
     bo_msg = build_breakout_message(merged, bj_time)
     if bo_msg:
         messages.append(bo_msg)

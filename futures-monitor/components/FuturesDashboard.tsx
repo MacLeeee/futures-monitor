@@ -49,6 +49,7 @@ export default function FuturesDashboard() {
   const [remoteUpdatedAt, setRemoteUpdatedAt] = useState<string | null>(null);
   const [positions, setPositions] = useState<Position[]>([]);
   const [pendingSet, setPendingSet] = useState<Set<string>>(new Set());
+  const [seatMap, setSeatMap] = useState<Record<string, { jia: string; inst: string; foreign: string; alert: boolean }>>({});
 
   const [selectedCategory, setSelectedCategory] = useState("全部");
   const [selectedState, setSelectedState] = useState<StateFilter>("全部");
@@ -117,7 +118,36 @@ export default function FuturesDashboard() {
     } catch { /* 静默 */ }
   }, []);
 
-  useEffect(() => { loadData(); loadPositions(); loadPending(); }, [loadData, loadPositions, loadPending]);
+  const loadSeats = useCallback(async () => {
+    try {
+      const isLocal = typeof window !== "undefined" && window.location.port !== "";
+      const base = isLocal ? "" : GITHUB_RAW;
+      const url = `${base}/seat_positions.json?t=${Date.now()}`;
+      const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+      if (!res.ok) return;
+      const json = await res.json();
+      const map: Record<string, { jia: string; inst: string; foreign: string; alert: boolean }> = {};
+      for (const entry of (json.data ?? [])) {
+        const f = entry.factions ?? {};
+        const jia = f["家人"];
+        const inst = f["机构"];
+        const foreign = f["外资"];
+        if (!jia || !inst || !foreign) continue;
+        // 标签清洗：取第一个非空标签
+        const pick = (s: string) => (s && s !== "–" && s !== "-") ? s : "";
+        const jl = pick(jia.label);
+        const il = pick(inst.label);
+        const fl = pick(foreign.label);
+        // 背离：家人偏多(bias>0)但机构+外资共识偏空(bias<0)，或反过来
+        const consBias = (inst.bias + foreign.bias) / 2;
+        const alert = jia.bias !== 0 && consBias !== 0 && jia.bias * consBias < 0;
+        map[entry.symbol] = { jia: jl, inst: il, foreign: fl, alert };
+      }
+      setSeatMap(map);
+    } catch { /* 静默 */ }
+  }, []);
+
+  useEffect(() => { loadData(); loadPositions(); loadPending(); loadSeats(); }, [loadData, loadPositions, loadPending, loadSeats]);
 
   // ── 自动刷新 ──
   useEffect(() => {
@@ -235,6 +265,7 @@ export default function FuturesDashboard() {
                 pendingSet={pendingSet}
                 positions={positions}
                 currentPrices={Object.fromEntries(data.map((d) => [d.symbol, d.price]))}
+                seatMap={seatMap}
               />
             </div>
           )}

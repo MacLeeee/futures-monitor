@@ -181,9 +181,10 @@ interface FuturesTableProps {
   pendingSet: Set<string>;
   positions: Position[];
   currentPrices: Record<string, number>;
+  seatMap: Record<string, { jia: string; inst: string; foreign: string; alert: boolean }>;
 }
 
-export default function FuturesTable({ data, pendingSet, positions, currentPrices }: FuturesTableProps) {
+export default function FuturesTable({ data, pendingSet, positions, currentPrices, seatMap }: FuturesTableProps) {
   const grouped = React.useMemo(() => {
     const order = ["贵金属", "有色", "黑色", "农产品", "油脂", "能化", "建材", "股指"];
     const map: Record<string, FuturesStatus[]> = {};
@@ -235,6 +236,7 @@ export default function FuturesTable({ data, pendingSet, positions, currentPrice
                   pendingSet={pendingSet}
                   position={positions.find((p) => p.symbol === row.symbol && p.status === "open")}
                   curPrice={currentPrices[row.symbol]}
+                  seat={seatMap[row.symbol]}
                 />
               ))}
             </React.Fragment>
@@ -247,9 +249,10 @@ export default function FuturesTable({ data, pendingSet, positions, currentPrice
 
 // ── 单行 ─────────────────────────────────────────────────────
 
-function DataRow({ row, idx, cat, pendingSet, position, curPrice }: {
+function DataRow({ row, idx, cat, pendingSet, position, curPrice, seat }: {
   row: FuturesStatus; idx: number; cat: string; pendingSet: Set<string>;
   position?: Position; curPrice?: number;
+  seat?: { jia: string; inst: string; foreign: string; alert: boolean };
 }) {
   const borderColor = CATEGORY_COLORS[cat] ?? "border-l-gray-700";
   const st = computeState(row, pendingSet);
@@ -283,6 +286,16 @@ function DataRow({ row, idx, cat, pendingSet, position, curPrice }: {
           <div className="text-[10px] text-stone-600 font-mono mt-0.5">{st.detail}</div>
           {st.subDetail && (
             <div className="text-[9px] text-stone-400 font-mono">{st.subDetail}</div>
+          )}
+          {seat && (seat.alert || position) && (
+            <div className={`text-[8px] font-mono mt-0.5 flex items-center gap-1 ${seat.alert ? "text-amber-600" : "text-stone-300"}`}>
+              {seat.alert && <span className="font-bold">⚡背离</span>}
+              <span>家人{seat.jia || "–"}</span>
+              <span className="text-stone-300">·</span>
+              <span>机构{seat.inst || "–"}</span>
+              <span className="text-stone-300">·</span>
+              <span>外资{seat.foreign || "–"}</span>
+            </div>
           )}
         </div>
       </td>

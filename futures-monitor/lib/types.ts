@@ -11,7 +11,7 @@ export type MacdSign = "positive" | "negative";
 export type MaSlopeType = "steep" | "gentle" | "declining" | "flat";
 
 // 突破信号：30min MA排列（价格在MA20/MA60上/下方）+ 15min MACD扩口 + 15min量>均量
-// 增仓(OI)为或有加分项
+// 增仓(OI)为或有加分项；H-010 结构位锚定新增 level/extAtr
 export interface BreakoutSignal {
   type: "long" | "short";
   maCumulative: number;      // 30min MA 排列方向持续 K 数
@@ -19,19 +19,40 @@ export interface BreakoutSignal {
   expansionRate: number;     // 15min MACD 走扩倍率
   oiConfirmed: boolean;      // 15min 持仓量增仓（或有加分项）
   boxBreakout: boolean;      // 震荡行情下同步突破箱体边沿
+  level: number | null;      // H-010: 前期关键位价格（近30根最高/最低）
+  extAtr: number | null;     // H-010: 收盘距突破位延伸度（ATR倍数）
 }
 
-// 回踩信号：30min MA60 锚定方向 + 价格从正确方向回踩均线 + 15min MACD扩口 + 15min放量
+// H-005 MTF回踩信号：日线趋势 × 30min结构回踩状态机
+// 状态机: IDLE→ARMED(等回踩)→QUALIFYING(质量审查)→TRIGGER_WAIT→SIGNAL
 export interface PullbackSignal {
-  type: "long" | "short";   // 做多回踩（从上方） / 做空反抽（从下方）
-  target: "MA20" | "MA60";  // 回踩/反抽的目标均线
-  support: number;           // 目标均线当前值
-  distPct: number;           // 距均线的 % 距离（绝对值）
-  aboveMa: boolean;          // 做多: true=价格仍在均线上方; 做空: true=已轻微突破
-  slopeType: MaSlopeType;    // 30min MA20 斜率类型
-  ma20: number;              // 30min MA20 当前值
-  ma60: number;              // 30min MA60 当前值
-  bounceTol: number;         // 自适应回踩容忍阈值%（按 ATR 收缩）
+  signal: string;            // "mtf_pullback"
+  symbol: string;
+  type: "long" | "short";
+  trigger: string;           // "sweep"（扫损收回，最高级）| "structure_macd"（结构+MACD）
+  zone: string;              // 回踩命中的区域名: "breakout_retest" | "pivot_retest" | "fib_0.382/0.5/0.618" | "daily_ema20"
+  zoneLevel: number;         // 回踩区域价格
+  entry: number;             // 入场价
+  stopLoss: number;          // 结构止损价
+  riskPct: number;           // 风险百分比
+  quality: {                 // 回调质量审查
+    pbBars: number;          // 回调K线根数
+    retrace: number;         // 回调深度（占上一段升浪比例）
+    volRatio: number;        // 回调段均量/升浪段均量
+    oiChgPct: number;        // 回调段 OI 变化 %
+    pbExtreme: number;       // 回调极值价格
+    swingPx: number;         // 分型价格
+    legBase: number;         // 升浪起点
+  };
+  tet?: {                    // TET 三元组（TET闸门通过时存在）
+    ats: number;             // 锚定趋势分 [-1, 1]
+    trendNow: number;        // 当前趋势强度
+    eiNow: number;           // 当前情绪指数 [-1, 1]
+    eiPbExtreme: number;     // 回调段情绪极值
+    ti: number;              // 择时指标 = ATS - EI
+    variant: string;         // 使用的TET变体 "V1"
+  } | null;
+  time: string;              // 信号时间
 }
 
 export interface FuturesStatus {

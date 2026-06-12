@@ -1,18 +1,163 @@
 "use client";
 // ============================================================
-// 期货监控主表格组件
-// 高信息密度 Data Table，Bloomberg/Wind 金融终端风格
+// 期货监控主表格 — 状态机视图
+// 每品种一行，显示在策略状态机中的位置
+// 替代旧版 MA/MACD/Vol/OI 四列原始指标
 // ============================================================
 
 import React from "react";
 import { FuturesStatus } from "@/lib/types";
-import { MABadge, MACDBadge, VolumeBadge, OIBadge, PriceCell } from "./StatusBadge";
+import { PriceCell } from "./StatusBadge";
+import {
+  TrendingUp, TrendingDown, Zap, Target, Clock, AlertTriangle,
+  BarChart3, Circle, Minus
+} from "lucide-react";
 
-interface FuturesTableProps {
-  data: FuturesStatus[];
+// ── 状态定义 ─────────────────────────────────────────────────
+
+type PipelineState = "SIGNAL" | "PENDING" | "APPROACHING" | "TRENDING" | "IDLE";
+
+interface SymbolState {
+  level: PipelineState;
+  label: string;
+  detail: string;
+  subDetail: string;
+  // colors
+  borderClass: string;
+  bgClass: string;
+  textClass: string;
 }
 
-// 板块颜色标记
+function computeState(
+  row: FuturesStatus,
+  pendingSet: Set<string>,
+): SymbolState {
+  const bo = row.breakoutSignal;
+  const pb = row.pullbackSignal;
+  const ma = row.ma;
+  const macd = row.macd;
+  const vol = row.volume;
+  const oi = row.openInterest;
+  const rg = row.marketRegime;
+
+  // ── 优先级 1: 信号触发 ──
+  if (bo || pb) {
+    if (pb) {
+      const isLong = pb.type === "long";
+      const isSweep = pb.trigger === "sweep";
+      const tetStr = pb.tet
+        ? ` TET:ATS${pb.tet.ats.toFixed(1)} TI${pb.tet.ti.toFixed(1)}`
+        : "";
+      return {
+        level: "SIGNAL",
+        label: `${isLong ? "🔵" : "🟠"} 回踩${isLong ? "做多" : "做空"}`,
+        detail: `${isSweep ? "⚡" : ""}${pb.trigger}@${pb.zone} entry=${pb.entry} SL=${pb.stopLoss} risk=${pb.riskPct}%`,
+        subDetail: `pb${pb.quality.pbBars}K ret${pb.quality.retrace} vr${pb.quality.volRatio}${tetStr}`,
+        borderClass: isLong ? "border-teal-200" : "border-orange-200",
+        bgClass: isLong ? "bg-teal-50/50" : "bg-orange-50/50",
+        textClass: isLong ? "text-teal-600" : "text-orange-600",
+      };
+    }
+    if (bo) {
+      const isLong = bo.type === "long";
+      const extra = bo.level
+        ? ` lv${bo.level}${bo.extAtr ? ` ext${bo.extAtr}` : ""}`
+        : "";
+      return {
+        level: "SIGNAL",
+        label: `${isLong ? "🔴" : "🟢"} 突破${isLong ? "做多" : "做空"}`,
+        detail: `MA×${bo.maCumulative} MACD${bo.expansionRate.toFixed(1)}x${bo.oiConfirmed ? " +OI" : ""}${extra}`,
+        subDetail: bo.boxBreakout ? "已破箱体" : "",
+        borderClass: isLong ? "border-red-200" : "border-emerald-200",
+        bgClass: isLong ? "bg-red-50/40" : "bg-emerald-50/40",
+        textClass: isLong ? "text-red-600" : "text-emerald-600",
+      };
+    }
+  }
+
+  // ── 优先级 2: 突破待确认（pending）──
+  if (pendingSet.has(row.symbol)) {
+    return {
+      level: "PENDING",
+      label: "⚫ 突破待确认",
+      detail: "等待 30m KD 冷却",
+      subDetail: "最多12K",
+      borderClass: "border-stone-300",
+      bgClass: "bg-stone-100/50",
+      textClass: "text-stone-500",
+    };
+  }
+
+  // ── 优先级 3: 接近信号（3/4 满足）──
+  const maOk = ma.status === "Upward" || ma.status === "Downward";
+  const macdOk = macd.sign === (ma.status === "Upward" ? "positive" : "negative") && macd.rapidExpanding;
+  const volOk = vol.status === "Surge";
+  const oiOk = oi.status === "Increasing";
+  const score = [maOk, macdOk, volOk, oiOk].filter(Boolean).length;
+
+  if (score >= 3 && !bo) {
+    const missing: string[] = [];
+    if (!maOk) missing.push("MA");
+    if (!macdOk) missing.push("MACD");
+    if (!volOk) missing.push("量");
+    if (!oiOk) missing.push("仓");
+    const isLong = ma.status === "Upward";
+    return {
+      level: "APPROACHING",
+      label: `🟡 接近${isLong ? "突破" : "跌破"}`,
+      detail: `缺:${missing.join("/")}`,
+      subDetail: `MA×${ma.cumulative} MACD×${macd.cumulative} ${vol.status === "Surge" ? "放量" : ""}`,
+      borderClass: "border-amber-200",
+      bgClass: "bg-amber-50/40",
+      textClass: "text-amber-600",
+    };
+  }
+
+  // ── 优先级 4: 趋势就绪 ──
+  if (rg && rg.regime === "trending" && maOk) {
+    const isBull = rg.direction === "bullish" || ma.status === "Upward";
+    const emoji = isBull ? "🔵" : "🟠";
+    const dirLabel = isBull ? "多头趋势" : "空头趋势";
+    const macdStr = macd.sign === (isBull ? "positive" : "negative")
+      ? (macd.rapidExpanding ? "MACD扩口" : "MACD同向")
+      : "MACD背离";
+    return {
+      level: "TRENDING",
+      label: `${emoji} ${dirLabel}`,
+      detail: `${rg.score}分 MA×${ma.cumulative} ${macdStr}`,
+      subDetail: `等回踩结构`,
+      borderClass: isBull ? "border-blue-200" : "border-orange-200",
+      bgClass: isBull ? "bg-blue-50/30" : "bg-orange-50/30",
+      textClass: isBull ? "text-blue-600" : "text-orange-600",
+    };
+  }
+
+  // ── 优先级 5: 观望 ──
+  const rgLabel = rg
+    ? (rg.regime === "ranging" ? "震荡" : `${rg.score}分`)
+    : "";
+  return {
+    level: "IDLE",
+    label: "⬜ 观望",
+    detail: rgLabel ? `${rgLabel} ${ma.status === "Silent" ? "均线静默" : ""}` : "无方向",
+    subDetail: macd.sign === "positive" ? "MACD金叉" : macd.sign === "negative" ? "MACD死叉" : "",
+    borderClass: "border-stone-200",
+    bgClass: "bg-stone-50/30",
+    textClass: "text-stone-400",
+  };
+}
+
+// ── 表格列 ───────────────────────────────────────────────────
+
+const COLUMNS = [
+  { key: "symbol",  label: "品种",     width: "w-24", align: "text-left" },
+  { key: "price",   label: "价格/涨跌", width: "w-28", align: "text-right" },
+  { key: "state",   label: "状态",     width: "flex-1", align: "text-left" },
+  { key: "update",  label: "更新",     width: "w-16", align: "text-right" },
+];
+
+// ── 板块色 ───────────────────────────────────────────────────
+
 const CATEGORY_COLORS: Record<string, string> = {
   贵金属: "border-l-yellow-500",
   有色:   "border-l-orange-500",
@@ -35,19 +180,14 @@ const CATEGORY_TEXT: Record<string, string> = {
   股指:   "text-amber-600",
 };
 
-// 表格列定义
-const COLUMNS = [
-  { key: "symbol",       label: "品种",    width: "w-28",  align: "text-left" },
-  { key: "price",        label: "价格/涨跌", width: "w-28", align: "text-right" },
-  { key: "ma",           label: "均线", width: "w-44", align: "text-left" },
-  { key: "macd",         label: "MACD",    width: "w-44", align: "text-left" },
-  { key: "volume",       label: "成交量",  width: "w-40", align: "text-left" },
-  { key: "openInterest", label: "持仓量",  width: "w-40", align: "text-left" },
-  { key: "lastUpdate",   label: "更新",    width: "w-20", align: "text-right" },
-];
+// ── 组件 ─────────────────────────────────────────────────────
 
-export default function FuturesTable({ data }: FuturesTableProps) {
-  // 按板块分组
+interface FuturesTableProps {
+  data: FuturesStatus[];
+  pendingSet: Set<string>;
+}
+
+export default function FuturesTable({ data, pendingSet }: FuturesTableProps) {
   const grouped = React.useMemo(() => {
     const order = ["贵金属", "有色", "黑色", "农产品", "油脂", "能化", "建材", "股指"];
     const map: Record<string, FuturesStatus[]> = {};
@@ -60,8 +200,7 @@ export default function FuturesTable({ data }: FuturesTableProps) {
 
   return (
     <div className="w-full overflow-x-auto rounded-lg border border-stone-200 shadow-sm">
-      <table className="w-full min-w-[900px] border-collapse">
-        {/* 固定表头 */}
+      <table className="w-full min-w-[600px] border-collapse">
         <thead className="sticky top-0 z-20">
           <tr className="bg-white border-b border-stone-300">
             {COLUMNS.map((col) => (
@@ -82,7 +221,7 @@ export default function FuturesTable({ data }: FuturesTableProps) {
         <tbody>
           {grouped.map(({ cat, items }) => (
             <React.Fragment key={cat}>
-              {/* 板块分组标题行 */}
+              {/* 板块标题 */}
               <tr className="bg-white/90 border-t border-stone-200">
                 <td
                   colSpan={COLUMNS.length}
@@ -92,10 +231,9 @@ export default function FuturesTable({ data }: FuturesTableProps) {
                   <span className="ml-2 text-stone-400 font-normal">{items.length} 个品种</span>
                 </td>
               </tr>
-
-              {/* 品种数据行 */}
+              {/* 品种行 */}
               {items.map((row, idx) => (
-                <DataRow key={row.symbol} row={row} idx={idx} cat={cat} />
+                <DataRow key={row.symbol} row={row} idx={idx} cat={cat} pendingSet={pendingSet} />
               ))}
             </React.Fragment>
           ))}
@@ -105,9 +243,13 @@ export default function FuturesTable({ data }: FuturesTableProps) {
   );
 }
 
-// 单行组件（拆分减少渲染压力）
-function DataRow({ row, idx, cat }: { row: FuturesStatus; idx: number; cat: string }) {
+// ── 单行 ─────────────────────────────────────────────────────
+
+function DataRow({ row, idx, cat, pendingSet }: {
+  row: FuturesStatus; idx: number; cat: string; pendingSet: Set<string>;
+}) {
   const borderColor = CATEGORY_COLORS[cat] ?? "border-l-gray-700";
+  const st = computeState(row, pendingSet);
 
   return (
     <tr
@@ -117,8 +259,8 @@ function DataRow({ row, idx, cat }: { row: FuturesStatus; idx: number; cat: stri
         ${idx % 2 === 0 ? "bg-white" : "bg-stone-50/60"}
       `}
     >
-      {/* 品种名称 */}
-      <td className={`px-3 py-2.5 border-l-2 ${borderColor}`}>
+      {/* 品种 */}
+      <td className={`px-3 py-2 border-l-2 ${borderColor}`}>
         <div className="font-semibold text-sm text-stone-900 whitespace-nowrap">
           {row.symbol}
         </div>
@@ -126,51 +268,24 @@ function DataRow({ row, idx, cat }: { row: FuturesStatus; idx: number; cat: stri
       </td>
 
       {/* 价格 */}
-      <td className="px-3 py-2.5">
+      <td className="px-3 py-2">
         <PriceCell price={row.price} change={row.change} />
       </td>
 
-      {/* 均线状态 */}
-      <td className="px-3 py-2.5">
-        <MABadge status={row.ma.status} cumulative={row.ma.cumulative} />
+      {/* 状态机 */}
+      <td className="px-3 py-2">
+        <div className={`rounded border ${st.borderClass} ${st.bgClass} px-2.5 py-1.5`}>
+          <div className={`text-xs font-bold ${st.textClass}`}>{st.label}</div>
+          <div className="text-[10px] text-stone-600 font-mono mt-0.5">{st.detail}</div>
+          {st.subDetail && (
+            <div className="text-[9px] text-stone-400 font-mono">{st.subDetail}</div>
+          )}
+        </div>
       </td>
 
-      {/* MACD 状态 */}
-      <td className="px-3 py-2.5">
-        <MACDBadge
-          sign={row.macd.sign}
-          rapidExpanding={row.macd.rapidExpanding}
-          expansionRate={row.macd.expansionRate}
-          cumulative={row.macd.cumulative}
-        />
-      </td>
-
-      {/* 成交量 */}
-      <td className="px-3 py-2.5">
-        <VolumeBadge
-          status={row.volume.status}
-          cumulative={row.volume.cumulative}
-          value={row.volume.value}
-          change={row.volume.change}
-          changePct={row.volume.changePct}
-        />
-      </td>
-
-      {/* 持仓量 */}
-      <td className="px-3 py-2.5">
-        <OIBadge
-          value={row.openInterest.value}
-          prevValue={row.openInterest.prevValue}
-          change={row.openInterest.change}
-          changePct={row.openInterest.changePct}
-          status={row.openInterest.status}
-          cumulative={row.openInterest.cumulative}
-        />
-      </td>
-
-      {/* 更新时间 */}
-      <td className="px-3 py-2.5 text-right">
-        <span className="text-[11px] font-mono text-stone-400">{row.lastUpdate}</span>
+      {/* 更新 */}
+      <td className="px-3 py-2 text-right">
+        <span className="text-[10px] font-mono text-stone-400">{row.lastUpdate}</span>
       </td>
     </tr>
   );

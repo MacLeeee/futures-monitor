@@ -4,7 +4,7 @@
   "updatedAt": "2026-06-11",
 
   "pullback": {
-    "_desc": "回踩/反抽信号参数",
+    "_desc": "旧版回踩参数（已弃用，保留兼容）",
     "bounce_tol_pct": 1.5,
     "atr_factor": 0.8,
     "adaptive_min_pct": 0.30,
@@ -12,6 +12,34 @@
     "min_slope20_pct": 0.05,
     "min_slope60_pct": 0.02,
     "ma_entanglement_threshold_pct": 0.15
+  },
+
+  "mtf_pullback": {
+    "_desc": "H-005 MTF回踩状态机（日线趋势×30min结构回踩）",
+    "_design": "状态机: IDLE→ARMED(等回踩)→QUALIFYING(质量审查)→TRIGGER_WAIT→SIGNAL",
+    "zone_tol_atr30": 0.3,
+    "zone_tol_atr_d": 0.5,
+    "overheat_atr_d": 2.0,
+    "max_retrace": 0.618,
+    "shrink_ratio": 0.8,
+    "max_oi_increase": 3.0,
+    "min_pb_bars": 2,
+    "max_pb_bars": 20,
+    "trigger_wait": 8,
+    "stop_buffer_atr": 0.5,
+    "swing_lookback": 5,
+
+    "use_tet": true,
+    "ats_min": 0.30,
+    "ei_washout": 0.30,
+    "ti_entry": 0.50,
+    "trend_score_version": 2,
+    "tet_variant": "V1",
+    "_tet_note": "V1=期货最优(IC5≈0,IC20=-0.018,翻转8.6%); V3=指数最优(跨资产不稳定,按事前规则用V1)",
+
+    "fib_zones": true,
+    "sweep_trigger": true,
+    "sweep_pierce_atr": 0.1
   },
 
   "breakout": {

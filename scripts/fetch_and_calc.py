@@ -42,6 +42,12 @@ UTC = timezone.utc
 import numpy as np
 import pandas as pd
 
+# ── H-005 MTF 回踩状态机 ──
+try:
+    from mtf_pullback import evaluate as eval_mtf_pullback
+except ImportError:
+    eval_mtf_pullback = None  # 模块缺失时不崩溃，回踩信号返回 None
+
 try:
     import akshare as ak
 except ImportError:
@@ -118,6 +124,75 @@ def _load_params() -> dict:
 def _p() -> dict:
     """快捷访问：_p()['pullback']['bounce_tol_pct']"""
     return _load_params()
+
+
+def _mtf_cfg() -> dict:
+    """加载 H-005 MTF回踩参数（从 strategy_params.json 的 mtf_pullback 节）。"""
+    params = _load_params()
+    raw = params.get("mtf_pullback", {})
+    # 映射到 mtf_pullback.evaluate() 所需的 CONFIG 格式
+    return {
+        "zone_tol_atr30":   raw.get("zone_tol_atr30", 0.3),
+        "zone_tol_atr_d":   raw.get("zone_tol_atr_d", 0.5),
+        "overheat_atr_d":   raw.get("overheat_atr_d", 2.0),
+        "max_retrace":      raw.get("max_retrace", 0.618),
+        "shrink_ratio":     raw.get("shrink_ratio", 0.8),
+        "max_oi_increase":  raw.get("max_oi_increase", 3.0),
+        "min_pb_bars":      raw.get("min_pb_bars", 2),
+        "max_pb_bars":      raw.get("max_pb_bars", 20),
+        "trigger_wait":     raw.get("trigger_wait", 8),
+        "stop_buffer_atr":  raw.get("stop_buffer_atr", 0.5),
+        "swing_lookback":   raw.get("swing_lookback", 5),
+        "use_tet":          raw.get("use_tet", True),
+        "ats_min":          raw.get("ats_min", 0.30),
+        "ei_washout":       raw.get("ei_washout", 0.30),
+        "ti_entry":         raw.get("ti_entry", 0.50),
+        "trend_score_version": raw.get("trend_score_version", 2),
+        "tet_variant":      raw.get("tet_variant", "V1"),
+        "fib_zones":        raw.get("fib_zones", True),
+        "sweep_trigger":    raw.get("sweep_trigger", True),
+        "sweep_pierce_atr": raw.get("sweep_pierce_atr", 0.1),
+    }
+
+
+_daily_map_cache: dict | None = None
+_daily_map_loaded: bool = False
+
+
+def _load_daily_map() -> dict[str, dict] | None:
+    """加载 data_daily.json 中的品种→复盘数据映射（缓存）。"""
+    global _daily_map_cache, _daily_map_loaded
+    if _daily_map_loaded:
+        return _daily_map_cache
+    _daily_map_loaded = True
+    if OUTPUT_DAILY.exists():
+        try:
+            raw = json.loads(OUTPUT_DAILY.read_text("utf-8"))
+            _daily_map_cache = {d["symbol"]: d for d in raw.get("data", [])}
+        except Exception:
+            _daily_map_cache = None
+    return _daily_map_cache
+
+
+def _eval_pullback(symbol: str, df_daily, df_30m,
+                   macd_15m: dict, vol_15m: dict,
+                   daily_entry: dict | None = None) -> dict | None:
+    """
+    H-005 MTF回踩状态机评估。
+    若 df_daily 不可用或模块缺失，返回 None（不崩溃）。
+    """
+    if eval_mtf_pullback is None:
+        return None
+    if df_daily is None or df_30m is None:
+        return None
+    try:
+        cfg = _mtf_cfg()
+        return eval_mtf_pullback(symbol, df_daily, df_30m,
+                                 macd_15m, vol_15m,
+                                 daily_entry=daily_entry, cfg=cfg)
+    except Exception as e:
+        print(f"  [MTF-PB] {symbol}: 评估异常 {e}", file=sys.stderr)
+        return None
 
 
 # ── 品种定义 ─────────────────────────────────────────────────
@@ -574,6 +649,12 @@ def calc_box_signal(close: float, donchian: dict, regime: dict,
     return None
 
 
+# ── 结构位突破过滤器（H-010 突破战术增强）──────────────
+_STRUCT_BREAKOUT  = True   # False = 一行回滚到旧逻辑
+_LEVEL_LOOKBACK   = 30     # 前期关键位 = 近30根(不含当前K)最高/最低
+_EXT_ATR_MAX      = 1.0    # 收盘距突破位最大延伸(×ATR)，超出=追高不开
+_LEVEL_FRESH_TOL  = 0.001  # 新鲜度容差：前收须仍在位内 ±0.1%
+
 _params_module = _load_params()  # 模块加载时初始化
 _BOUNCE_TOL          = _params_module["pullback"]["bounce_tol_pct"]          # 回踩阈值上限
 _PULLBACK_ATR_FACTOR = _params_module["pullback"]["atr_factor"]               # 回踩ATR自适应因子
@@ -588,6 +669,19 @@ def _adaptive_bounce_tol(close: float, atr: float = 0.0) -> float:
         return max(_p()["pullback"]["adaptive_min_pct"], min(_BOUNCE_TOL, _PULLBACK_ATR_FACTOR * atr_pct))
     return _BOUNCE_TOL
 
+
+def calc_struct_levels(df: pd.DataFrame, lookback: int = _LEVEL_LOOKBACK) -> dict:
+    """前期关键位：近 lookback 根（不含当前K）的最高/最低 + 前收（新鲜度判断用）。"""
+    n = len(df)
+    if n < lookback + 2:
+        return {"up": None, "dn": None, "prevClose": None}
+    return {
+        "up":        float(df["high"].astype(float).iloc[-(lookback + 1):-1].max()),
+        "dn":        float(df["low"].astype(float).iloc[-(lookback + 1):-1].min()),
+        "prevClose": float(df["close"].iloc[-2]),
+    }
+
+
 def calc_breakout_signal(
     ma_30m: dict,
     macd_15m: dict,
@@ -598,6 +692,7 @@ def calc_breakout_signal(
     close: float = 0.0,
     trigger_open: float = 0.0,
     atr: float = 0.0,
+    levels: dict | None = None,
 ) -> dict | None:
     """
     突破信号（多周期）- 四个必选条件（缺一不触发）：
@@ -653,6 +748,27 @@ def calc_breakout_signal(
         if not box_breakout:
             return None   # 震荡中未突破箱体，不触发
 
+    # ── 结构位锚定：所有 regime 一律生效 ──
+    level_val = None
+    ext_atr = None
+    if _STRUCT_BREAKOUT and levels and levels.get("up") and levels.get("dn") and atr > 0:
+        prev_c = levels.get("prevClose") or 0.0
+        if is_long:
+            level_val = levels["up"]
+            fresh = prev_c <= level_val * (1 + _LEVEL_FRESH_TOL)
+            broke = close > level_val
+            ext = close - level_val
+        else:
+            level_val = levels["dn"]
+            fresh = prev_c >= level_val * (1 - _LEVEL_FRESH_TOL)
+            broke = close < level_val
+            ext = level_val - close
+        if not (broke and fresh):
+            return None      # 非新鲜结构突破 → 只是均线上方动量点火，不开
+        if ext > _EXT_ATR_MAX * atr:
+            return None      # 延伸过远=追高 → 转回踩接力
+        ext_atr = round(ext / atr, 3)
+
     oi_ok = oi_15m.get("status") == "Increasing"
     return {
         "type":          "long" if is_long else "short",
@@ -661,6 +777,8 @@ def calc_breakout_signal(
         "expansionRate": macd_15m.get("expansionRate", 1.0),
         "oiConfirmed":   oi_ok,
         "boxBreakout":   box_breakout,   # True=震荡行情下同步突破了箱体
+        "level":  round(level_val, 4) if level_val else None,
+        "extAtr": ext_atr,
     }
 
 
@@ -964,6 +1082,20 @@ def process_symbol(args: tuple) -> dict | None:
             df_15m = df_30m
             tf_label = "30m↓"
 
+        # ── H-005: 抓日K供 MTF 回踩状态机使用 ──
+        df_daily = None
+        try:
+            _time_module.sleep(_p()["fetch"]["request_delay_seconds"])
+            df_daily = fetch_klines_daily(code)
+        except Exception as e_d:
+            print(f"  [WARN-D] {symbol}({code}): 日K抓取失败: {e_d}", file=sys.stderr)
+
+        # ── 日线复盘数据（regime / direction 等）──
+        daily_entry = None
+        _daily_map = _load_daily_map()
+        if _daily_map:
+            daily_entry = _daily_map.get(symbol)
+
         last = float(df_30m["close"].iloc[-1])
         prev = float(df_30m["close"].iloc[-2])
         change = round((last - prev) / prev * 100, 2) if prev else 0.0
@@ -1015,9 +1147,10 @@ def process_symbol(args: tuple) -> dict | None:
             "breakoutSignal":  calc_breakout_signal(ma_30m, macd_15m, vol_15m, oi_15m,
                                                      regime=regime, donchian=donchian, close=close,
                                                      trigger_open=round(float(df_15m["open"].iloc[-1]), 2),
-                                                     atr=atr),
-            "pullbackSignal":  calc_pullback_signal(close, ma_30m, macd_15m, vol_15m, regime,
-                                                    donchian=donchian, atr=atr, oi_15m=oi_15m),
+                                                     atr=atr,
+                                                     levels=calc_struct_levels(df_30m)),
+            "pullbackSignal":  _eval_pullback(symbol, df_daily, df_30m, macd_15m, vol_15m,
+                                           daily_entry=daily_entry),
             "marketRegime":    regime,
             "boxSignal":       box_sig,
         }
@@ -1155,38 +1288,46 @@ def build_breakout_message(data: list[dict], bj_time: str) -> str | None:
 
 def build_pullback_message(data: list[dict], bj_time: str) -> str | None:
     """
-    回踩信号推送格式：
+    H-005 MTF回踩信号推送格式：
     ─────────────────────────────────
-    🎯 回踩信号 03-24 10:00
+    🎯 MTF回踩 06-11 14:30
     ─────────────────────────────────
-    🔵 做多回踩：黄金 回踩MA20 距0.23%
-    🟠 做空反抽：原油 反抽MA60 距0.18%
+    🔵 黄金 做多 sweep@pivot_retest entry=620.5 SL=618.2 risk=0.37%
+       pbBars=3 retrace=0.382 volRatio=0.45 TET✓(ATS=0.42 EI=-0.35 TI=0.77)
+    🟠 螺纹 做空 structure_macd@daily_ema20 entry=3850 SL=3875 risk=0.65%
+       pbBars=8 retrace=0.500 volRatio=0.62 TET✓(ATS=-0.38 EI=0.42 TI=-0.80)
     ─────────────────────────────────
     """
-    longs  = [d for d in data if d.get("pullbackSignal") and d["pullbackSignal"]["type"] == "long"]
-    shorts = [d for d in data if d.get("pullbackSignal") and d["pullbackSignal"]["type"] == "short"]
+    longs  = [d for d in data if d.get("pullbackSignal") and d["pullbackSignal"].get("type") == "long"]
+    shorts = [d for d in data if d.get("pullbackSignal") and d["pullbackSignal"].get("type") == "short"]
     if not longs and not shorts:
         return None
 
-    def fmt_item(d: dict, action: str) -> str:
+    def fmt_item(d: dict) -> str:
         sig = d["pullbackSignal"]
         chg = f"+{d['change']:.2f}%" if d["change"] >= 0 else f"{d['change']:.2f}%"
-        slp = f"{d['ma']['slope20Pct']:+.3f}%"
-        return (f"  {d['symbol']} {chg}"
-                f"  {action}{sig['target']}={sig['support']}"
-                f"  距{sig['distPct']:.3f}%"
-                f"  斜率{slp}")
+        q = sig.get("quality", {})
+        pb_info = f"pbBars={q.get('pbBars','?')} retrace={q.get('retrace','?')} volRatio={q.get('volRatio','?')}"
+        tet = sig.get("tet")
+        tet_str = ""
+        if tet:
+            tet_str = (f" TET✓(ATS={tet.get('ats',0):.2f} "
+                       f"EI={tet.get('eiNow',0):.2f} TI={tet.get('ti',0):.2f})")
+        return (f"  {d['symbol']} {chg}\n"
+                f"     {sig['trigger']}@{sig['zone']} "
+                f"entry={sig['entry']} SL={sig['stopLoss']} risk={sig['riskPct']}%\n"
+                f"     {pb_info}{tet_str}")
 
-    sep = "─" * 24
-    lines = [f"<b>🎯 回踩信号</b>  {bj_time}", sep]
+    sep = "─" * 32
+    lines = [f"<b>🎯 MTF回踩</b>  {bj_time}", sep]
 
     if longs:
-        lines.append("🔵 <b>做多回踩</b>（30m MA60上方 · 价格在支撑上方≤1.5% · 15m金叉扩口 · 放量）")
-        lines.extend(fmt_item(d, "↩") for d in longs)
+        lines.append("🔵 <b>做多回踩</b>（日线EMA多头排列 · 30min结构回踩 · 扫损/结构触发）")
+        lines.extend(fmt_item(d) for d in longs)
     if shorts:
         if longs: lines.append("")
-        lines.append("🟠 <b>做空反抽</b>（30m MA60下方 · 价格在阻力下方≤1.5% · 15m死叉扩口 · 放量）")
-        lines.extend(fmt_item(d, "↪") for d in shorts)
+        lines.append("🟠 <b>做空反抽</b>（日线EMA空头排列 · 30min结构反抽 · 扫损/结构触发）")
+        lines.extend(fmt_item(d) for d in shorts)
 
     lines.append(sep)
     return "\n".join(lines)

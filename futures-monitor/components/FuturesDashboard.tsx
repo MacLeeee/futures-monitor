@@ -1,14 +1,14 @@
 "use client";
 // ============================================================
-// 主 Dashboard 容器 — v3 紧凑版
-// 布局：顶栏 → 数据源 → 统计pills → 信号(合并) → 持仓 → 筛选+表格
+// 主 Dashboard 容器 — v4 状态机视图
+// 布局：顶栏 → 数据源 → 统计pills → 信号 → 持仓 → 筛选+表格
 // ============================================================
 
 import React, { useState, useEffect, useCallback } from "react";
 import { FuturesStatus, Position, PositionsData } from "@/lib/types";
 import DashboardHeader from "./DashboardHeader";
 import FuturesTable from "./FuturesTable";
-import FilterBar from "./FilterBar";
+import FilterBar, { StateFilter } from "./FilterBar";
 import SignalTabs from "./SignalTabs";
 import CurrentPositions from "./CurrentPositions";
 import { Database, WifiOff, TrendingUp, Zap, Users } from "lucide-react";
@@ -48,10 +48,31 @@ export default function FuturesDashboard() {
   const [nextRefreshIn, setNextRefreshIn] = useState(AUTO_REFRESH_INTERVAL);
   const [remoteUpdatedAt, setRemoteUpdatedAt] = useState<string | null>(null);
   const [positions, setPositions] = useState<Position[]>([]);
+  const [pendingSet, setPendingSet] = useState<Set<string>>(new Set());
 
   const [selectedCategory, setSelectedCategory] = useState("全部");
-  const [selectedMAStatus, setSelectedMAStatus] = useState("全部");
+  const [selectedState, setSelectedState] = useState<StateFilter>("全部");
 
+  // ── 状态推断（供筛选用）──
+  const getSymbolState = useCallback((row: FuturesStatus): string => {
+    const bo = row.breakoutSignal;
+    const pb = row.pullbackSignal;
+    if (bo || pb) return "SIGNAL";
+    if (pendingSet.has(row.symbol)) return "PENDING";
+    const ma = row.ma;
+    const macd = row.macd;
+    const vol = row.volume;
+    const oi = row.openInterest;
+    const maOk = ma.status === "Upward" || ma.status === "Downward";
+    const macdOk = macd.sign === (ma.status === "Upward" ? "positive" : "negative") && macd.rapidExpanding;
+    const volOk = vol.status === "Surge";
+    const oiOk = oi.status === "Increasing";
+    if ([maOk, macdOk, volOk, oiOk].filter(Boolean).length >= 3) return "APPROACHING";
+    if (row.marketRegime?.regime === "trending" && maOk) return "TRENDING";
+    return "IDLE";
+  }, [pendingSet]);
+
+  // ── 数据加载 ──
   const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -83,8 +104,22 @@ export default function FuturesDashboard() {
     } catch { /* 静默 */ }
   }, []);
 
-  useEffect(() => { loadData(); loadPositions(); }, [loadData, loadPositions]);
+  const loadPending = useCallback(async () => {
+    try {
+      const isLocal = typeof window !== "undefined" && window.location.port !== "";
+      const base = isLocal ? "" : GITHUB_RAW;
+      const url = `${base}/pending_breakouts.json?t=${Date.now()}`;
+      const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+      if (!res.ok) return;
+      const json = await res.json();
+      const symbols = (json.pending ?? []).map((p: { symbol: string }) => p.symbol);
+      setPendingSet(new Set(symbols));
+    } catch { /* 静默 */ }
+  }, []);
 
+  useEffect(() => { loadData(); loadPositions(); loadPending(); }, [loadData, loadPositions, loadPending]);
+
+  // ── 自动刷新 ──
   useEffect(() => {
     if (!autoRefresh) return;
     const timer = setInterval(loadData, AUTO_REFRESH_INTERVAL);
@@ -98,15 +133,17 @@ export default function FuturesDashboard() {
   }, [autoRefresh, lastRefresh]);
 
   const handleManualRefresh = useCallback(() => {
-    setNextRefreshIn(AUTO_REFRESH_INTERVAL); loadData();
+    setNextRefreshIn(AUTO_REFRESH_INTERVAL);
+    loadData();
   }, [loadData]);
 
+  // ── 筛选 ──
   useEffect(() => {
     let result = data;
     if (selectedCategory !== "全部") result = result.filter((d) => d.category === selectedCategory);
-    if (selectedMAStatus !== "全部") result = result.filter((d) => d.ma.status === selectedMAStatus);
+    if (selectedState !== "全部") result = result.filter((d) => getSymbolState(d) === selectedState);
     setFilteredData(result);
-  }, [data, selectedCategory, selectedMAStatus]);
+  }, [data, selectedCategory, selectedState, getSymbolState]);
 
   const formatCountdown = (ms: number) => {
     const m = Math.floor(ms / 60000);
@@ -124,7 +161,7 @@ export default function FuturesDashboard() {
           <span className="text-sm font-bold tracking-tight text-amber-600">
             期货监控
           </span>
-          <span className="text-[10px] text-stone-400">30min</span>
+          <span className="text-[10px] text-stone-400">30min · 状态机视图</span>
 
           <div className="flex-1" />
 
@@ -147,7 +184,7 @@ export default function FuturesDashboard() {
         {/* ── 数据源状态 ─────────────────────────────── */}
         <DataSourceBanner source={dataSource} updatedAt={remoteUpdatedAt} />
 
-        {/* ── 概览栏（紧凑 pills） ───────────────────── */}
+        {/* ── 概览栏 ───────────────────── */}
         <DashboardHeader
           data={data}
           lastRefresh={lastRefresh}
@@ -158,10 +195,10 @@ export default function FuturesDashboard() {
           nextRefreshIn={autoRefresh ? formatCountdown(nextRefreshIn) : null}
         />
 
-        {/* ── 信号面板（突破/回踩 tab 合并，无信号自动隐藏） */}
+        {/* ── 信号面板 ───────────────── */}
         <SignalTabs data={data} />
 
-        {/* ── 持仓（带浮盈汇总） ─────────────────────── */}
+        {/* ── 持仓 ─────────────────────── */}
         <CurrentPositions
           positions={positions}
           currentPrices={Object.fromEntries(data.map((d) => [d.symbol, d.price]))}
@@ -171,9 +208,9 @@ export default function FuturesDashboard() {
         <div className="space-y-2">
           <FilterBar
             selectedCategory={selectedCategory}
-            selectedMAStatus={selectedMAStatus}
+            selectedState={selectedState}
             onCategoryChange={setSelectedCategory}
-            onMAStatusChange={setSelectedMAStatus}
+            onStateChange={setSelectedState}
             totalCount={data.length}
             filteredCount={filteredData.length}
           />
@@ -193,7 +230,7 @@ export default function FuturesDashboard() {
                   拉取数据...
                 </div>
               )}
-              <FuturesTable data={filteredData} />
+              <FuturesTable data={filteredData} pendingSet={pendingSet} />
             </div>
           )}
         </div>
@@ -203,7 +240,7 @@ export default function FuturesDashboard() {
           <div className="flex gap-4">
             <span>AKShare · 新浪财经</span>
             <span>30min K 线</span>
-            <span>MA20/60 · MACD · Vol · OI</span>
+            <span>H-005 回踩 + H-010 突破 状态机</span>
           </div>
         </footer>
       </div>

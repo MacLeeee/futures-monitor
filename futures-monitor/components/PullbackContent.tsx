@@ -1,6 +1,6 @@
 "use client";
 // ============================================================
-// 回踩信号内容（从 DipBuyPanel 提取）
+// H-005 MTF回踩信号内容
 // ============================================================
 
 import React from "react";
@@ -61,10 +61,13 @@ function PullbackCard({ d, sig, isLong }: { d: FuturesStatus; sig: PullbackSigna
   const dot      = CATEGORY_DOT[d.category] ?? "bg-stone-500";
   const border   = isLong ? "border-teal-800/40 bg-teal-950/30" : "border-orange-800/40 bg-orange-950/30";
   const badge    = isLong ? "border-teal-700/50 bg-teal-900/40 text-teal-200" : "border-orange-200 bg-orange-900/40 text-orange-200";
+  const q        = sig.quality ?? {};
+  const isSweep  = sig.trigger === "sweep";
+  const tet      = sig.tet;
 
   return (
     <div className={`rounded border ${border} px-3 py-2 text-xs font-mono`}>
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex items-center justify-between gap-2 mb-1">
         <div className="flex items-center gap-1.5 min-w-0">
           <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${dot}`} />
           <span className="font-bold text-stone-900">{d.symbol}</span>
@@ -74,18 +77,25 @@ function PullbackCard({ d, sig, isLong }: { d: FuturesStatus; sig: PullbackSigna
           </span>
         </div>
         <span className={`text-[10px] px-1.5 py-0.5 rounded border font-bold ${badge}`}>
-          {isLong ? "↩" : "↪"} {isLong ? "做多回踩" : "做空反抽"} {sig.target}
-        </span>
-        <span className={`text-[10px] px-1 rounded ${
-          isLong
-            ? sig.aboveMa ? "text-teal-400" : "text-yellow-500"
-            : sig.aboveMa ? "text-yellow-500" : "text-orange-600"
-        }`}>
-          {isLong
-            ? (sig.aboveMa ? "↗贴近" : "↘微穿")
-            : (sig.aboveMa ? "↗微突" : "↙贴近")}
+          {isSweep ? "⚡扫损" : sig.trigger}@{sig.zone}
         </span>
       </div>
+      <div className="flex items-center gap-2 text-[10px] text-stone-500">
+        <span>entry={sig.entry}</span>
+        <span>SL={sig.stopLoss}</span>
+        <span className={isLong ? "text-teal-500" : "text-orange-500"}>risk={sig.riskPct}%</span>
+        <span>pb={q.pbBars}K</span>
+        <span>ret={q.retrace?.toFixed(2)}</span>
+        <span>vr={q.volRatio?.toFixed(2)}</span>
+      </div>
+      {tet && (
+        <div className="flex items-center gap-1.5 mt-1 text-[9px]">
+          <span className="text-teal-300">TET</span>
+          <span className="text-stone-400">ATS={tet.ats?.toFixed(2)}</span>
+          <span className="text-stone-400">EI={tet.eiNow?.toFixed(2)}</span>
+          <span className="text-stone-400">TI={tet.ti?.toFixed(2)}</span>
+        </div>
+      )}
     </div>
   );
 }

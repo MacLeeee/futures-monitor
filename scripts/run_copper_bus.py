@@ -5,6 +5,7 @@
 被 run_local.sh / cron 调用，输出 copper_bus.json 到 public/
 """
 import json
+import math
 import sys
 from pathlib import Path
 
@@ -16,6 +17,17 @@ OUTPUT_FILE = PUBLIC_DIR / "copper_bus.json"
 sys.path.insert(0, str(SCRIPTS_DIR))
 
 from copper_bus.run import run as copper_run
+
+
+def _sanitize(obj):
+    """递归将 NaN/Inf 替换为 None，确保 JSON 合法。"""
+    if isinstance(obj, float) and (math.isnan(obj) or math.isinf(obj)):
+        return None
+    if isinstance(obj, dict):
+        return {k: _sanitize(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_sanitize(v) for v in obj]
+    return obj
 
 
 def main() -> None:
@@ -55,7 +67,7 @@ def main() -> None:
         n_tot = len(avail)
         missing = [k for k, v in avail.items() if not v]
 
-        result = {
+        result = _sanitize({
             "timestamp": meta["timestamp"],
             "interval": meta["interval"],
             # 状态机
@@ -81,10 +93,10 @@ def main() -> None:
             "data_ok": n_ok,
             "data_total": n_tot,
             "data_missing": missing,
-        }
+        })
 
         with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
-            json.dump(result, f, ensure_ascii=False, indent=2, default=str)
+            json.dump(result, f, ensure_ascii=False, indent=2)
 
         print(f"[COPPER_BUS] ✓ 已写入 {OUTPUT_FILE}")
         print(f"  状态机: {reg['regime']} ({reg['dominant']})")

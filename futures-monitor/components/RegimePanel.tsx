@@ -1,6 +1,6 @@
 "use client";
 
-import { FuturesStatus, MarketRegime, BoxSignal } from "@/lib/types";
+import { FuturesStatus, MarketRegime } from "@/lib/types";
 
 interface Props {
   data: FuturesStatus[];
@@ -22,9 +22,6 @@ export default function RegimePanel({ data }: Props) {
 
   const trending = withRegime.filter((d) => d.marketRegime?.regime === "trending");
   const ranging  = withRegime.filter((d) => d.marketRegime?.regime === "ranging");
-  const boxSigs  = data.filter((d) => d.boxSignal);
-  const boxLongs = boxSigs.filter((d) => d.boxSignal?.type === "long");
-  const boxShorts= boxSigs.filter((d) => d.boxSignal?.type === "short");
 
   return (
     <div className="rounded-xl border border-stone-200 bg-white p-4 space-y-4">
@@ -40,7 +37,7 @@ export default function RegimePanel({ data }: Props) {
           </span>
         </div>
         <div className="text-[10px] text-stone-400">
-          30m唐奇安通道 · 枢轴点结构 · EMA缎带(20/50/120)
+          15m·30m·日线 MTF 状态矩阵
         </div>
       </div>
 
@@ -48,7 +45,7 @@ export default function RegimePanel({ data }: Props) {
       {trending.length > 0 && (
         <div>
           <div className="mb-2 text-xs font-medium text-purple-600">
-            📊 趋势行情 — 关注<span className="text-stone-500">突破策略（顺势）+ 回踩策略</span>
+            📊 趋势 — <span className="text-stone-500">突破+回踩策略关注</span>
           </div>
           <div className="flex flex-wrap gap-1.5">
             {trending.map((d) => (
@@ -62,57 +59,12 @@ export default function RegimePanel({ data }: Props) {
       {ranging.length > 0 && (
         <div>
           <div className="mb-2 text-xs font-medium text-amber-500">
-            📦 震荡行情 — 重点关注<span className="text-stone-500">突破策略 / 箱体策略</span>
+            📦 震荡 — <span className="text-stone-500">等MTF对齐或回踩结构</span>
           </div>
           <div className="flex flex-wrap gap-1.5">
             {ranging.map((d) => (
               <RegimeChip key={d.symbol} d={d} />
             ))}
-          </div>
-        </div>
-      )}
-
-      {/* 箱体信号 */}
-      {(boxLongs.length > 0 || boxShorts.length > 0) && (
-        <div className="border-t border-stone-200 pt-3">
-          <div className="mb-2 text-xs font-semibold text-amber-600">
-            📦 箱体信号（震荡行情 · 触及唐奇安通道边沿）
-          </div>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {/* 做多箱体 */}
-            {boxLongs.length > 0 && (
-              <div className="rounded-lg border border-emerald-200 bg-emerald-50/20 p-3">
-                <div className="mb-1.5 text-xs font-medium text-emerald-600">
-                  ▲ 做多（触下沿支撑）
-                </div>
-                {boxLongs.length === 0 ? (
-                  <p className="text-xs text-stone-400">暂无</p>
-                ) : (
-                  <div className="space-y-1">
-                    {boxLongs.map((d) => (
-                      <BoxItem key={d.symbol} d={d} />
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-            {/* 做空箱体 */}
-            {boxShorts.length > 0 && (
-              <div className="rounded-lg border border-red-200 bg-red-50/20 p-3">
-                <div className="mb-1.5 text-xs font-medium text-red-600">
-                  ▼ 做空（触上沿阻力）
-                </div>
-                {boxShorts.length === 0 ? (
-                  <p className="text-xs text-stone-400">暂无</p>
-                ) : (
-                  <div className="space-y-1">
-                    {boxShorts.map((d) => (
-                      <BoxItem key={d.symbol} d={d} />
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
           </div>
         </div>
       )}

@@ -60,7 +60,6 @@ function computeState(
         level: "SIGNAL",
         label: `${isLong ? "🔴" : "🟢"} 突破${isLong ? "做多" : "做空"}`,
         detail: `MA×${bo.maCumulative} MACD${bo.expansionRate.toFixed(1)}x${bo.oiConfirmed ? " +OI" : ""}${extra}`,
-        subDetail: bo.boxBreakout ? "已破箱体" : "",
         borderClass: isLong ? "border-red-200" : "border-emerald-200",
         bgClass: isLong ? "bg-red-50/40" : "bg-emerald-50/40",
         textClass: isLong ? "text-red-600" : "text-emerald-600",

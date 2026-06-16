@@ -771,8 +771,6 @@ def calc_breakout_signal(
     macd_15m: dict,
     vol_15m: dict,
     oi_15m: dict,
-    regime: dict | None = None,
-    donchian: dict | None = None,
     close: float = 0.0,
     trigger_open: float = 0.0,
     atr: float = 0.0,
@@ -813,25 +811,6 @@ def calc_breakout_signal(
         if body / atr <= _p()["breakout"]["body_atr_ratio_min"]:
             return None
 
-    # ── 震荡行情附加：必须同时突破箱体边沿 ─────────────────────
-    # 趋势行情中均线排列已经说明价格有持续性，箱体条件可豁免
-    # 震荡行情中仅突破均线极易快速折返，需要箱体上/下沿也被穿越才开单
-    box_breakout = False   # 是否突破了箱体（仅在 ranging 时强制要求）
-    if regime is not None and regime.get("regime") == "ranging" and donchian and close > 0:
-        upper = donchian.get("upper", 0)
-        lower = donchian.get("lower", 0)
-        basis = donchian.get("basis", 0)
-        if upper > lower > 0:
-            if is_long:
-                # 做多：价格须已站上箱体上沿（允许 donchian_tolerance_pct% 容差，防止恰好卡边）
-                _dtol = _p()["breakout"]["donchian_tolerance_pct"] / 100
-                box_breakout = close >= upper * (1 - _dtol)
-            else:
-                # 做空：价格须已跌破箱体下沿
-                box_breakout = close <= lower * (1 + _dtol)
-        if not box_breakout:
-            return None   # 震荡中未突破箱体，不触发
-
     # ── 结构位锚定：所有 regime 一律生效 ──
     level_val = None
     ext_atr = None
@@ -860,7 +839,6 @@ def calc_breakout_signal(
         "macdSign":      macd_15m.get("sign"),
         "expansionRate": macd_15m.get("expansionRate", 1.0),
         "oiConfirmed":   oi_ok,
-        "boxBreakout":   box_breakout,   # True=震荡行情下同步突破了箱体
         "level":  round(level_val, 4) if level_val else None,
         "extAtr": ext_atr,
     }
@@ -1203,7 +1181,6 @@ def process_symbol(args: tuple) -> dict | None:
         prev_close = round(float(df_30m["close"].iloc[-2]), 4) if len(df_30m) >= 2 else close
 
         # ── 市场状态判定（多周期共振：15m + 30m + 日线）──
-        donchian = calc_donchian(df_30m)
 
         # 日线 MA/MACD 数据
         daily_ma = daily_entry.get("ma") if daily_entry else None
@@ -1215,7 +1192,6 @@ def process_symbol(args: tuple) -> dict | None:
                                    close_15m=round(float(df_15m["close"].iloc[-1]), 2),
                                    close_30m=close,
                                    close_daily=daily_close_val)
-        box_sig  = calc_box_signal(close, donchian, regime)
 
         return {
             "symbol":          symbol,
@@ -1239,14 +1215,13 @@ def process_symbol(args: tuple) -> dict | None:
             "volume":          vol_15m,
             "openInterest":    oi_15m,
             "breakoutSignal":  calc_breakout_signal(ma_30m, macd_15m, vol_15m, oi_15m,
-                                                     regime=regime, donchian=donchian, close=close,
+                                                     close=close,
                                                      trigger_open=round(float(df_15m["open"].iloc[-1]), 2),
                                                      atr=atr,
                                                      levels=calc_struct_levels(df_30m)),
             "pullbackSignal":  _eval_pullback(symbol, df_daily, df_30m, macd_15m, vol_15m,
                                            daily_entry=daily_entry),
             "marketRegime":    regime,
-            "boxSignal":       box_sig,
         }
     except Exception as e:
         print(f"  [SKIP] {symbol}({code}): {e}", file=sys.stderr)

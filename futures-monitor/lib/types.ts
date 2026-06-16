@@ -17,8 +17,7 @@ export interface BreakoutSignal {
   maCumulative: number;      // 30min MA 排列方向持续 K 数
   macdSign: "positive" | "negative";
   expansionRate: number;     // 15min MACD 走扩倍率
-  oiConfirmed: boolean;      // 15min 持仓量增仓（或有加分项）
-  boxBreakout: boolean;      // 震荡行情下同步突破箱体边沿
+  oiConfirmed: boolean;      // 增仓确认（+OI标注，不参与门控）
   level: number | null;      // H-010: 前期关键位价格（近30根最高/最低）
   extAtr: number | null;     // H-010: 收盘距突破位延伸度（ATR倍数）
 }
@@ -87,8 +86,7 @@ export interface FuturesStatus {
   };
   breakoutSignal: BreakoutSignal | null;  // 突破信号（30m方向+15m触发）
   pullbackSignal: PullbackSignal | null;  // 回踩信号（30m MA60锚定+15m触发）
-  marketRegime?: MarketRegime | null;     // 市场状态（趋势/震荡判定）
-  boxSignal?: BoxSignal | null;           // 箱体信号（震荡行情触及通道边沿）
+  marketRegime?: MarketRegime | null;     // MTF 多周期状态矩阵
   macd: {
     sign: MacdSign;           // diff-dea 正负：positive=金叉区 / negative=死叉区
     rapidExpanding: boolean;  // |diff-dea| 是否快速走扩（当前变化速率 > 近10期均值）
@@ -154,15 +152,6 @@ export interface MarketRegime {
     "30m": number;
     "daily": number;
   };
-}
-
-export interface BoxSignal {
-  type: "long" | "short";
-  boundary: "upper" | "lower";
-  boundaryPrice: number;
-  distPct: number;
-  boxUpper: number;
-  boxLower: number;
 }
 
 // ── 持仓记录 ─────────────────────────────────────────────────

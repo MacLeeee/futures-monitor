@@ -119,11 +119,11 @@ export default function RegimePanel({ data }: Props) {
 
       {/* 说明 */}
       <div className="text-[10px] text-stone-400 leading-relaxed">
-        <span className="text-purple-600">趋势</span> = 唐奇安通道扩张 + 枢轴HH/HL或LL/LH + EMA多/空头排列 + 斜率显著
+        <span className="text-purple-600">趋势</span> = 15m+30m+日线 ≥2 周期对齐（price&gt;MA20&gt;MA60 + MACD同向）
         &nbsp;·&nbsp;
-        <span className="text-amber-500">震荡</span> = 通道走平 + 枢轴无序 + EMA缠绕 + 斜率≈0
+        <span className="text-amber-500">震荡</span> = 对齐不足2周期
         &nbsp;·&nbsp;
-        箱体信号 = 震荡行情中价格触及通道上沿(空)/下沿(多)
+        状态矩阵决定操作建议 + 信号门控
       </div>
     </div>
   );
@@ -140,7 +140,7 @@ function RegimeChip({ d }: { d: FuturesStatus }) {
       <span className={`font-medium ${badge.text}`}>{d.symbol}</span>
       <span className="text-stone-500">{arrow}</span>
       <span className="text-stone-400 text-[10px]">{chg}</span>
-      <span className="text-stone-400 text-[10px]">{regime.score}分</span>
+      <span className="text-stone-400 text-[10px]">{regime.bullCount}/{regime.bearCount}</span>
     </div>
   );
 }

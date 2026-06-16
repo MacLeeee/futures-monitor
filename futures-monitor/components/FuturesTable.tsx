@@ -117,7 +117,7 @@ function computeState(
     return {
       level: "TRENDING",
       label: `${emoji} ${dirLabel}`,
-      detail: `${rg.score}分 MA×${ma.cumulative} ${macdStr}`,
+      detail: `MA×${ma.cumulative} ${macdStr}  (${rg.bullCount}/${rg.bearCount})`,
       subDetail: "等回踩结构",
       borderClass: isBull ? "border-blue-200" : "border-orange-200",
       bgClass: isBull ? "bg-blue-50/30" : "bg-orange-50/30",
@@ -127,7 +127,7 @@ function computeState(
 
   // ── 优先级 5: 观望 ──
   const rgLabel = rg
-    ? (rg.regime === "ranging" ? "震荡" : `${rg.score}分`)
+    ? (rg.regime === "ranging" ? "震荡" : `${rg.bullCount > rg.bearCount ? rg.bullCount : rg.bearCount}/3`)
     : "";
   return {
     level: "IDLE",
@@ -286,6 +286,15 @@ function DataRow({ row, idx, cat, pendingSet, position, curPrice, seat }: {
           <div className="text-[10px] text-stone-600 font-mono mt-0.5">{st.detail}</div>
           {st.subDetail && (
             <div className="text-[9px] text-stone-400 font-mono">{st.subDetail}</div>
+          )}
+          {/* MTF 多周期状态 */}
+          {row.marketRegime?.action && (
+            <div className="text-[9px] font-mono mt-0.5 text-stone-500">
+              📐 {row.marketRegime.action}
+              <span className="text-stone-300 ml-1">
+                ({row.marketRegime.bullCount}/{row.marketRegime.bearCount})
+              </span>
+            </div>
           )}
           {seat && (seat.alert || position) && (
             <div className={`text-[8px] font-mono mt-0.5 flex items-center gap-1 ${seat.alert ? "text-amber-600" : "text-stone-300"}`}>

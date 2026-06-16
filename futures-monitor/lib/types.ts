@@ -144,10 +144,16 @@ export interface EmaRibbon {
 export interface MarketRegime {
   regime: RegimeType;
   direction: RegimeDirection;
-  score: number;           // 0~100, >=55=趋势
-  donchian: DonchianChannel;
-  pivot: PivotStructure;
-  emaRibbon: EmaRibbon;
+  action: string;                // 操作建议，如 "顺势持有 / 趋势加仓"
+  allowBreakout: boolean;        // MTF 门控：是否允许突破入场
+  allowPullback: boolean;        // MTF 门控：是否允许回踩入场
+  bullCount: number;             // Bull 对齐周期数 0-3
+  bearCount: number;             // Bear 对齐周期数 0-3
+  states: {                      // 每周期状态 1=Bull -1=Bear 0=Neutral
+    "15m": number;
+    "30m": number;
+    "daily": number;
+  };
 }
 
 export interface BoxSignal {

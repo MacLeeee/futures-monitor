@@ -18,30 +18,30 @@
 
 ## 数据概览
 
-- 统计范围: 2026-05-13 ~ 2026-06-11
-- 总交易: 38 笔
-- 胜率: 18.4%
+- 统计范围: 2026-05-18 ~ 2026-06-15
+- 总交易: 37 笔
+- 胜率: 18.9%
 - 盈亏比: 0.03
 - 盈利因子: 0.01
-- 期望值: -516.04 点/笔
-- 累计盈亏: -19609.51 点
-- 最大连亏: 12 笔
+- 期望值: -530.09 点/笔
+- 累计盈亏: -19613.22 点
+- 最大连亏: 14 笔
 
 ## 分策略统计
-- breakout: 24笔, 胜率12.5%, 盈亏比0.05, EV-562.54, PF0.01
+- breakout: 23笔, 胜率13.0%, 盈亏比0.05, EV-587.16, PF0.01
 - pullback: 14笔, 胜率28.6%, 盈亏比0.02, EV-436.33, PF0.01
 
 ## 分方向统计
-- 做空: 20笔, 胜率25.0%, 盈亏比0.38, EV-33.8
-- 做多: 18笔, 胜率11.1%, 盈亏比0.02, EV-1051.86
+- 做空: 19笔, 胜率26.3%, 盈亏比0.37, EV-33.88
+- 做多: 18笔, 胜率11.1%, 盈亏比0.02, EV-1053.86
 
 ## ⚠️ 品种连亏预警
 - 烧碱: 连亏3笔 (-81.71点)
 - 锡: 连亏3笔 (-15954.29点)
 
 ## 滚动窗口表现 (最近20笔)
-- 近期胜率: 15.0% (全期: 18.4%)
-- 近期EV: -883.44 (全期: -516.04)
+- 近期胜率: 15.0% (全期: 18.9%)
+- 近期EV: -629.33 (全期: -530.09)
 
 ## 当前参数 (完整)
 ```json
@@ -50,7 +50,7 @@
   "version": "1.0",
   "updatedAt": "2026-06-11",
   "pullback": {
-    "_desc": "回踩/反抽信号参数",
+    "_desc": "旧版回踩参数（已弃用，保留兼容）",
     "bounce_tol_pct": 1.5,
     "atr_factor": 0.8,
     "adaptive_min_pct": 0.3,
@@ -58,6 +58,31 @@
     "min_slope20_pct": 0.05,
     "min_slope60_pct": 0.02,
     "ma_entanglement_threshold_pct": 0.15
+  },
+  "mtf_pullback": {
+    "_desc": "H-005 MTF回踩状态机（日线趋势×30min结构回踩）",
+    "_design": "状态机: IDLE→ARMED(等回踩)→QUALIFYING(质量审查)→TRIGGER_WAIT→SIGNAL",
+    "zone_tol_atr30": 0.3,
+    "zone_tol_atr_d": 0.5,
+    "overheat_atr_d": 2.0,
+    "max_retrace": 0.618,
+    "shrink_ratio": 0.8,
+    "max_oi_increase": 3.0,
+    "min_pb_bars": 2,
+    "max_pb_bars": 20,
+    "trigger_wait": 8,
+    "stop_buffer_atr": 0.5,
+    "swing_lookback": 5,
+    "use_tet": true,
+    "ats_min": 0.3,
+    "ei_washout": 0.3,
+    "ti_entry": 0.5,
+    "trend_score_version": 2,
+    "tet_variant": "V1",
+    "_tet_note": "V1=期货最优(IC5≈0,IC20=-0.018,翻转8.6%); V3=指数最优(跨资产不稳定,按事前规则用V1)",
+    "fib_zones": true,
+    "sweep_trigger": true,
+    "sweep_pierce_atr": 0.1
   },
   "breakout": {
     "_desc": "突破信号参数",
@@ -91,8 +116,8 @@
     "stop_loss_atr_prev_bar": 1,
     "take_profit_risk_ratio": 2,
     "breakeven_r": 1,
-    "trailing_activate_r": 2,
-    "trailing_atr_mult": 2
+    "trailing_activate_r": 1.5,
+    "trailing_atr_mult": 1.2
   },
   "position": {
     "_desc": "持仓管理参数",

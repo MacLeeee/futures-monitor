@@ -100,16 +100,6 @@ def daily_trend_filter(daily_entry: dict | None, df_daily: pd.DataFrame | None,
     bull = float(e20.iloc[-1]) > float(e60.iloc[-1]) and s20 > 0 and s60 > 0
     bear = float(e20.iloc[-1]) < float(e60.iloc[-1]) and s20 < 0 and s60 < 0
 
-    if daily_entry:
-        rg = (daily_entry.get("marketRegime") or {})
-        direction = rg.get("direction")
-        if rg.get("regime") == "ranging":
-            return None
-        if direction == "bearish":
-            bull = False
-        if direction == "bullish":
-            bear = False
-
     if not bull and not bear:
         return None
     if abs(close - float(e20.iloc[-1])) > cfg["overheat_atr_d"] * atr_d:

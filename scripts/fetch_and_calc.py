@@ -112,7 +112,7 @@ def _load_params() -> dict:
         "volume": {"surge_ma_mult": 1.5, "ma_window": 10},
         "risk": {"min_risk_pct": 0.15, "min_price_gap_pct": 0.01, "stop_loss_atr_entry": 2,
                   "stop_loss_atr_prev_bar": 1, "take_profit_risk_ratio": 2, "breakeven_r": 1,
-                  "trailing_activate_r": 2, "trailing_atr_mult": 2},
+                  "trailing_activate_r": 1.5, "trailing_atr_mult": 1.2},
         "position": {"cooldown_minutes": 60, "max_wait_bars": 12},
         "trading_hours": {"morning": ["08:50", "11:40"], "afternoon": ["13:20", "15:10"],
                            "night": ["20:50", "23:40"], "daily_k_window": ["23:00", "23:15"]},
@@ -529,7 +529,91 @@ def calc_ema_ribbon(df: pd.DataFrame) -> dict:
     }
 
 
-def calc_market_regime(donchian: dict, pivot: dict, ema: dict) -> dict:
+def _tf_state(ma: dict | None, macd: dict | None, close: float | None) -> int:
+    """
+    单周期状态判定：
+      1 = Bull: close > MA20 > MA60  且  MACD > 0
+     -1 = Bear: close < MA20 < MA60  且  MACD < 0
+      0 = Neutral
+    """
+    if not ma or not macd or close is None:
+        return 0
+    ma20 = ma.get("ma20")
+    ma60 = ma.get("ma60")
+    sign = macd.get("sign")
+    if not ma20 or not ma60 or not sign:
+        return 0
+    if close > ma20 and ma20 > ma60 and sign == "positive":
+        return 1
+    if close < ma20 and ma20 < ma60 and sign == "negative":
+        return -1
+    return 0
+
+
+# ── MTF 状态矩阵：15m × 30m × 日线 → 操作建议 + 信号门控 ──
+# 每周期: 1=Bull  -1=Bear  0=Neutral
+# 原则: 日线定战略方向, 30m定战术偏向, 15m定入场时机
+# allowBreakout/allowPullback 控制信号是否可入场
+_ACTION_MATRIX: dict[tuple, tuple[str, str, str, bool, bool]] = {
+    # 日线 Bull — 战略做多
+    (1,  1,  1):  ("trending", "bullish", "顺势持有 / 趋势加仓",           True,  True),
+    (-1, 1,  1):  ("trending", "bullish", "止盈部分，不轻易反手空",         False, False),
+    (1,  0,  1):  ("trending", "bullish", "可重新试多",                    True,  True),
+    (1,  -1, 1):  ("trending", "bullish", "最重要的小仓试多结构",           False, True),
+    (-1, -1, 1):  ("ranging",  "neutral", "观察是否升级为4h转空，或15m转多",  False, False),
+    (-1, 0,  1):  ("ranging",  "neutral", "先观察，不急着追空",              False, False),
+    # 日线 Bear — 战略做空
+    (-1, -1, -1): ("trending", "bearish", "顺势做空 / 持空",               True,  True),
+    (1,  -1, -1): ("trending", "bearish", "短线反弹，趋势偏空",              False, False),
+    (1,  1,  -1): ("trending", "bearish", "可逐步加仓",                    False, True),
+    (1,  0,  -1): ("ranging",  "neutral", "观察是否升级为1h转多",            False, False),
+    (-1, 1,  -1): ("trending", "bearish", "可考虑反手空",                   True,  True),
+}
+
+
+def calc_mtf_regime(ma_15m: dict, ma_30m: dict, ma_daily: dict | None,
+                    macd_15m: dict, macd_30m: dict, macd_daily: dict | None,
+                    close_15m: float, close_30m: float,
+                    close_daily: float | None = None) -> dict:
+    """
+    MTF 状态矩阵：15min + 30min + 日线。
+    每周期独立判定 Bull/Bear/Neutral，查表得操作建议。
+    日线不可用时降级为 2TF 模式（以 30m 为锚）。
+    """
+    s15 = _tf_state(ma_15m, macd_15m, close_15m)
+    s30 = _tf_state(ma_30m, macd_30m, close_30m)
+    sd  = _tf_state(ma_daily, macd_daily, close_daily) if ma_daily else 0
+
+    key = (s15, s30, sd)
+    if key in _ACTION_MATRIX:
+        regime, direction, action, allow_bo, allow_pb = _ACTION_MATRIX[key]
+    elif sd == 1:
+        regime, direction, action, allow_bo, allow_pb = "trending", "bullish", "偏多观望", True, False
+    elif sd == -1:
+        regime, direction, action, allow_bo, allow_pb = "trending", "bearish", "偏空观望", True, False
+    elif s30 == 1:
+        regime, direction, action, allow_bo, allow_pb = "ranging", "neutral", "30m偏多，等日线确认", False, False
+    elif s30 == -1:
+        regime, direction, action, allow_bo, allow_pb = "ranging", "neutral", "30m偏空，等日线确认", False, False
+    else:
+        regime, direction, action, allow_bo, allow_pb = "ranging", "neutral", "等待方向明确", False, False
+
+    bull_count = (1 if s15 == 1 else 0) + (1 if s30 == 1 else 0) + (1 if sd == 1 else 0)
+    bear_count = (1 if s15 == -1 else 0) + (1 if s30 == -1 else 0) + (1 if sd == -1 else 0)
+
+    return {
+        "regime":          regime,
+        "direction":       direction,
+        "action":          action,
+        "allowBreakout":   allow_bo,
+        "allowPullback":   allow_pb,
+        "bullCount":       bull_count,
+        "bearCount":       bear_count,
+        "states":          {"15m": s15, "30m": s30, "daily": sd},
+    }
+
+
+# ── 旧版 regime 判定（已弃用，保留供参考）─────────────────────
     """
     综合唐奇安通道、枢轴点结构、EMA缎带，给出趋势/震荡判定。
     评分 0~100: >=55 趋势，<55 震荡。
@@ -1101,7 +1185,9 @@ def process_symbol(args: tuple) -> dict | None:
         change = round((last - prev) / prev * 100, 2) if prev else 0.0
 
         ma_30m   = calc_ma(df_30m)
+        ma_15m   = calc_ma(df_15m)
         macd_15m = calc_macd(df_15m)
+        macd_30m = calc_macd(df_30m)
         vol_15m  = calc_volume(df_15m)
         oi_15m   = calc_oi(df_15m)
 
@@ -1116,11 +1202,19 @@ def process_symbol(args: tuple) -> dict | None:
         prev_high  = round(float(df_30m["high"].iloc[-2]),  4) if len(df_30m) >= 2 else close
         prev_close = round(float(df_30m["close"].iloc[-2]), 4) if len(df_30m) >= 2 else close
 
-        # ── 市场状态判定（30min 数据）──
+        # ── 市场状态判定（多周期共振：15m + 30m + 日线）──
         donchian = calc_donchian(df_30m)
-        pivot    = calc_pivot_structure(df_30m)
-        ema_rib  = calc_ema_ribbon(df_30m)
-        regime   = calc_market_regime(donchian, pivot, ema_rib)
+
+        # 日线 MA/MACD 数据
+        daily_ma = daily_entry.get("ma") if daily_entry else None
+        daily_macd = daily_entry.get("macd") if daily_entry else None
+        daily_close_val = daily_entry.get("price") if daily_entry else None
+
+        regime   = calc_mtf_regime(ma_15m, ma_30m, daily_ma,
+                                   macd_15m, macd_30m, daily_macd,
+                                   close_15m=round(float(df_15m["close"].iloc[-1]), 2),
+                                   close_30m=close,
+                                   close_daily=daily_close_val)
         box_sig  = calc_box_signal(close, donchian, regime)
 
         return {
@@ -1343,8 +1437,8 @@ def build_regime_message(data: list[dict], bj_time: str,
     ─────────────────────────────
     🔮 状态切换  03-30 14:00
     ─────────────────────────────
-    📊 震荡→趋势：黄金↗(72分) 铜↗(68分)
-    📦 趋势→震荡：原油(38分) 螺纹(41分)
+    📊 震荡→趋势：黄金↗(3/3) 铜↗(2/3)
+    📦 趋势→震荡：原油(1/3) 螺纹(0/3)
     ─────────────────────────────
     """
     prev = prev_map or {}
@@ -1378,14 +1472,16 @@ def build_regime_message(data: list[dict], bj_time: str,
         for d in to_trending:
             dr    = d.get("marketRegime", {}).get("direction", "")
             arrow = "↗" if dr == "bullish" else "↘" if dr == "bearish" else "→"
-            score = d.get("marketRegime", {}).get("score", "?")
-            items.append(f"{d['symbol']}{arrow}({score}分)")
+            bc    = d.get("marketRegime", {}).get("bullCount", 0)
+            bec   = d.get("marketRegime", {}).get("bearCount", 0)
+            cnt   = bc if dr == "bullish" else bec
+            items.append(f"{d['symbol']}{arrow}({cnt}/3)")
         lines.append(f"📊 <b>震荡→趋势</b>: {' '.join(items)}")
         lines.append("  💡 关注突破策略入场机会")
 
     if to_ranging:
         items = [
-            f"{d['symbol']}({d.get('marketRegime',{}).get('score','?')}分)"
+            f"{d['symbol']}({max(d.get('marketRegime',{}).get('bullCount',0), d.get('marketRegime',{}).get('bearCount',0))}/3)"
             for d in to_ranging
         ]
         lines.append(f"📦 <b>趋势→震荡</b>: {' '.join(items)}")
@@ -1839,31 +1935,40 @@ def _can_open(positions: list[dict], symbol: str, direction: str,
 
 def _open_position(symbol: str, direction: str, signal_type: str,
                    entry_price: float, atr: float,
-                   prev_low: float, prev_high: float) -> dict | None:
+                   prev_low: float, prev_high: float,
+                   signal_stop: float | None = None) -> dict | None:
     """
     创建新持仓记录。
-    止损：做多 = max(入场价-2ATR, 前K低点-1ATR)；做空 = min(入场价+2ATR, 前K高点+1ATR)
+    止损：默认做多 = max(入场价-2ATR, 前K低点-1ATR)；做空 = min(入场价+2ATR, 前K高点+1ATR)
+          若 signal_stop 传入（回踩信号的结构止损），优先使用 signal_stop。
     风险保护：止损必须位于入场价正确一侧，且初始风险不得过小。
-    止盈目标：2:1 风险回报，达到 2R 后进入移动止损。
+    止盈目标：2:1 风险回报。
     """
     bj_time = datetime.now(ZoneInfo("Asia/Shanghai")).strftime("%Y-%m-%d %H:%M")
     uid     = datetime.now(ZoneInfo("Asia/Shanghai")).strftime("%Y%m%d%H%M%S")
 
+    _sl_entry = _p()["risk"]["stop_loss_atr_entry"]
+    _sl_prev  = _p()["risk"]["stop_loss_atr_prev_bar"]
+
     if direction == "long":
-        # 两种方案取较大值（价格较高 = 止损距离较小 = 更保守地控制风险）
-        # 方案1: 入场价 - stop_loss_atr_entry×ATR
-        # 方案2: 前一根K线低点 - stop_loss_atr_prev_bar×ATR
-        _sl_entry = _p()["risk"]["stop_loss_atr_entry"]
-        _sl_prev  = _p()["risk"]["stop_loss_atr_prev_bar"]
-        stop_loss = max(entry_price - _sl_entry * atr, prev_low - _sl_prev * atr)
+        if signal_stop is not None and signal_stop < entry_price:
+            stop_loss = signal_stop
+        else:
+            # 两种方案取较大值（价格较高 = 止损距离较小 = 更保守地控制风险）
+            # 方案1: 入场价 - stop_loss_atr_entry×ATR
+            # 方案2: 前一根K线低点 - stop_loss_atr_prev_bar×ATR
+            stop_loss = max(entry_price - _sl_entry * atr, prev_low - _sl_prev * atr)
         max_sl = entry_price * (1 - _MIN_PRICE_GAP_PCT / 100)
         stop_loss = min(stop_loss, max_sl)
         risk      = entry_price - stop_loss
     else:
-        # 两种方案取较小值（价格较低 = 止损距离较小 = 更保守地控制风险）
-        # 方案1: 入场价 + stop_loss_atr_entry×ATR
-        # 方案2: 前一根K线高点 + stop_loss_atr_prev_bar×ATR
-        stop_loss = min(entry_price + _sl_entry * atr, prev_high + _sl_prev * atr)
+        if signal_stop is not None and signal_stop > entry_price:
+            stop_loss = signal_stop
+        else:
+            # 两种方案取较小值（价格较低 = 止损距离较小 = 更保守地控制风险）
+            # 方案1: 入场价 + stop_loss_atr_entry×ATR
+            # 方案2: 前一根K线高点 + stop_loss_atr_prev_bar×ATR
+            stop_loss = min(entry_price + _sl_entry * atr, prev_high + _sl_prev * atr)
         min_sl = entry_price * (1 + _MIN_PRICE_GAP_PCT / 100)
         stop_loss = max(stop_loss, min_sl)
         risk      = stop_loss - entry_price
@@ -1951,7 +2056,7 @@ def _check_and_close(positions: list[dict],
                 pos["trailingActive"] = True
                 pos["trailingActivatedAt"] = bj_time
                 print(f"[POS] {pos['id']} 移动止损激活 @ high={cur_high:.4f} "
-                      f"(entry+2R={entry + 2*risk_ref:.4f})")
+                      f"(entry+{_p()['risk']['trailing_activate_r']}R={entry + _p()['risk']['trailing_activate_r'] * risk_ref:.4f})")
 
             # ── 移动止损更新（每根K线往上推进）──────────────
             if trailing and cur_atr > 0:
@@ -1962,7 +2067,7 @@ def _check_and_close(positions: list[dict],
 
             # ── 出场判断（用最低价触碰止损）─────────────────
             hit_sl = cur_low <= sl
-            # 无法计算 ATR 时，保留固定止盈兜底
+            # 正常运行时 ATR > 0，移动止损负责止盈。hit_tp 仅在 ATR 缺失时作为兜底安全网
             hit_tp = (not trailing) and cur_atr <= 0 and cur_high >= pos["takeProfit"]
 
         else:  # short
@@ -1978,7 +2083,7 @@ def _check_and_close(positions: list[dict],
                 pos["trailingActive"] = True
                 pos["trailingActivatedAt"] = bj_time
                 print(f"[POS] {pos['id']} 移动止损激活 @ low={cur_low:.4f} "
-                      f"(entry-2R={entry - 2*risk_ref:.4f})")
+                      f"(entry-{_p()['risk']['trailing_activate_r']}R={entry - _p()['risk']['trailing_activate_r'] * risk_ref:.4f})")
 
             if trailing and cur_atr > 0:
                 new_sl = round(prev_close + _p()["risk"]["trailing_atr_mult"] * cur_atr, 4)
@@ -1988,7 +2093,7 @@ def _check_and_close(positions: list[dict],
 
             # ── 出场判断（用最高价触碰止损）─────────────────
             hit_sl = cur_high >= sl
-            # 无法计算 ATR 时，保留固定止盈兜底
+            # 正常运行时 ATR > 0，移动止损负责止盈。hit_tp 仅在 ATR 缺失时作为兜底安全网
             hit_tp = (not trailing) and cur_atr <= 0 and cur_low <= pos["takeProfit"]
 
         if hit_sl or hit_tp:
@@ -2061,6 +2166,10 @@ def _manage_positions(merged: list[dict]) -> list[dict]:
         prev_low = d.get("prevLow", close or 0.0)
         prev_high = d.get("prevHigh", close or 0.0)
         if close and atr and _confirm_pending_breakout(p, d) and _can_open(positions, symbol, direction):
+            # MTF 门控：仅在允许突破入场时确认开仓
+            if not d.get("marketRegime", {}).get("allowBreakout", True):
+                print(f"[PENDING] {p.get('id')} MTF状态禁止突破入场（{d.get('marketRegime',{}).get('action','?')}），跳过确认")
+                continue
             pos = _open_position(symbol, direction, "breakout", close, atr, prev_low, prev_high)
             if pos:
                 pos["breakoutConfirm"] = {
@@ -2094,7 +2203,10 @@ def _manage_positions(merged: list[dict]) -> list[dict]:
         bo_sig = d.get("breakoutSignal")
         if bo_sig:
             direction = bo_sig.get("type", "long")
-            if _can_open(positions, symbol, direction) and not _has_pending_breakout(pending, symbol, direction):
+            # MTF 门控：仅在允许突破入场时加入 pending
+            if not d.get("marketRegime", {}).get("allowBreakout", True):
+                print(f"[GATE] {symbol} 突破信号被MTF拦截（{d.get('marketRegime',{}).get('action','?')}）")
+            elif _can_open(positions, symbol, direction) and not _has_pending_breakout(pending, symbol, direction):
                 event = _make_pending_breakout(d, direction)
                 if event:
                     pending.append(event)
@@ -2104,8 +2216,14 @@ def _manage_positions(merged: list[dict]) -> list[dict]:
         pb_sig = d.get("pullbackSignal")
         if pb_sig:
             direction = pb_sig.get("type", "long")
+            # 互斥：同品种已有 pending breakout 或 open 持仓时，跳过回踩信号
+            if _has_pending_breakout(pending, symbol, direction) or \
+               any(p["symbol"] == symbol and p["direction"] == direction and p["status"] == "open"
+                   for p in positions):
+                continue
             if _can_open(positions, symbol, direction):
-                pos = _open_position(symbol, direction, "pullback", close, atr, prev_low, prev_high)
+                pos = _open_position(symbol, direction, "pullback", close, atr, prev_low, prev_high,
+                                     signal_stop=pb_sig.get("stopLoss"))
                 if pos:
                     positions.append(pos)
                     new_opened.append(pos)

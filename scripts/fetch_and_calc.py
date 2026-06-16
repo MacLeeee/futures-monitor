@@ -1355,7 +1355,7 @@ def build_breakout_message(data: list[dict], bj_time: str) -> str | None:
 
     def fmt_near(d: dict, arrow: str) -> str:
         chg = f"+{d['change']:.2f}%" if d["change"] >= 0 else f"{d['change']:.2f}%"
-        return f"  {arrow}{d['symbol']} {chg} MA×{d['ma']['cumulative']} MACD{d['macd']['expansionRate']:.1f}x 缺增仓"
+        return f"  {arrow}{d['symbol']} {chg} MA×{d['ma']['cumulative']} MACD{d['macd']['expansionRate']:.1f}x 待确认"
 
     sep = "─" * 24
     lines = [f"<b>⚡ 突破信号</b>  {bj_time}", sep]
@@ -1370,7 +1370,7 @@ def build_breakout_message(data: list[dict], bj_time: str) -> str | None:
 
     if near_long or near_short:
         if longs or shorts: lines.append("")
-        lines.append("🟡 <b>接近信号</b>（缺增仓）")
+        lines.append("🟡 <b>接近信号</b>（体量/结构未过）")
         lines.extend(fmt_near(d, "▲") for d in near_long)
         lines.extend(fmt_near(d, "▼") for d in near_short)
 

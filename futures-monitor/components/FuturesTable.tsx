@@ -85,20 +85,18 @@ function computeState(
   const maOk = ma.status === "Upward" || ma.status === "Downward";
   const macdOk = macd.sign === (ma.status === "Upward" ? "positive" : "negative") && macd.rapidExpanding;
   const volOk = vol.status === "Surge";
-  const oiOk = oi.status === "Increasing";
-  const score = [maOk, macdOk, volOk, oiOk].filter(Boolean).length;
+  const score = [maOk, macdOk, volOk].filter(Boolean).length;
 
-  if (score >= 3 && !bo) {
+  if (score >= 2 && !bo && !pb) {
     const missing: string[] = [];
     if (!maOk) missing.push("MA");
     if (!macdOk) missing.push("MACD");
     if (!volOk) missing.push("量");
-    if (!oiOk) missing.push("仓");
     const isLong = ma.status === "Upward";
     return {
       level: "APPROACHING",
       label: `🟡 接近${isLong ? "突破" : "跌破"}`,
-      detail: `缺:${missing.join("/")}`,
+      detail: missing.length ? `缺:${missing.join("/")}` : "体量/结构拦截",
       subDetail: `MA×${ma.cumulative} MACD×${macd.cumulative} ${vol.status === "Surge" ? "放量" : ""}`,
       borderClass: "border-amber-200",
       bgClass: "bg-amber-50/40",

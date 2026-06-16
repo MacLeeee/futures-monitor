@@ -65,7 +65,7 @@ export default function FuturesDashboard() {
     const vol = row.volume;
     const oi = row.openInterest;
     const maOk = ma.status === "Upward" || ma.status === "Downward";
-    const macdOk = macd.sign === (ma.status === "Upward" ? "positive" : "negative") && macd.rapidExpanding;
+    const macdOk = macd.sign === (ma.status === "Upward" ? "positive" : "negative");
     const volOk = vol.status === "Surge";
     const oiOk = oi.status === "Increasing";
     if ([maOk, macdOk, volOk, oiOk].filter(Boolean).length >= 3) return "APPROACHING";

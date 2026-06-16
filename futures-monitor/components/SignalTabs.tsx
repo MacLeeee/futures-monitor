@@ -21,8 +21,8 @@ export default function SignalTabs({ data }: SignalTabsProps) {
   const total = breakoutCount + pullbackCount;
   const nearBreakout = data.filter(
     (d) => !d.breakoutSignal &&
-      ((d.ma.status === "Upward" && d.macd.sign === "positive" && d.macd.rapidExpanding && d.volume.status === "Surge") ||
-       (d.ma.status === "Downward" && d.macd.sign === "negative" && d.macd.rapidExpanding && d.volume.status === "Surge"))
+      ((d.ma.status === "Upward" && d.macd.sign === "positive" && d.volume.status === "Surge") ||
+       (d.ma.status === "Downward" && d.macd.sign === "negative" && d.volume.status === "Surge"))
   ).length;
 
   // 零信号且无待观察 → 自动隐藏整个面板

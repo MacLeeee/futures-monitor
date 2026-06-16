@@ -20,36 +20,32 @@ export default function BreakoutContent({ data }: BreakoutContentProps) {
   const longs  = data.filter((d) => d.breakoutSignal?.type === "long");
   const shorts = data.filter((d) => d.breakoutSignal?.type === "short");
 
-  // 全条件满足（MA+MACD+量+增仓）但无信号 → 被结构位闸门拦截
+  // MA+MACD+量满足 但无信号 → 被实体/结构位闸门拦截
   const blockedLong = data.filter((d) =>
     !d.breakoutSignal &&
     d.ma.status === "Upward" &&
-    d.macd.sign === "positive" && d.macd.rapidExpanding &&
-    d.volume.status === "Surge" &&
-    d.openInterest.status === "Increasing"
+    d.macd.sign === "positive" &&
+    d.volume.status === "Surge"
   );
   const blockedShort = data.filter((d) =>
     !d.breakoutSignal &&
     d.ma.status === "Downward" &&
-    d.macd.sign === "negative" && d.macd.rapidExpanding &&
-    d.volume.status === "Surge" &&
-    d.openInterest.status === "Increasing"
+    d.macd.sign === "negative" &&
+    d.volume.status === "Surge"
   );
 
-  // 3/4 满足（缺增仓）→ 待观察
+  // MA+MACD满足（缺量）→ 待观察
   const nearLong = data.filter((d) =>
     !d.breakoutSignal &&
     d.ma.status === "Upward" &&
-    d.macd.sign === "positive" && d.macd.rapidExpanding &&
-    d.volume.status === "Surge" &&
-    d.openInterest.status !== "Increasing"
+    d.macd.sign === "positive" &&
+    d.volume.status !== "Surge"
   );
   const nearShort = data.filter((d) =>
     !d.breakoutSignal &&
     d.ma.status === "Downward" &&
-    d.macd.sign === "negative" && d.macd.rapidExpanding &&
-    d.volume.status === "Surge" &&
-    d.openInterest.status !== "Increasing"
+    d.macd.sign === "negative" &&
+    d.volume.status !== "Surge"
   );
 
   const maFirstUp = data.filter((d) => d.ma.status === "Upward"   && d.ma.cumulative === 1);
@@ -104,12 +100,12 @@ function BreakoutColumn({ title, direction, signals, blocked, near }: {
         <p className="text-xs text-stone-400 mb-2">暂无满足全条件的品种</p>
       )}
 
-      {/* 被结构位拦截（4/4满足但无信号） */}
+      {/* 被实体/结构位拦截（MA+MACD+量满足但无信号） */}
       {blocked.length > 0 && (
         <>
           <div className="flex items-center gap-1.5 mb-1 mt-2">
             <ShieldOff size={10} className="text-stone-500" />
-            <span className="text-[10px] text-stone-500">被结构位拦截（延伸过远/非新鲜突破）</span>
+            <span className="text-[10px] text-stone-500">被实体/结构位拦截</span>
           </div>
           <div className="space-y-1">
             {blocked.map((d) => <BreakoutCard key={d.symbol} d={d} isLong={isLong} variant="blocked" />)}
@@ -117,12 +113,12 @@ function BreakoutColumn({ title, direction, signals, blocked, near }: {
         </>
       )}
 
-      {/* 待观察（仅缺增仓） */}
+      {/* 待观察（缺量） */}
       {near.length > 0 && (
         <>
           <div className="flex items-center gap-1.5 mb-1 mt-2">
             <AlertTriangle size={10} className="text-stone-500" />
-            <span className="text-[10px] text-stone-500">待观察（仅缺增仓）</span>
+            <span className="text-[10px] text-stone-500">待观察（缺量）</span>
           </div>
           <div className="space-y-1">
             {near.map((d) => <BreakoutCard key={d.symbol} d={d} isLong={isLong} variant="near" />)}

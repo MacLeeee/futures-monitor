@@ -1428,66 +1428,39 @@ def build_pullback_message(data: list[dict], bj_time: str) -> str | None:
     return "\n".join(lines)
 
 
-def build_regime_message(data: list[dict], bj_time: str,
-                         prev_map: dict[str, dict] | None = None) -> str | None:
+def build_trend_ready_message(data: list[dict], bj_time: str,
+                              prev_map: dict[str, dict] | None = None) -> str | None:
     """
-    推送规则：只推「震荡 → 趋势」或「趋势 → 震荡」的品种（存量不推，箱体不推）
-
-    推送格式：
-    ─────────────────────────────
-    🔮 状态切换  03-30 14:00
-    ─────────────────────────────
-    📊 震荡→趋势：黄金↗(3/3) 铜↗(2/3)
-    📦 趋势→震荡：原油(1/3) 螺纹(0/3)
-    ─────────────────────────────
+    趋势就绪推送：仅推送「震荡 → 趋势」的品种（存量不推，趋势→震荡不推）。
     """
     prev = prev_map or {}
-
-    to_trending: list[dict] = []   # 震荡 → 趋势
-    to_ranging:  list[dict] = []   # 趋势 → 震荡
+    just_trending: list[dict] = []
 
     for d in data:
-        sym    = d["symbol"]
+        sym = d["symbol"]
         cur_rg = d.get("marketRegime", {}).get("regime")
-        if not cur_rg:
+        if cur_rg != "trending":
             continue
-
         prev_rg = prev.get(sym, {}).get("marketRegime", {}).get("regime")
-        if prev_rg is None or prev_rg == cur_rg:
-            continue   # 无变化，跳过
+        if prev_rg == "trending":
+            continue   # 已经是趋势，不推
+        just_trending.append(d)
 
-        if cur_rg == "trending":
-            to_trending.append(d)
-        else:
-            to_ranging.append(d)
-
-    if not to_trending and not to_ranging:
+    if not just_trending:
         return None
 
+    items = []
+    for d in just_trending:
+        mr = d.get("marketRegime", {})
+        dr = mr.get("direction", "")
+        arrow = "↗" if dr == "bullish" else "↘" if dr == "bearish" else "→"
+        items.append(f"{d['symbol']}{arrow}({mr.get('bullCount',0)}/{mr.get('bearCount',0)})")
+
     sep = "─" * 24
-    lines: list[str] = [f"<b>🔮 状态切换</b>  {bj_time}", sep]
-
-    if to_trending:
-        items = []
-        for d in to_trending:
-            dr    = d.get("marketRegime", {}).get("direction", "")
-            arrow = "↗" if dr == "bullish" else "↘" if dr == "bearish" else "→"
-            bc    = d.get("marketRegime", {}).get("bullCount", 0)
-            bec   = d.get("marketRegime", {}).get("bearCount", 0)
-            cnt   = bc if dr == "bullish" else bec
-            items.append(f"{d['symbol']}{arrow}({cnt}/3)")
-        lines.append(f"📊 <b>震荡→趋势</b>: {' '.join(items)}")
-        lines.append("  💡 关注突破策略入场机会")
-
-    if to_ranging:
-        items = [
-            f"{d['symbol']}({max(d.get('marketRegime',{}).get('bullCount',0), d.get('marketRegime',{}).get('bearCount',0))}/3)"
-            for d in to_ranging
-        ]
-        lines.append(f"📦 <b>趋势→震荡</b>: {' '.join(items)}")
-        lines.append("  💡 回踩信号暂停，等待状态切回趋势")
-
-    lines.append(sep)
+    lines = [f"<b>🔮 趋势就绪</b>  {bj_time}", sep,
+             " ".join(items),
+             "💡 突破策略关注入场机会",
+             sep]
     return "\n".join(lines)
 
 
@@ -1769,12 +1742,12 @@ def main():
     pb_msg = build_pullback_message(merged, bj_time)
     if pb_msg:
         messages.append(pb_msg)
-    rg_msg = build_regime_message(merged, bj_time, prev_map)
-    if rg_msg:
-        messages.append(rg_msg)
     ok_msg = build_position_opened_message(new_opened, bj_time)
     if ok_msg:
         messages.append(ok_msg)
+    tr_msg = build_trend_ready_message(merged, bj_time, prev_map)
+    if tr_msg:
+        messages.append(tr_msg)
     if messages:
         tg_send_all("\n\n".join(messages))
     else:

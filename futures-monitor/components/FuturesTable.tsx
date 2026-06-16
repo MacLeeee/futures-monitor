@@ -282,19 +282,17 @@ function DataRow({ row, idx, cat, pendingSet, position, curPrice, seat }: {
       {/* 状态机 */}
       <td className="px-3 py-2">
         <div className={`rounded border ${st.borderClass} ${st.bgClass} px-2.5 py-1.5`}>
-          <div className={`text-xs font-bold ${st.textClass}`}>{st.label}</div>
+          <div className="flex items-center gap-1.5">
+            <span className={`text-xs font-bold ${st.textClass}`}>{st.label}</span>
+            {row.marketRegime?.action && (
+              <span className="text-[9px] font-mono text-stone-500">
+                📐{row.marketRegime.action}({row.marketRegime.bullCount}/{row.marketRegime.bearCount})
+              </span>
+            )}
+          </div>
           <div className="text-[10px] text-stone-600 font-mono mt-0.5">{st.detail}</div>
           {st.subDetail && (
             <div className="text-[9px] text-stone-400 font-mono">{st.subDetail}</div>
-          )}
-          {/* MTF 多周期状态 */}
-          {row.marketRegime?.action && (
-            <div className="text-[9px] font-mono mt-0.5 text-stone-500">
-              📐 {row.marketRegime.action}
-              <span className="text-stone-300 ml-1">
-                ({row.marketRegime.bullCount}/{row.marketRegime.bearCount})
-              </span>
-            </div>
           )}
           {seat && (seat.alert || position) && (
             <div className={`text-[8px] font-mono mt-0.5 flex items-center gap-1 ${seat.alert ? "text-amber-600" : "text-stone-300"}`}>

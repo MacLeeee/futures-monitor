@@ -54,12 +54,13 @@ function computeState(
     if (bo) {
       const isLong = bo.type === "long";
       const extra = bo.level
-        ? ` lv${bo.level}${bo.extAtr ? ` ext${bo.extAtr}` : ""}`
+        ? ` lv${bo.level}`
         : "";
       return {
         level: "SIGNAL",
         label: `${isLong ? "🔴" : "🟢"} 突破${isLong ? "做多" : "做空"}`,
         detail: `MA×${bo.maCumulative} MACD${bo.expansionRate.toFixed(1)}x${bo.oiConfirmed ? " +OI" : ""}${extra}`,
+        subDetail: bo.level ? `结构位 ${bo.level}` : "—",
         borderClass: isLong ? "border-red-200" : "border-emerald-200",
         bgClass: isLong ? "bg-red-50/40" : "bg-emerald-50/40",
         textClass: isLong ? "text-red-600" : "text-emerald-600",
@@ -82,7 +83,7 @@ function computeState(
 
   // ── 优先级 3: 接近信号 ──
   const maOk = ma.status === "Upward" || ma.status === "Downward";
-  const macdOk = macd.sign === (ma.status === "Upward" ? "positive" : "negative") && macd.rapidExpanding;
+  const macdOk = macd.sign === (ma.status === "Upward" ? "positive" : "negative");
   const volOk = vol.status === "Surge";
   const score = [maOk, macdOk, volOk].filter(Boolean).length;
 

@@ -106,7 +106,7 @@ def _load_params() -> dict:
         "pullback": {"bounce_tol_pct": 1.5, "atr_factor": 0.8, "adaptive_min_pct": 0.30,
                       "approach_tol_pct": 0.30, "min_slope20_pct": 0.05, "min_slope60_pct": 0.02,
                       "ma_entanglement_threshold_pct": 0.15},
-        "breakout": {"body_atr_ratio_min": 1.0, "donchian_tolerance_pct": 0.1,
+        "breakout": {"body_atr_ratio_min": 1.0,
                       "kd_cooling": {"long_k_max": 80, "long_d_max": 80, "short_k_min": 20, "short_d_min": 20}},
         "macd": {"fast": 12, "slow": 26, "signal": 9, "expansion_rate_min": 1.2, "expansion_lookback_bars": 10},
         "volume": {"surge_ma_mult": 1.5, "ma_window": 10},
@@ -736,8 +736,6 @@ def calc_box_signal(close: float, donchian: dict, regime: dict,
 # ── 结构位突破过滤器（H-010 突破战术增强）──────────────
 _STRUCT_BREAKOUT  = True   # False = 一行回滚到旧逻辑
 _LEVEL_LOOKBACK   = 30     # 前期关键位 = 近30根(不含当前K)最高/最低
-_EXT_ATR_MAX      = 1.0    # 收盘距突破位最大延伸(×ATR)，超出=追高不开
-_LEVEL_FRESH_TOL  = 0.001  # 新鲜度容差：前收须仍在位内 ±0.1%
 
 _params_module = _load_params()  # 模块加载时初始化
 _BOUNCE_TOL          = _params_module["pullback"]["bounce_tol_pct"]          # 回踩阈值上限
@@ -795,8 +793,7 @@ def calc_breakout_signal(
 
     is_long = (ma_status == "Upward")
 
-    macd_ok = (macd_15m.get("sign") == ("positive" if is_long else "negative")
-               and macd_15m.get("rapidExpanding", False))
+    macd_ok = macd_15m.get("sign") == ("positive" if is_long else "negative")
     # 成交量：环比放量 + （当前量 OR 前一根量）高于均量
     vol_above = vol_15m.get("aboveVolMa", False) or vol_15m.get("prevAboveVolMa", False)
     vol_ok    = vol_15m.get("status") == "Surge" and vol_above
@@ -811,26 +808,17 @@ def calc_breakout_signal(
         if body / atr <= _p()["breakout"]["body_atr_ratio_min"]:
             return None
 
-    # ── 结构位锚定：所有 regime 一律生效 ──
+    # ── 结构位锚定：仅需穿透前期关键位 ──
     level_val = None
-    ext_atr = None
     if _STRUCT_BREAKOUT and levels and levels.get("up") and levels.get("dn") and atr > 0:
-        prev_c = levels.get("prevClose") or 0.0
         if is_long:
             level_val = levels["up"]
-            fresh = prev_c <= level_val * (1 + _LEVEL_FRESH_TOL)
-            broke = close > level_val
-            ext = close - level_val
+            if not (close > level_val):
+                return None
         else:
             level_val = levels["dn"]
-            fresh = prev_c >= level_val * (1 - _LEVEL_FRESH_TOL)
-            broke = close < level_val
-            ext = level_val - close
-        if not (broke and fresh):
-            return None      # 非新鲜结构突破 → 只是均线上方动量点火，不开
-        if ext > _EXT_ATR_MAX * atr:
-            return None      # 延伸过远=追高 → 转回踩接力
-        ext_atr = round(ext / atr, 3)
+            if not (close < level_val):
+                return None
 
     oi_ok = oi_15m.get("status") == "Increasing"
     return {
@@ -840,7 +828,6 @@ def calc_breakout_signal(
         "expansionRate": macd_15m.get("expansionRate", 1.0),
         "oiConfirmed":   oi_ok,
         "level":  round(level_val, 4) if level_val else None,
-        "extAtr": ext_atr,
     }
 
 
@@ -1301,7 +1288,7 @@ def build_breakout_message(data: list[dict], bj_time: str) -> str | None:
     longs  = [d for d in data if d.get("breakoutSignal") and d["breakoutSignal"]["type"] == "long"]
     shorts = [d for d in data if d.get("breakoutSignal") and d["breakoutSignal"]["type"] == "short"]
 
-    # 接近信号：3/4满足（缺增仓），且该方向没有真实突破信号
+    # 接近信号：MA+MACD+量满足但缺实体/结构，且该方向没有真实突破信号
     def _near(d, is_long):
         if d.get("breakoutSignal"): return False
         ma = d.get("ma", {})
@@ -1310,7 +1297,6 @@ def build_breakout_message(data: list[dict], bj_time: str) -> str | None:
         return (
             ma.get("status") == ("Upward" if is_long else "Downward")
             and macd.get("sign") == ("positive" if is_long else "negative")
-            and macd.get("rapidExpanding")
             and vol.get("status") == "Surge"
         )
     near_long  = [d for d in data if _near(d, True)] if not longs else []
@@ -1324,8 +1310,7 @@ def build_breakout_message(data: list[dict], bj_time: str) -> str | None:
         chg = f"+{d['change']:.2f}%" if d["change"] >= 0 else f"{d['change']:.2f}%"
         oi  = " +OI" if sig.get("oiConfirmed") else ""
         lv  = sig.get("level")
-        ext = sig.get("extAtr")
-        extra = f" lv{lv} ext{ext}" if lv else ""
+        extra = f" lv{lv}" if lv else ""
         return f"  {arrow}{d['symbol']} {chg} MA×{d['ma']['cumulative']} MACD{sig.get('expansionRate',1):.1f}x{oi}{extra}"
 
     def fmt_near(d: dict, arrow: str) -> str:

@@ -10,8 +10,8 @@ export type MacdSign = "positive" | "negative";
 
 export type MaSlopeType = "steep" | "gentle" | "declining" | "flat";
 
-// 突破信号：30min MA排列（价格在MA20/MA60上/下方）+ 15min MACD扩口 + 15min量>均量
-// 增仓(OI)为或有加分项；H-010 结构位锚定新增 level/extAtr
+// 突破信号：30min MA方向（价格在MA20/MA60上/下方）+ 15min MACD方向正确 + 量放量+超均量
+// + 实体≥ATR + 结构位穿透。增仓(OI)为或有加分项。
 export interface BreakoutSignal {
   type: "long" | "short";
   maCumulative: number;      // 30min MA 排列方向持续 K 数
@@ -19,7 +19,6 @@ export interface BreakoutSignal {
   expansionRate: number;     // 15min MACD 走扩倍率
   oiConfirmed: boolean;      // 增仓确认（+OI标注，不参与门控）
   level: number | null;      // H-010: 前期关键位价格（近30根最高/最低）
-  extAtr: number | null;     // H-010: 收盘距突破位延伸度（ATR倍数）
 }
 
 // H-005 MTF回踩信号：日线趋势 × 30min结构回踩状态机

@@ -96,29 +96,3 @@ function RegimeChip({ d }: { d: FuturesStatus }) {
     </div>
   );
 }
-
-function BoxItem({ d }: { d: FuturesStatus }) {
-  const sig = d.boxSignal!;
-  const chg = d.change >= 0 ? `+${d.change.toFixed(2)}%` : `${d.change.toFixed(2)}%`;
-  const isLong = sig.type === "long";
-
-  return (
-    <div className="flex items-center justify-between text-xs">
-      <div className="flex items-center gap-1.5">
-        <span className={`font-medium ${isLong ? "text-emerald-600" : "text-red-600"}`}>
-          {isLong ? "●" : "●"} {d.symbol}
-        </span>
-        <span className="text-stone-500">{chg}</span>
-      </div>
-      <div className="flex items-center gap-2 text-stone-500">
-        <span>
-          {isLong ? "下沿" : "上沿"}{sig.boundaryPrice}
-        </span>
-        <span className="text-stone-400">距{sig.distPct.toFixed(2)}%</span>
-        <span className="text-stone-300 text-[10px]">
-          [{sig.boxLower}~{sig.boxUpper}]
-        </span>
-      </div>
-    </div>
-  );
-}

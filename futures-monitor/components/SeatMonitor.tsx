@@ -183,6 +183,13 @@ export default function SeatMonitor() {
             <TrendingUp size={12} />
             黄金监控
           </Link>
+          <Link
+            href="/copper"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md font-medium transition-all text-stone-500 hover:text-orange-500 hover:bg-orange-50/70"
+          >
+            <Zap size={12} />
+            铜状态机
+          </Link>
         </header>
 
         {/* ── 统计条 ───────────────── */}

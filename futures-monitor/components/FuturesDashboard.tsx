@@ -217,6 +217,13 @@ export default function FuturesDashboard() {
             黄金监控
           </Link>
           <Link
+            href="/copper"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md font-medium transition-all text-stone-500 hover:text-orange-500 hover:bg-orange-50/70"
+          >
+            <Zap size={12} />
+            铜状态机
+          </Link>
+          <Link
             href="/seats"
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md font-medium transition-all text-stone-500 hover:text-purple-500 hover:bg-purple-50/70"
           >

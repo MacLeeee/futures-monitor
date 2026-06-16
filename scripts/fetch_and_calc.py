@@ -2244,6 +2244,7 @@ def _merge_positions_union(local_path: Path) -> None:
         return
 
     # 以 ID 为键合并：同 ID 取"已关闭"或"退出时间更晚"的版本
+    # 同状态 open 时，优先保留本地版本（本地有最新的止损/保本/移动止损更新）
     merged: dict[str, dict] = {}
     for p in remote_positions + local_positions:   # local 覆盖 remote（same ID）
         pid = p.get("id", "")
@@ -2258,8 +2259,26 @@ def _merge_positions_union(local_path: Path) -> None:
                 merged[pid] = p
             elif existing["status"] != "open" and p["status"] == "open":
                 pass  # 保留已有的已平仓版本
+            elif existing["status"] == "open" and p["status"] == "open":
+                # 同为 open：优先保留有止损更新（breakEvenMoved/trailingActive）的版本
+                # 或 stopLoss 更紧的版本（说明移动止损已经推进过）
+                ex_be = existing.get("breakEvenMoved") or existing.get("trailingActive")
+                p_be  = p.get("breakEvenMoved") or p.get("trailingActive")
+                if p_be and not ex_be:
+                    merged[pid] = p   # 本地版本有止损更新，远端没有 → 用本地
+                elif not p_be and ex_be:
+                    pass              # 远端有更新，本地没有 → 保留远端
+                elif p.get("stopLoss") is not None and existing.get("stopLoss") is not None:
+                    # 都有或都没有更新：优先保留止损更紧的版本
+                    direc = existing.get("direction", "long")
+                    if direc == "long":
+                        if p["stopLoss"] > existing["stopLoss"]:
+                            merged[pid] = p   # 做多止损更高 = 更紧
+                    else:
+                        if p["stopLoss"] < existing["stopLoss"]:
+                            merged[pid] = p   # 做空止损更低 = 更紧
             else:
-                # 同状态：取 exitTime 更晚（或 entryTime 更晚）的
+                # 同状态已平仓：取 exitTime 更晚（或 entryTime 更晚）的
                 def ts(pos):
                     return pos.get("exitTime") or pos.get("entryTime") or ""
                 if ts(p) > ts(existing):

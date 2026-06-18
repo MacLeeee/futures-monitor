@@ -1748,10 +1748,9 @@ def _manage_positions(merged: list[dict]) -> list[dict]:
         prev_low = d.get("prevLow", close or 0.0)
         prev_high = d.get("prevHigh", close or 0.0)
         if close and atr and _confirm_pending_breakout(p, d) and _can_open(positions, symbol, direction):
-            # MTF 门控：仅在允许突破入场时确认开仓
-            if not d.get("marketRegime", {}).get("allowBreakout", True):
-                print(f"[PENDING] {p.get('id')} MTF状态禁止突破入场（{d.get('marketRegime',{}).get('action','?')}），跳过确认")
-                continue
+            # MTF 仅作参考，不拦截交易
+            regime_info = d.get("marketRegime", {}).get("action", "?")
+            print(f"[PENDING] {p.get('id')} MTF参考: {regime_info}")
             pos = _open_position(symbol, direction, "breakout", close, atr, prev_low, prev_high)
             if pos:
                 pos["breakoutConfirm"] = {
@@ -1785,10 +1784,11 @@ def _manage_positions(merged: list[dict]) -> list[dict]:
         bo_sig = d.get("breakoutSignal")
         if bo_sig:
             direction = bo_sig.get("type", "long")
-            # MTF 门控：仅在允许突破入场时加入 pending
+            # MTF 仅作参考，不拦截交易
+            regime_info = d.get("marketRegime", {}).get("action", "?")
             if not d.get("marketRegime", {}).get("allowBreakout", True):
-                print(f"[GATE] {symbol} 突破信号被MTF拦截（{d.get('marketRegime',{}).get('action','?')}）")
-            elif _can_open(positions, symbol, direction) and not _has_pending_breakout(pending, symbol, direction):
+                print(f"[GATE] {symbol} MTF参考: {regime_info}（allowBreakout=False，但仍允许进入pending）")
+            if _can_open(positions, symbol, direction) and not _has_pending_breakout(pending, symbol, direction):
                 event = _make_pending_breakout(d, direction)
                 if event:
                     pending.append(event)

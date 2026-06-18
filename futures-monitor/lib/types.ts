@@ -69,7 +69,12 @@ export interface FuturesStatus {
   prevLow: number;        // 前一根K最低价
   prevHigh: number;       // 前一根K最高价
   prevClose: number;      // 前一根K收盘价
-  kdj30: {                // 30m KDJ 指标（突破后KD冷却确认用）
+  kdj30: {                // 30m KDJ 指标（保留兼容）
+    k: number;
+    d: number;
+    j: number;
+  };
+  kdj15?: {               // 15m KDJ 指标（突破后KD冷却确认用）
     k: number;
     d: number;
     j: number;
@@ -313,4 +318,41 @@ export interface GoldBusData {
     chg_60m: Record<string, number | null>;
     chg_240m: Record<string, number | null>;
   };
+}
+
+// ── A股科技板块轮动 ─────────────────────────────────────────────────
+
+export type TechRotationState = 3 | 2 | 1 | 0 | -1 | -2 | 9;
+export type TechRotationTrend = 2 | 1 | 0 | -1 | -2;
+
+export interface TechThemeRow {
+  name: string;
+  source: string | null;
+  rel5: number | null;
+  rel20: number | null;
+  rel60: number | null;
+  abs5: number | null;
+  trend: TechRotationTrend | null;
+  volR: number | null;
+  breadth: number | null;
+  score: number | null;
+  state: TechRotationState | null;
+  reason: number | null;
+  rel5_2: number | null;
+  score2: number | null;
+}
+
+export interface TechAttributionRow {
+  name: string;
+  score: number | null;
+  hint: string | null;
+}
+
+export interface TechRotationData {
+  generated: string;
+  data_date: string;
+  primary: string;
+  secondary: string | null;
+  themes: TechThemeRow[];
+  attribution: TechAttributionRow[];
 }

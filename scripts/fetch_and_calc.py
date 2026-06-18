@@ -908,6 +908,7 @@ def process_symbol(args: tuple) -> dict | None:
         close = round(last, 2)
         atr        = calc_atr(df_30m)
         kdj_30m    = calc_kdj(df_30m)
+        kdj_15m    = calc_kdj(df_15m)
         bar_time   = str(df_30m["time"].iloc[-1])
         cur_open   = round(float(df_30m["open"].iloc[-1]),  4)
         cur_low    = round(float(df_30m["low"].iloc[-1]),   4)
@@ -946,6 +947,7 @@ def process_symbol(args: tuple) -> dict | None:
             "prevHigh":        prev_high,
             "prevClose":       prev_close,
             "kdj30":           kdj_30m,
+            "kdj15":           kdj_15m,
             "ma":              ma_30m,
             "macd":            macd_15m,
             "volume":          vol_15m,
@@ -1433,9 +1435,9 @@ def _make_pending_breakout(d: dict, direction: str) -> dict | None:
 
 
 def _confirm_pending_breakout(pending: dict, d: dict) -> bool:
-    """30m KD 冷却 + 价格守住突破K实体50%位置。"""
+    """15m KD 冷却 + 价格守住突破K实体50%位置。"""
     close = d.get("price") or d.get("close")
-    kdj = d.get("kdj30") or {}
+    kdj = d.get("kdj15") or {}
     if not close or not kdj:
         return False
     k = kdj.get("k", 50.0)

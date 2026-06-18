@@ -1,0 +1,359 @@
+<!doctype html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>A股科技板块轮动监控器</title><style>
+:root{color-scheme:dark;}
+body{margin:0;background:#0d1117;color:#e6edf3;font-family:-apple-system,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;font-size:13px;}
+.wrap{padding:18px 22px;max-width:1280px;margin:0 auto;}
+h1{font-size:19px;margin:0 0 4px;}
+.meta{color:#8b949e;font-size:12px;margin-bottom:16px;line-height:1.6;}
+.meta code{background:#161b22;padding:1px 6px;border-radius:4px;color:#9ecbff;}
+h2{font-size:15px;margin:22px 0 8px;border-left:3px solid #2f81f7;padding-left:8px;}
+table{border-collapse:collapse;width:100%;margin-bottom:8px;}
+th,td{padding:6px 9px;text-align:center;border:1px solid #21262d;white-space:nowrap;}
+th{background:#161b22;color:#c9d1d9;font-weight:600;position:sticky;top:0;}
+td.name{text-align:left;font-weight:600;}
+td.left{text-align:left;color:#8b949e;}
+.c-strong{background:#196c2e;color:#fff;}
+.c-good{background:#1b5e57;color:#fff;}
+.c-neu{background:#21262d;color:#c9d1d9;}
+.c-weak{background:#5c2b2b;color:#fff;}
+.c-bad{background:#8b1a1a;color:#fff;}
+.c-hot{background:#a85b00;color:#fff;}
+.c-na{background:#161b22;color:#6e7681;}
+.s-hot{background:#a85b00;}.s-in{background:#196c2e;}.s-early{background:#1b5e57;}
+.s-neu{background:#30363d;}.s-out{background:#7a2222;}.s-dist{background:#8b1a1a;}.s-na{background:#161b22;color:#6e7681;}
+.pos{color:#3fb950;}.neg{color:#f85149;}
+.note{color:#6e7681;font-size:11px;margin-top:14px;line-height:1.7;border-top:1px solid #21262d;padding-top:10px;}
+#refresh-bar{position:fixed;bottom:0;left:0;right:0;background:#161b22;border-top:1px solid #21262d;padding:5px 22px;
+  font-size:11px;color:#8b949e;display:flex;align-items:center;gap:8px;z-index:100;}
+#refresh-bar .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+#refresh-bar .dot.live{background:#3fb950;box-shadow:0 0 5px #3fb950;}
+#refresh-bar .dot.idle{background:#6e7681;}
+#refresh-bar .countdown{color:#c9d1d9;font-variant-numeric:tabular-nums;}
+</style></head><body><div class="wrap">
+<h1>A股科技板块轮动监控器 <span style="color:#8b949e;font-size:13px;">v2.4-CN</span></h1>
+<div class="meta">生成时间：2026-06-18 00:17 &nbsp;|&nbsp; 数据日期：<code>20260617</code></div><h2>主题轮动评分</h2>
+<table><thead><tr>
+<th>主题</th>
+<th>5D相对</th><th>20D相对</th><th>60D相对</th>
+<th>绝对5D</th><th>趋势</th><th>量比</th><th>广度</th>
+<th>评分</th><th>状态</th><th>可能原因</th>
+</tr></thead><tbody><tr>
+<td class="name">半导体</td>
+<td class="neg">-2.29%</td><td class="pos">+1.17%</td><td class="pos">+5.26%</td>
+<td class="pos">+8.31%</td>
+<td>强</td>
+<td>1.10x</td>
+<td>—</td>
+<td class="c-neu">46</td>
+
+<td class="s-neu">中性观察</td>
+<td>Beta假强</td>
+</tr><tr>
+<td class="name">半导体设备</td>
+<td class="neg">-2.29%</td><td class="pos">+1.17%</td><td class="pos">+5.26%</td>
+<td class="pos">+8.31%</td>
+<td>强</td>
+<td>1.10x</td>
+<td>—</td>
+<td class="c-neu">46</td>
+
+<td class="s-neu">中性观察</td>
+<td>Beta假强</td>
+</tr><tr>
+<td class="name">AI算力/服务器</td>
+<td class="neg">-6.32%</td><td class="neg">-8.67%</td><td class="neg">-15.84%</td>
+<td class="pos">+3.84%</td>
+<td>弱</td>
+<td>1.02x</td>
+<td>—</td>
+<td class="c-bad">8</td>
+
+<td class="s-out">资金撤出</td>
+<td>Beta假强</td>
+</tr><tr>
+<td class="name">光模块/CPO</td>
+<td class="pos">+1.53%</td><td class="pos">+9.73%</td><td class="pos">+33.41%</td>
+<td class="pos">+12.55%</td>
+<td>强</td>
+<td>1.08x</td>
+<td>—</td>
+<td class="c-hot">66</td>
+
+<td class="s-hot">拥挤主升</td>
+<td>AI链条扩散</td>
+</tr><tr>
+<td class="name">PCB</td>
+<td class="pos">+3.91%</td><td class="pos">+18.14%</td><td class="pos">+33.24%</td>
+<td class="pos">+15.19%</td>
+<td>强</td>
+<td>1.28x</td>
+<td>—</td>
+<td class="c-hot">66</td>
+
+<td class="s-hot">拥挤主升</td>
+<td>AI链条扩散</td>
+</tr><tr>
+<td class="name">存储芯片</td>
+<td class="pos">+1.91%</td><td class="pos">+7.57%</td><td class="pos">+27.13%</td>
+<td class="pos">+12.97%</td>
+<td>强</td>
+<td>1.18x</td>
+<td>—</td>
+<td class="c-hot">74</td>
+
+<td class="s-hot">拥挤主升</td>
+<td>AI链条扩散</td>
+</tr><tr>
+<td class="name">液冷/温控</td>
+<td class="neg">-5.36%</td><td class="neg">-7.32%</td><td class="neg">-11.37%</td>
+<td class="pos">+4.92%</td>
+<td>弱</td>
+<td>1.02x</td>
+<td>—</td>
+<td class="c-bad">8</td>
+
+<td class="s-out">资金撤出</td>
+<td>Beta假强</td>
+</tr><tr>
+<td class="name">电力设备</td>
+<td class="neg">-5.51%</td><td class="neg">-7.59%</td><td class="neg">-12.50%</td>
+<td class="pos">+4.75%</td>
+<td>弱</td>
+<td>1.12x</td>
+<td>—</td>
+<td class="c-bad">8</td>
+
+<td class="s-out">资金撤出</td>
+<td>Beta假强</td>
+</tr><tr>
+<td class="name">AI应用</td>
+<td class="neg">-8.79%</td><td class="neg">-10.56%</td><td class="neg">-22.62%</td>
+<td class="pos">+1.11%</td>
+<td>弱</td>
+<td>0.93x</td>
+<td>—</td>
+<td class="c-bad">8</td>
+
+<td class="s-out">资金撤出</td>
+<td>Beta假强</td>
+</tr><tr>
+<td class="name">机器人</td>
+<td class="neg">-6.50%</td><td class="neg">-6.42%</td><td class="neg">-13.71%</td>
+<td class="pos">+3.65%</td>
+<td>弱</td>
+<td>1.01x</td>
+<td>—</td>
+<td class="c-bad">8</td>
+
+<td class="s-out">资金撤出</td>
+<td>Beta假强</td>
+</tr><tr>
+<td class="name">网络安全</td>
+<td class="neg">-8.27%</td><td class="neg">-12.91%</td><td class="neg">-26.01%</td>
+<td class="pos">+1.69%</td>
+<td>弱</td>
+<td>1.02x</td>
+<td>—</td>
+<td class="c-bad">8</td>
+
+<td class="s-out">资金撤出</td>
+<td>Beta假强</td>
+</tr><tr>
+<td class="name">云计算</td>
+<td class="neg">-9.15%</td><td class="neg">-14.07%</td><td class="neg">-26.24%</td>
+<td class="pos">+0.71%</td>
+<td>弱</td>
+<td>0.95x</td>
+<td>—</td>
+<td class="c-bad">8</td>
+
+<td class="s-out">资金撤出</td>
+<td>Beta假强</td>
+</tr></tbody></table><h2>资金轮动归因</h2>
+<table><thead><tr><th style="text-align:left">归因信号</th><th>分数</th><th style="text-align:left">核心依据</th></tr></thead>
+<tbody><tr>
+<td class="name">龙头失速→AI应用追赶</td>
+<td class="c-weak">30</td>
+<td class="left">AI应用/半导体 accel: -3.75%</td></tr><tr>
+<td class="name">AI算力扩散</td>
+<td class="c-weak">0</td>
+<td class="left">算力/半导体 accel: -1.69%</td></tr><tr>
+<td class="name">光模块/CPO 扩散</td>
+<td class="c-good">62</td>
+<td class="left">光模块/半导体 accel: 1.80%</td></tr><tr>
+<td class="name">PCB 扩散</td>
+<td class="c-good">65</td>
+<td class="left">PCB/半导体 accel: 2.15%</td></tr><tr>
+<td class="name">存储芯片扩散</td>
+<td class="c-good">65</td>
+<td class="left">存储/半导体 accel: 2.72%</td></tr><tr>
+<td class="name">液冷/电源扩散</td>
+<td class="c-weak">0</td>
+<td class="left">液冷/半导体 accel: -1.04%</td></tr><tr>
+<td class="name">AI应用追赶</td>
+<td class="c-weak">0</td>
+<td class="left">AI应用 accel: -6.15%</td></tr><tr>
+<td class="name">硬件拥挤出清</td>
+<td class="c-weak">37</td>
+<td class="left">半导体失速</td></tr><tr>
+<td class="name">月末/季末再平衡</td>
+<td class="c-weak">18</td>
+<td class="left">失速:2 / 修复:0</td></tr><tr>
+<td class="name">科技内部降风险</td>
+<td class="c-weak">35</td>
+<td class="left">走弱主题:9/12</td></tr></tbody></table><div id="refresh-bar">
+<span id="rf-dot" class="dot live"></span>
+<span id="rf-label">盘中</span>
+<span style="flex:1"></span>
+<span style="color:#6e7681">下次刷新</span>
+<span id="rf-cd" class="countdown">--:--</span>
+</div>
+<script>
+(function(){
+  const el = document.getElementById('refresh-bar');
+  const dot = document.getElementById('rf-dot');
+  const label = document.getElementById('rf-label');
+  const cd = document.getElementById('rf-cd');
+
+  const SESSIONS = [
+    [9,30, 11,30],  // 早盘
+    [13,0,  15,0],  // 午盘
+  ];
+  const REFRESH_MIN = 60;  // 交易时段每 60 分钟刷新
+
+  function bjNow() {
+    return new Date(new Date().toLocaleString('en-US', {timeZone:'Asia/Shanghai'}));
+  }
+
+  function isTradingDay(d) {
+    const day = d.getDay();
+    return day >= 1 && day <= 5;
+  }
+
+  function minutesSinceMidnight(d) {
+    return d.getHours() * 60 + d.getMinutes();
+  }
+
+  function inSession(now) {
+    const m = minutesSinceMidnight(now);
+    for (const [sh,sm, eh,em] of SESSIONS) {
+      const start = sh * 60 + sm;
+      const end   = eh * 60 + em;
+      if (m >= start && m < end) return {in:true, sessionEnd:end, nextStart:null};
+    }
+    // 找下一个 session 开始时间
+    for (const [sh,sm, eh,em] of SESSIONS) {
+      const start = sh * 60 + sm;
+      if (m < start) return {in:false, sessionEnd:null, nextStart:start};
+    }
+    return {in:false, sessionEnd:null, nextStart:null};  // 已过所有 session
+  }
+
+  function fmtHM(mins) {
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+  }
+
+  function nextRefreshTarget(now) {
+    const m = minutesSinceMidnight(now);
+    const s = inSession(now);
+
+    if (s.in) {
+      // 在交易时段内：下一个整点刷新（但不超过 session 结束）
+      const nextHour = (Math.floor(m / 60) + 1) * 60;
+      if (nextHour < s.sessionEnd) {
+        return {mins: nextHour, reason: '交易中'};
+      }
+      // 离 session 结束不足 1 小时，在 session 结束前刷新一次
+      if (s.sessionEnd - m >= 5) {
+        return {mins: s.sessionEnd, reason: '收盘前'};
+      }
+      // 太接近收盘，等下一 session
+    }
+
+    // 不在交易时段
+    if (!isTradingDay(now)) {
+      // 周末/节假日 → 下周一 9:30
+      let next = new Date(now);
+      next.setDate(next.getDate() + 1);
+      while (!isTradingDay(next)) next.setDate(next.getDate() + 1);
+      next.setHours(9, 30, 0, 0);
+      const deltaMin = Math.max(1, Math.round((next - now) / 60000));
+      return {mins: null, reason: '休市', deltaMin};
+    }
+
+    if (s.nextStart !== null) {
+      // 今天还有 session 没开始
+      return {mins: s.nextStart, reason: '等待开盘'};
+    }
+
+    // 今天已收盘 → 明天 9:30
+    let next = new Date(now);
+    next.setDate(next.getDate() + 1);
+    next.setHours(9, 30, 0, 0);
+    while (!isTradingDay(next)) next.setDate(next.getDate() + 1);
+    const deltaMin = Math.max(1, Math.round((next - now) / 60000));
+    return {mins: null, reason: '已收盘', deltaMin};
+  }
+
+  function updateUI() {
+    const now = bjNow();
+    const target = nextRefreshTarget(now);
+    const inTrading = inSession(now).in;
+
+    dot.className = 'dot ' + (inTrading ? 'live' : 'idle');
+    label.textContent = inTrading ? '盘中 · ' + target.reason : target.reason;
+
+    if (target.mins !== null) {
+      // 今天内会刷新，显示倒计时
+      const targetMin = target.mins;
+      const nowMin = minutesSinceMidnight(now);
+      let remain = targetMin - nowMin;
+      if (remain < 0) remain = 0;
+      cd.textContent = fmtHM(remain);
+    } else if (target.deltaMin !== undefined) {
+      // 跨天，显示大致等待时间
+      const h = Math.floor(target.deltaMin / 60);
+      const m = target.deltaMin % 60;
+      cd.textContent = h > 0 ? h + 'h' + (m ? m + 'm' : '') : m + 'm';
+    } else {
+      cd.textContent = '--:--';
+    }
+    // 状态栏变灰提示
+    el.style.opacity = inTrading ? '1' : '0.7';
+  }
+
+  function scheduleRefresh() {
+    updateUI();
+    // 每 30 秒更新一次倒计时显示
+    // 实际刷新由 setTimeout 精确控制
+    const now = bjNow();
+    const target = nextRefreshTarget(now);
+    let delayMs;
+
+    if (target.mins !== null) {
+      const targetMin = target.mins;
+      const nowMin = minutesSinceMidnight(now);
+      delayMs = Math.max(10000, (targetMin - nowMin) * 60000);
+      // 加上秒数修正，让刷新发生在目标分钟的第 0 秒附近
+      delayMs -= now.getSeconds() * 1000;
+    } else {
+      // 下次开盘才刷新，每 5 分钟检查一次
+      delayMs = 5 * 60000;
+    }
+
+    // 设置刷新定时器
+    clearTimeout(window._refreshTimer);
+    window._refreshTimer = setTimeout(() => {
+      location.reload();
+    }, delayMs);
+  }
+
+  // 每 30 秒更新 UI
+  setInterval(updateUI, 30000);
+  scheduleRefresh();
+})();
+</script>
+</div></body></html>

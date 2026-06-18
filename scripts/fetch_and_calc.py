@@ -1712,7 +1712,7 @@ def _manage_positions(merged: list[dict]) -> list[dict]:
     """
     主入口：
     1. 检查现有 open 持仓是否触及 SL/TP
-    2. 突破信号先进入 pending，等待 30m KD 冷却后二次确认
+    2. 突破信号先进入 pending，等待 15m KD 冷却后二次确认
     3. 回踩信号仍即时新建持仓
     3. 写回 positions.json
 
@@ -1761,7 +1761,7 @@ def _manage_positions(merged: list[dict]) -> list[dict]:
                     "breakoutClose": p.get("breakoutClose"),
                     "triggerLevel": p.get("triggerLevel"),
                     "barsWaited": p.get("barsWaited", 0),
-                    "confirmRule": "30m_kd_cool_hold_body50",
+                    "confirmRule": "15m_kd_cool_hold_body50",
                 }
                 positions.append(pos)
                 new_opened.append(pos)

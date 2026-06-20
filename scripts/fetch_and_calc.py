@@ -1173,58 +1173,6 @@ def build_trend_ready_message(data: list[dict], bj_time: str,
              "💡 突破策略关注入场机会",
              sep]
     return "\n".join(lines)
-def build_dip_message(data: list[dict], bj_time: str) -> str | None:
-    """构建抄底信号推送文本。"""
-    dips = [d for d in data if d.get("dipSignal")]
-    if not dips:
-        return None
-    ma20_dips = [d for d in dips if d["dipSignal"]["type"] == "MA20"]
-    ma60_dips = [d for d in dips if d["dipSignal"]["type"] == "MA60"]
-
-    def fmt_dip(d: dict) -> str:
-        sig  = d["dipSignal"]
-        chg  = f"+{d['change']:.2f}%" if d["change"] >= 0 else f"{d['change']:.2f}%"
-        slp  = f"+{d['ma']['slope20Pct']:.3f}%" if d['ma']['slope20Pct'] >= 0 else f"{d['ma']['slope20Pct']:.3f}%"
-        return (f"  ↩ {d['symbol']}({d['category']}) {chg}"
-                f"  距{sig['type']}: {sig['distPct']:.3f}%"
-                f"  斜率: {slp}/3K"
-                f"  MACD死叉×{d['macd']['cumulative']}")
-
-    lines = [f"<b>🎯 抄底信号 {bj_time}</b>"]
-    if ma20_dips:
-        lines.append("\n🟦 <b>MA20 抄底</b>（急速上行≥45°·收盘触及MA20）")
-        lines.extend(fmt_dip(d) for d in ma20_dips)
-    if ma60_dips:
-        lines.append("\n🟩 <b>MA60 抄底</b>（缓慢上行&lt;45°·收盘触及MA60）")
-        lines.extend(fmt_dip(d) for d in ma60_dips)
-    return "\n".join(lines)
-
-
-def build_strategy_message(data: list[dict], bj_time: str) -> str | None:
-    """构建回踩策略信号推送文本。"""
-    longs  = [d for d in data if d.get("strategySignal") and d["strategySignal"]["type"] == "long"]
-    shorts = [d for d in data if d.get("strategySignal") and d["strategySignal"]["type"] == "short"]
-    if not longs and not shorts:
-        return None
-
-    def fmt_strat(d: dict) -> str:
-        sig = d["strategySignal"]
-        chg = f"+{d['change']:.2f}%" if d["change"] >= 0 else f"{d['change']:.2f}%"
-        dma = f"日MA20={sig['dailyMa20']}" if sig.get("dailyMa20") else "日MA20=N/A"
-        return (f"  {d['symbol']}({d['category']}) {chg}"
-                f"  回踩{sig['bounceAt']}: {sig['distPct']:.3f}%  {dma}"
-                f"  MACD×{d['macd']['cumulative']}")
-
-    lines = [f"<b>📐 回踩策略信号 {bj_time}</b>"]
-    if longs:
-        lines.append("\n🟢 <b>做多回踩</b>（30m多头排列·回踩均线·MACD金叉扩口·放量·日MA20上方）")
-        lines.extend(fmt_strat(d) for d in longs)
-    if shorts:
-        lines.append("\n🔴 <b>做空反抽</b>（30m空头排列·反抽均线·MACD死叉扩口·放量·日MA20下方）")
-        lines.extend(fmt_strat(d) for d in shorts)
-    return "\n".join(lines)
-
-
 def build_position_opened_message(new_positions: list[dict], bj_time: str) -> str | None:
     """
     开仓确认推送格式：

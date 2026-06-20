@@ -1,0 +1,8 @@
+# 铜宝宝巴士 · Python 版依赖
+# 核心:yfinance 为主数据源(全球跨资产,含 USDCLP=CLP=X)
+yfinance>=0.2.40
+pandas>=2.0
+numpy>=1.24
+
+# 中国/供给端升级(沪铜期限结构、铜库存)。装不上可注释掉,程序会自动降级。
+akshare>=1.13.0

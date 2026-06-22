@@ -51,13 +51,6 @@ run_once() {
         log "  ⚠️ 铜状态机失败（非致命，继续后续步骤）"
     fi
 
-    # ── 4. 科技板块轮动 ─────────────────────────────────────
-    if python3 "$TECH_ROTATION_SCRIPT" --out "$DATA_DIR/tech.html" --json "$DATA_DIR/tech_rotation.json" 2>/dev/null; then
-        log "  ✓ 科技轮动完成"
-    else
-        log "  ⚠️ 科技轮动失败（非致命，继续后续步骤）"
-    fi
-
     cd "$REPO_DIR"
 
     # ── Git 健康检查：清理上次失败残留，确保在 main 分支（非 detached HEAD）──
@@ -67,7 +60,7 @@ run_once() {
     git symbolic-ref HEAD &>/dev/null || git checkout main 2>/dev/null || true
 
     # 暂存所有数据文件
-    git add "$DATA_DIR/data.json" "$DATA_DIR/data_daily.json" "$DATA_DIR/gold_bus.json" "$DATA_DIR/copper_bus.json" "$DATA_DIR/seat_positions.json" "$DATA_DIR/positions.json" "$DATA_DIR/pending_breakouts.json" "$DATA_DIR/tech.html" "$DATA_DIR/tech_rotation.json" 2>/dev/null || true
+    git add "$DATA_DIR/data.json" "$DATA_DIR/data_daily.json" "$DATA_DIR/gold_bus.json" "$DATA_DIR/copper_bus.json" "$DATA_DIR/seat_positions.json" "$DATA_DIR/positions.json" "$DATA_DIR/pending_breakouts.json" 2>/dev/null || true
     if git diff --staged --quiet; then
         log "✓ 数据无变化，跳过 commit"
         return 0
@@ -79,8 +72,8 @@ run_once() {
     git fetch origin main
     git merge origin/main --no-edit -X ours 2>/dev/null || {
         log "⚠️  merge 冲突，强制保留本地数据文件"
-        git checkout HEAD -- "$DATA_DIR/data.json" "$DATA_DIR/data_daily.json" "$DATA_DIR/gold_bus.json" "$DATA_DIR/copper_bus.json" "$DATA_DIR/positions.json" "$DATA_DIR/seat_positions.json" "$DATA_DIR/pending_breakouts.json" "$DATA_DIR/tech.html" "$DATA_DIR/tech_rotation.json"
-        git add "$DATA_DIR/data.json" "$DATA_DIR/data_daily.json" "$DATA_DIR/gold_bus.json" "$DATA_DIR/copper_bus.json" "$DATA_DIR/positions.json" "$DATA_DIR/seat_positions.json" "$DATA_DIR/pending_breakouts.json" "$DATA_DIR/tech.html" "$DATA_DIR/tech_rotation.json"
+        git checkout HEAD -- "$DATA_DIR/data.json" "$DATA_DIR/data_daily.json" "$DATA_DIR/gold_bus.json" "$DATA_DIR/copper_bus.json" "$DATA_DIR/positions.json" "$DATA_DIR/seat_positions.json" "$DATA_DIR/pending_breakouts.json"
+        git add "$DATA_DIR/data.json" "$DATA_DIR/data_daily.json" "$DATA_DIR/gold_bus.json" "$DATA_DIR/copper_bus.json" "$DATA_DIR/positions.json" "$DATA_DIR/seat_positions.json" "$DATA_DIR/pending_breakouts.json"
         GIT_EDITOR=true git merge --continue 2>/dev/null || git merge --abort 2>/dev/null || true
     }
 

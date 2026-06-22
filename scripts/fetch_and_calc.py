@@ -1741,9 +1741,26 @@ def _manage_positions(merged: list[dict]) -> list[dict]:
             if _can_open(positions, symbol, direction) and not _has_pending_breakout(pending, symbol, direction):
                 event = _make_pending_breakout(d, direction)
                 if event:
-                    pending.append(event)
-                    print(f"[PENDING] 新增突破等待 {event['id']} "
-                          f"level={event['triggerLevel']} maxBars={event['maxWaitBars']}")
+                    # 如果 KD 已经冷却到位，直接开仓，不等下一根 K 线
+                    if _confirm_pending_breakout(event, d):
+                        pos = _open_position(symbol, direction, "breakout", close, atr, prev_low, prev_high)
+                        if pos:
+                            pos["breakoutConfirm"] = {
+                                "breakoutTime": event.get("breakoutTime"),
+                                "breakoutOpen": event.get("breakoutOpen"),
+                                "breakoutClose": event.get("breakoutClose"),
+                                "triggerLevel": event.get("triggerLevel"),
+                                "barsWaited": 0,
+                                "confirmRule": "15m_kd_cool_hold_body50",
+                            }
+                            positions.append(pos)
+                            new_opened.append(pos)
+                            print(f"[PENDING] {event['id']} KD已冷却，直接开仓 {pos['id']} "
+                                  f"SL={pos['stopLoss']}  TP={pos['takeProfit']}")
+                    else:
+                        pending.append(event)
+                        print(f"[PENDING] 新增突破等待 {event['id']} "
+                              f"level={event['triggerLevel']} maxBars={event['maxWaitBars']}")
 
         pb_sig = d.get("pullbackSignal")
         if pb_sig:

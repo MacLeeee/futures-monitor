@@ -1538,6 +1538,20 @@ def _open_position(symbol: str, direction: str, signal_type: str,
     }
 
 
+def _entry_in_current_bar(entry_time: str | None, bar_time: str | None,
+                         bar_minutes: int = 30) -> bool:
+    """判断入场时间是否落在当前K线范围内（防止入场前tick误杀）。"""
+    if not entry_time or not bar_time:
+        return False
+    try:
+        entry_dt = datetime.strptime(entry_time, "%Y-%m-%d %H:%M")
+        bar_dt   = datetime.strptime(bar_time, "%Y-%m-%d %H:%M:%S")
+        bar_start = bar_dt - timedelta(minutes=bar_minutes)
+        return bar_start <= entry_dt <= bar_dt
+    except Exception:
+        return False
+
+
 def _check_and_close(positions: list[dict],
                      current_map: dict[str, dict]) -> list[dict]:
     """
@@ -1598,7 +1612,9 @@ def _check_and_close(positions: list[dict],
                     sl = new_sl
 
             # ── 出场判断（用最低价触碰止损）─────────────────
-            hit_sl = cur_low <= sl
+            # 入场K线内不检查止损（curLow/curHigh可能包含入场前的tick）
+            entry_is_this_bar = _entry_in_current_bar(pos.get("entryTime"), sym_data.get("barTime"))
+            hit_sl = (not entry_is_this_bar) and cur_low <= sl
             # 正常运行时 ATR > 0，移动止损负责止盈。hit_tp 仅在 ATR 缺失时作为兜底安全网
             hit_tp = (not trailing) and cur_atr <= 0 and cur_high >= pos["takeProfit"]
 
@@ -1624,7 +1640,9 @@ def _check_and_close(positions: list[dict],
                     sl = new_sl
 
             # ── 出场判断（用最高价触碰止损）─────────────────
-            hit_sl = cur_high >= sl
+            # 入场K线内不检查止损（curLow/curHigh可能包含入场前的tick）
+            entry_is_this_bar = _entry_in_current_bar(pos.get("entryTime"), sym_data.get("barTime"))
+            hit_sl = (not entry_is_this_bar) and cur_high >= sl
             # 正常运行时 ATR > 0，移动止损负责止盈。hit_tp 仅在 ATR 缺失时作为兜底安全网
             hit_tp = (not trailing) and cur_atr <= 0 and cur_low <= pos["takeProfit"]
 

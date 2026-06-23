@@ -11,7 +11,7 @@ import FuturesTable from "./FuturesTable";
 import FilterBar, { StateFilter } from "./FilterBar";
 import SignalTabs from "./SignalTabs";
 import CurrentPositions from "./CurrentPositions";
-import { Database, WifiOff, TrendingUp, Zap, Users, Cpu, BarChart3 } from "lucide-react";
+import { Database, WifiOff, TrendingUp, Zap, Users, BarChart3 } from "lucide-react";
 import Link from "next/link";
 
 const AUTO_REFRESH_INTERVAL = 30 * 60 * 1000;
@@ -230,13 +230,7 @@ export default function FuturesDashboard() {
             <Users size={12} />
             席位监控
           </Link>
-          <Link
-            href="/tech.html"
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md font-medium transition-all text-stone-500 hover:text-purple-500 hover:bg-purple-50/70"
-          >
-            <Cpu size={12} />
-            科技轮动
-          </Link>
+
           <Link
             href="/trades"
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md font-medium transition-all text-stone-500 hover:text-emerald-500 hover:bg-emerald-50/70"

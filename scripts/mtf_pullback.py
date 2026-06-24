@@ -343,44 +343,11 @@ def evaluate(symbol: str, df_daily: pd.DataFrame, df_30m: pd.DataFrame,
     if not z:
         return None
 
-    # ── 状态3 触发 ──
-    if detect_sweep(direction, df_30m, q, atr_30, cfg):
-        trigger_type = "sweep"
-    elif check_trigger(direction, df_30m, macd_15m, vol_15m):
-        trigger_type = "structure_macd"
-    else:
-        return None
+    # ── 状态3 触发（已移除：回踩区域命中即视为触发就绪）──
+    trigger_type = "zone_ready"
 
-    # ── TET 闸门 ──
+    # ── TET 闸门（已移除）──
     tet: dict | None = None
-    if cfg.get("use_tet"):
-        ctx = compute_tet_context(df_daily, df_30m,
-                                  score_version=cfg.get("trend_score_version", 2),
-                                  variant=cfg.get("tet_variant", "V1"))
-        ei = ctx["eiSeries"]
-        ats, ti = ctx["ats"], ctx["ti"]
-        pb_window = min(q["pbBars"] + 1, len(ei))
-        ei_pb_min = float(ei.iloc[-pb_window:].min())
-        ei_pb_max = float(ei.iloc[-pb_window:].max())
-        if direction == "long":
-            if ats < cfg["ats_min"]:
-                return None
-            if ei_pb_min > -cfg["ei_washout"]:
-                return None
-            if ti < cfg["ti_entry"]:
-                return None
-        else:
-            if ats > -cfg["ats_min"]:
-                return None
-            if ei_pb_max < cfg["ei_washout"]:
-                return None
-            if ti > -cfg["ti_entry"]:
-                return None
-        tet = {"ats": ats, "trendNow": ctx["trendNow"], "eiNow": ctx["eiNow"],
-               "eiPbExtreme": round(ei_pb_min if direction == "long" else ei_pb_max, 4),
-               "ti": ti,
-               "variant": cfg.get("tet_variant", "V1"),
-               "allVariants": ctx["variants"]}
 
     if direction == "long":
         stop = q["pbExtreme"] - cfg["stop_buffer_atr"] * atr_30

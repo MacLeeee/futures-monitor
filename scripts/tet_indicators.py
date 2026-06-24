@@ -341,7 +341,9 @@ def compute_tet_context(
     if variant not in ats_fns:
         variant = "V1"
     ats = ats_fns[variant](df_daily, df_30m)
-    ei_series = ei_cache.get(variant) or ei_fns[variant](df_30m)
+    ei_series = ei_cache.get(variant)
+    if ei_series is None:
+        ei_series = ei_fns[variant](df_30m)
     ei_now = round(float(ei_series.iloc[-1]), 4)
     ti = round(ats - ei_now, 4)
 

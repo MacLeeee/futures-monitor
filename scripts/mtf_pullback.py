@@ -307,6 +307,46 @@ def check_trigger(direction: str, df_30m: pd.DataFrame,
     return structure and macd_ok and vol_ok
 
 
+def check_trigger_relaxed(direction: str, df_30m: pd.DataFrame,
+                          macd_15m: dict, vol_15m: dict) -> tuple[bool, str]:
+    """
+    放松版右侧触发（v2.1 — 2026-06-24）:
+    原版 strict 门槛太高导致一直不触发，此版本降低要求：
+      - MACD: 方向对即可，不要求 rapidExpanding
+      - 量: 不缩量即可（Shrink→跳过），不强制 Surge
+      - 结构: 价格止跌/止涨（long: close > prev_low; short: close < prev_high）
+    返回 (是否通过, 触发类型标签)
+    """
+    close = float(df_30m["close"].iloc[-1])
+    prev_high = float(df_30m["high"].iloc[-2])
+    prev_low = float(df_30m["low"].iloc[-2])
+
+    # ── MACD 方向（放宽：不要求 rapidExpanding）──
+    if direction == "long":
+        macd_ok = macd_15m.get("sign") == "positive"
+    else:
+        macd_ok = macd_15m.get("sign") == "negative"
+    if not macd_ok:
+        return False, "macd_direction"
+
+    # ── 成交量（放宽：不缩量即可）──
+    vol_shrink = vol_15m.get("status") == "Shrink"
+    if vol_shrink:
+        return False, "volume_shrink"
+
+    # ── 价格结构（放宽：止跌/止涨）──
+    if direction == "long":
+        # 多头：当前 bar 不再创新低 → 回踩止跌
+        if close <= prev_low:
+            return False, "still_falling"
+    else:
+        # 空头：当前 bar 不再创新高 → 反抽止涨
+        if close >= prev_high:
+            return False, "still_rising"
+
+    return True, "right_side_relaxed"
+
+
 # ── 顶层评估 ─────────────────────────────────────────────────
 
 def evaluate(symbol: str, df_daily: pd.DataFrame, df_30m: pd.DataFrame,
@@ -343,8 +383,10 @@ def evaluate(symbol: str, df_daily: pd.DataFrame, df_30m: pd.DataFrame,
     if not z:
         return None
 
-    # ── 状态3 触发（已移除：回踩区域命中即视为触发就绪）──
-    trigger_type = "zone_ready"
+    # ── 状态3 右侧触发（放松版 v2.1）──
+    trigger_ok, trigger_type = check_trigger_relaxed(direction, df_30m, macd_15m, vol_15m)
+    if not trigger_ok:
+        return None
 
     # ── TET 闸门（已移除）──
     tet: dict | None = None

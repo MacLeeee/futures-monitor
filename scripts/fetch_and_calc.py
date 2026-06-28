@@ -1298,6 +1298,9 @@ def main():
     bo_msg = build_breakout_message(merged, bj_time)
     if bo_msg:
         messages.append(bo_msg)
+    pb_msg = build_pullback_message(merged, bj_time)
+    if pb_msg:
+        messages.append(pb_msg)
     ok_msg = build_position_opened_message(new_opened, bj_time)
     if ok_msg:
         messages.append(ok_msg)

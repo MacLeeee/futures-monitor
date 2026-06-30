@@ -37,6 +37,13 @@ run_once() {
     python3 "$SCRIPT"
     log "  ✓ 期货数据抓取完成"
 
+    # ── 1b. 反指交易（基于 data.json 信号反向开仓）───────────
+    if python3 "$REPO_DIR/scripts/inverse_trader.py" 2>/dev/null; then
+        log "  ✓ 反指交易完成"
+    else
+        log "  ⚠️ 反指交易失败（非致命）"
+    fi
+
     # ── 2. 黄金宝宝巴士 ──────────────────────────────────────
     if python3 "$GOLD_BUS_SCRIPT" 2>/dev/null; then
         log "  ✓ 黄金监控完成"
@@ -60,7 +67,7 @@ run_once() {
     git symbolic-ref HEAD &>/dev/null || git checkout main 2>/dev/null || true
 
     # 暂存所有数据文件
-    git add "$DATA_DIR/data.json" "$DATA_DIR/data_daily.json" "$DATA_DIR/gold_bus.json" "$DATA_DIR/copper_bus.json" "$DATA_DIR/seat_positions.json" "$DATA_DIR/positions.json" "$DATA_DIR/pending_breakouts.json" 2>/dev/null || true
+    git add "$DATA_DIR/data.json" "$DATA_DIR/data_daily.json" "$DATA_DIR/gold_bus.json" "$DATA_DIR/copper_bus.json" "$DATA_DIR/seat_positions.json" "$DATA_DIR/positions.json" "$DATA_DIR/pending_breakouts.json" "$DATA_DIR/inverse_positions.json" 2>/dev/null || true
     if git diff --staged --quiet; then
         log "✓ 数据无变化，跳过 commit"
         return 0
@@ -72,8 +79,8 @@ run_once() {
     git fetch origin main
     git merge origin/main --no-edit -X ours 2>/dev/null || {
         log "⚠️  merge 冲突，强制保留本地数据文件"
-        git checkout HEAD -- "$DATA_DIR/data.json" "$DATA_DIR/data_daily.json" "$DATA_DIR/gold_bus.json" "$DATA_DIR/copper_bus.json" "$DATA_DIR/positions.json" "$DATA_DIR/seat_positions.json" "$DATA_DIR/pending_breakouts.json"
-        git add "$DATA_DIR/data.json" "$DATA_DIR/data_daily.json" "$DATA_DIR/gold_bus.json" "$DATA_DIR/copper_bus.json" "$DATA_DIR/positions.json" "$DATA_DIR/seat_positions.json" "$DATA_DIR/pending_breakouts.json"
+        git checkout HEAD -- "$DATA_DIR/data.json" "$DATA_DIR/data_daily.json" "$DATA_DIR/gold_bus.json" "$DATA_DIR/copper_bus.json" "$DATA_DIR/positions.json" "$DATA_DIR/seat_positions.json" "$DATA_DIR/pending_breakouts.json" "$DATA_DIR/inverse_positions.json"
+        git add "$DATA_DIR/data.json" "$DATA_DIR/data_daily.json" "$DATA_DIR/gold_bus.json" "$DATA_DIR/copper_bus.json" "$DATA_DIR/positions.json" "$DATA_DIR/seat_positions.json" "$DATA_DIR/pending_breakouts.json" "$DATA_DIR/inverse_positions.json"
         GIT_EDITOR=true git merge --continue 2>/dev/null || git merge --abort 2>/dev/null || true
     }
 

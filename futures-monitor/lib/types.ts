@@ -163,13 +163,14 @@ export interface MarketRegime {
 export type PositionStatus = "open" | "closed_sl" | "closed_tp";
 export type PositionDirection = "long" | "short";
 export type SignalType = "breakout" | "pullback";
-export type ExitReason = "initial_sl" | "break_even_sl" | "trailing_sl" | "fixed_tp";
+export type ExitReason = "initial_sl" | "break_even_sl" | "trailing_sl" | "fixed_tp" | "inverse_sl" | "inverse_tp";
 
 export interface Position {
   id: string;
   symbol: string;
   direction: PositionDirection;
   signalType: SignalType;
+  source?: "inverse";           // 反指交易标记
   entryTime: string;          // "2026-03-30 13:33"
   entryPrice: number;
   atr: number;

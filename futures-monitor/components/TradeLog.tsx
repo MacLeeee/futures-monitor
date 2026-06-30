@@ -357,6 +357,7 @@ const SIG_LABEL: Record<string, string> = {
   pullback: "回踩",
   box:      "箱体",
 };
+const isInverse = (pos: Position) => pos.source === "inverse" || pos.id?.startsWith("INV-");
 
 type FilterStatus = "all" | PositionStatus;
 type FilterDir    = "all" | "long" | "short";
@@ -375,15 +376,37 @@ export default function TradeLog() {
     setLoading(true);
     try {
       const isLocal = typeof window !== "undefined" && window.location.port !== "";
-      const url = isLocal
-        ? `/positions.json?t=${Date.now()}`
-        : `${GITHUB_RAW}/positions.json?t=${Date.now()}`;
-      const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json: PositionsData = await res.json();
-      setData(json);
-      if (json.updatedAt) {
-        const d = new Date(json.updatedAt);
+      const base = isLocal ? "" : GITHUB_RAW;
+
+      // 并行加载原系统 + 反指系统持仓
+      const [resMain, resInv] = await Promise.all([
+        fetch(`${base}/positions.json?t=${Date.now()}`, { signal: AbortSignal.timeout(15000) }),
+        fetch(`${base}/inverse_positions.json?t=${Date.now()}`, { signal: AbortSignal.timeout(15000) }).catch(() => null),
+      ]);
+
+      if (!resMain.ok) throw new Error(`HTTP ${resMain.status}`);
+      const jsonMain: PositionsData = await resMain.json();
+      let allPositions = jsonMain.positions ?? [];
+
+      // 合并反指持仓
+      if (resInv && resInv.ok) {
+        const jsonInv: PositionsData = await resInv.json();
+        const invPositions = (jsonInv.positions ?? []).map((p: Position) => ({
+          ...p,
+          source: "inverse" as const,
+        }));
+        allPositions = [...allPositions, ...invPositions];
+      }
+
+      const merged: PositionsData = {
+        updatedAt: jsonMain.updatedAt,
+        openCount: allPositions.filter((p: Position) => p.status === "open").length,
+        totalCount: allPositions.length,
+        positions: allPositions,
+      };
+      setData(merged);
+      if (jsonMain.updatedAt) {
+        const d = new Date(jsonMain.updatedAt);
         setUpdatedAt(
           d.toLocaleString("zh-CN", { timeZone: "Asia/Shanghai", hour12: false })
         );
@@ -609,7 +632,14 @@ export default function TradeLog() {
                       <td className={`px-3 py-2 font-medium ${DIR_COLOR[pos.direction]}`}>
                         {DIR_LABEL[pos.direction]}
                       </td>
-                      <td className="px-3 py-2 text-stone-500">{SIG_LABEL[pos.signalType] ?? pos.signalType}</td>
+                      <td className="px-3 py-2 text-stone-500">
+                        {SIG_LABEL[pos.signalType] ?? pos.signalType}
+                        {isInverse(pos) && (
+                          <span className="ml-1 rounded bg-amber-100 px-1 py-0.5 text-[9px] font-medium text-amber-700">
+                            反指
+                          </span>
+                        )}
+                      </td>
                       <td className="px-3 py-2 text-right text-stone-500">{mult}{unit}</td>
                       <td className="px-3 py-2 text-right text-stone-400">
                         {mpl.toLocaleString("zh-CN", { maximumFractionDigits: 0 })}
@@ -653,7 +683,14 @@ function ClosedTradeRow({ m }: { m: TradeMetrics }) {
       <td className={`px-3 py-2 font-medium ${DIR_COLOR[pos.direction]}`}>
         {DIR_LABEL[pos.direction]}
       </td>
-      <td className="px-3 py-2 text-stone-500">{SIG_LABEL[pos.signalType] ?? pos.signalType}</td>
+      <td className="px-3 py-2 text-stone-500">
+        {SIG_LABEL[pos.signalType] ?? pos.signalType}
+        {isInverse(pos) && (
+          <span className="ml-1 rounded bg-amber-100 px-1 py-0.5 text-[9px] font-medium text-amber-700">
+            反指
+          </span>
+        )}
+      </td>
       <td className="px-3 py-2 text-right text-stone-500">{mult}{unit}</td>
       <td className="px-3 py-2 text-right text-stone-500">
         {marginPerLot.toLocaleString("zh-CN", { maximumFractionDigits: 0 })}

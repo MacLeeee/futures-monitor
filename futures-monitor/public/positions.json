@@ -1,7 +1,7 @@
 {
-  "updatedAt": "2026-07-01T03:01:03.000Z",
-  "openCount": 4,
-  "totalCount": 227,
+  "updatedAt": "2026-07-01T03:15:53.000Z",
+  "openCount": 5,
+  "totalCount": 228,
   "positions": [
     {
       "id": "白银-L-20260407214545",
@@ -4150,19 +4150,20 @@
       "entryTime": "2026-06-29 21:46",
       "entryPrice": 3309.0,
       "atr": 6.8571,
-      "stopLoss": 3309.0,
+      "stopLoss": 3301.5715,
       "initialStopLoss": 3323.4286,
       "takeProfit": 3280.1428,
       "riskDist": 14.4286,
       "initialRiskDist": 14.4286,
-      "trailingActive": false,
+      "trailingActive": true,
       "breakEvenMoved": true,
       "exitReason": null,
       "status": "open",
       "exitTime": null,
       "exitPrice": null,
       "pnl": null,
-      "pnlPct": null
+      "pnlPct": null,
+      "trailingActivatedAt": "2026-07-01 11:15"
     },
     {
       "id": "铁矿石-S-20260629220102",
@@ -4289,6 +4290,36 @@
       "exitPrice": null,
       "pnl": null,
       "pnlPct": null
+    },
+    {
+      "id": "棉花-L-20260701111551",
+      "symbol": "棉花",
+      "direction": "long",
+      "signalType": "breakout",
+      "entryTime": "2026-07-01 11:15",
+      "entryPrice": 16185.0,
+      "atr": 47.8571,
+      "stopLoss": 16089.2858,
+      "initialStopLoss": 16089.2858,
+      "takeProfit": 16376.4284,
+      "riskDist": 95.7142,
+      "initialRiskDist": 95.7142,
+      "trailingActive": false,
+      "breakEvenMoved": false,
+      "exitReason": null,
+      "status": "open",
+      "exitTime": null,
+      "exitPrice": null,
+      "pnl": null,
+      "pnlPct": null,
+      "breakoutConfirm": {
+        "breakoutTime": "2026-07-01 11:15:00",
+        "breakoutOpen": 16105.0,
+        "breakoutClose": 16185.0,
+        "triggerLevel": 16145.0,
+        "barsWaited": 0,
+        "confirmRule": "15m_kd_cool_hold_body50"
+      }
     }
   ]
 }

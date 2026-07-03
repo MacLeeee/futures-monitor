@@ -1,7 +1,7 @@
 {
-  "updatedAt": "2026-07-02T15:46:06.000Z",
+  "updatedAt": "2026-07-03T01:19:26.000Z",
   "openCount": 1,
-  "totalCount": 6,
+  "totalCount": 7,
   "positions": [
     {
       "id": "INV-铁矿石-L-20260630214637",
@@ -110,12 +110,12 @@
       "initialStopLoss": 16280.7142,
       "trailingActive": false,
       "breakEvenMoved": false,
-      "status": "open",
-      "exitReason": null,
-      "exitTime": null,
-      "exitPrice": null,
-      "pnl": null,
-      "pnlPct": null,
+      "status": "closed_tp",
+      "exitReason": "inverse_tp",
+      "exitTime": "2026-07-03 09:19",
+      "exitPrice": 16089.2858,
+      "pnl": 95.7142,
+      "pnlPct": 0.5914,
       "triggerInfo": {
         "originalSignal": "breakout",
         "originalDirection": "long",
@@ -181,6 +181,36 @@
         "originalDirection": "short",
         "trigger": "right_side_relaxed",
         "zone": "fib_0.5"
+      }
+    },
+    {
+      "id": "INV-黄金-S-20260703091926",
+      "symbol": "黄金",
+      "direction": "short",
+      "originalDirection": "long",
+      "signalType": "breakout",
+      "source": "inverse",
+      "entryTime": "2026-07-03 09:19",
+      "entryPrice": 913.2,
+      "atr": 4.5771,
+      "stopLoss": 922.3542,
+      "takeProfit": 904.0458,
+      "riskDist": 9.1542,
+      "initialRiskDist": 9.1542,
+      "initialStopLoss": 922.3542,
+      "trailingActive": false,
+      "breakEvenMoved": false,
+      "status": "open",
+      "exitReason": null,
+      "exitTime": null,
+      "exitPrice": null,
+      "pnl": null,
+      "pnlPct": null,
+      "triggerInfo": {
+        "originalSignal": "breakout",
+        "originalDirection": "long",
+        "macdSign": "positive",
+        "expansionRate": -1.4
       }
     }
   ]

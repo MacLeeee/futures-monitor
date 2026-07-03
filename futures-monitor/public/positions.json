@@ -1,7 +1,7 @@
 {
-  "updatedAt": "2026-07-02T15:36:24.000Z",
+  "updatedAt": "2026-07-03T01:19:24.000Z",
   "openCount": 2,
-  "totalCount": 230,
+  "totalCount": 231,
   "positions": [
     {
       "id": "白银-L-20260407214545",
@@ -4307,12 +4307,12 @@
       "initialRiskDist": 95.7142,
       "trailingActive": false,
       "breakEvenMoved": false,
-      "exitReason": null,
-      "status": "open",
-      "exitTime": null,
-      "exitPrice": null,
-      "pnl": null,
-      "pnlPct": null,
+      "exitReason": "initial_sl",
+      "status": "closed_sl",
+      "exitTime": "2026-07-03 09:19",
+      "exitPrice": 16089.2858,
+      "pnl": -95.7142,
+      "pnlPct": -0.5914,
       "breakoutConfirm": {
         "breakoutTime": "2026-07-01 11:15:00",
         "breakoutOpen": 16105.0,
@@ -4365,6 +4365,36 @@
       "exitPrice": 2283.7857,
       "pnl": -12.7857,
       "pnlPct": -0.563
+    },
+    {
+      "id": "黄金-L-20260703091922",
+      "symbol": "黄金",
+      "direction": "long",
+      "signalType": "breakout",
+      "entryTime": "2026-07-03 09:19",
+      "entryPrice": 913.2,
+      "atr": 4.5771,
+      "stopLoss": 904.0458,
+      "initialStopLoss": 904.0458,
+      "takeProfit": 931.5084,
+      "riskDist": 9.1542,
+      "initialRiskDist": 9.1542,
+      "trailingActive": false,
+      "breakEvenMoved": false,
+      "exitReason": null,
+      "status": "open",
+      "exitTime": null,
+      "exitPrice": null,
+      "pnl": null,
+      "pnlPct": null,
+      "breakoutConfirm": {
+        "breakoutTime": "2026-07-03 09:30:00",
+        "breakoutOpen": 905.96,
+        "breakoutClose": 913.2,
+        "triggerLevel": 909.58,
+        "barsWaited": 0,
+        "confirmRule": "15m_kd_cool_hold_body50"
+      }
     }
   ]
 }

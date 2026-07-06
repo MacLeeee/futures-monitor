@@ -42,6 +42,15 @@ UTC = timezone.utc
 import numpy as np
 import pandas as pd
 
+# ── 新浪API反爬补丁：强制所有 requests 请求带 timeout，防止永久挂死 ──
+import requests as _requests
+_original_send = _requests.Session.send
+def _send_with_timeout(self, request, **kwargs):
+    if "timeout" not in kwargs or kwargs["timeout"] is None:
+        kwargs["timeout"] = 15  # 单个请求最多等15秒
+    return _original_send(self, request, **kwargs)
+_requests.Session.send = _send_with_timeout
+
 # ── H-005 MTF 回踩状态机 ──
 try:
     from mtf_pullback import evaluate as eval_mtf_pullback
@@ -53,6 +62,44 @@ try:
 except ImportError:
     print("[FATAL] akshare 未安装，请执行: pip install akshare pandas numpy")
     sys.exit(1)
+
+# ── 新浪反爬补丁：修复 AKShare futures_zh_minute_sina 对新响应格式的解析 ──
+_original_futures_zh_minute_sina = ak.futures_zh_minute_sina
+
+def _patched_futures_zh_minute_sina(symbol: str = "IF2008", period: str = "1"):
+    import requests as _r
+    import json as _json
+    import time as _time
+    url = "https://stock2.finance.sina.com.cn/futures/api/jsonp.php/=/InnerFuturesNewService.getFewMinLine"
+    params = {"symbol": symbol, "type": period}
+    r = _r.get(url, params=params, timeout=15)
+    # HTTP 456 = 新浪反爬封IP，抛特定异常让上层退避重试
+    if r.status_code == 456:
+        raise ConnectionError(f"Sina 456 blocked for {symbol}")
+    text = r.text
+    # 新浪反爬：响应前可能插入重定向脚本 /*<script>location.href='//sina.com';</script>*/
+    if "/*<script>location.href=" in text[:200]:
+        idx = text.find("*/")
+        if idx != -1:
+            text = text[idx + 2:]
+    # 响应可能被截断或无数据
+    if "=(" not in text:
+        raise ValueError(f"No JSONP data in response for {symbol} (len={len(text)})")
+    temp_df = pd.DataFrame(_json.loads(text.split("=(")[1].split(");")[0]))
+    temp_df.columns = [
+        "datetime",
+        "open",
+        "high",
+        "low",
+        "close",
+        "volume",
+        "hold",
+    ]
+    for col in ["open", "high", "low", "close", "volume", "hold"]:
+        temp_df[col] = pd.to_numeric(temp_df[col], errors="coerce")
+    return temp_df
+
+ak.futures_zh_minute_sina = _patched_futures_zh_minute_sina
 
 # 中国期货交易时段（北京时间）
 # 窗口比实际交易时间各宽约 5 分钟，确保 :25/:55 的 cron 也能通过守卫
@@ -255,13 +302,14 @@ def fetch_klines(code: str, rows: int | None = None, _retries: int | None = None
         except Exception as e:
             last_err = e
             if attempt < _retries:
-                _time.sleep(2 * attempt)  # 2s, 4s 退避后重试
+                # 456限流用更长退避
+                wait = 10 * attempt if "456" in str(e) or "ConnectionError" in type(e).__name__ else 2 * attempt
+                _time.sleep(wait)
     raise last_err
 
 def fetch_klines_15m(code: str, rows: int | None = None, _retries: int | None = None) -> pd.DataFrame:
     if rows is None: rows = _p()["fetch"]["kline_rows"]
     if _retries is None: _retries = _p()["fetch"]["max_retries"]
-    """获取 15 分钟 K 线数据，供 MACD/量/OI 触发层使用。"""
     import time as _time
     last_err: Exception = RuntimeError("未知错误")
     for attempt in range(1, _retries + 1):
@@ -276,7 +324,9 @@ def fetch_klines_15m(code: str, rows: int | None = None, _retries: int | None = 
         except Exception as e:
             last_err = e
             if attempt < _retries:
-                _time.sleep(2 * attempt)
+                # 456限流用更长退避
+                wait = 10 * attempt if "456" in str(e) or "ConnectionError" in type(e).__name__ else 2 * attempt
+                _time.sleep(wait)
     raise last_err
 
 def fetch_klines_daily(code: str, rows: int | None = None) -> pd.DataFrame:
@@ -860,6 +910,15 @@ def calc_oi(df: pd.DataFrame) -> dict:
 # ── 单品种处理（双周期）─────────────────────────────────────
 import time as _time_module
 
+def _in_daily_k_window() -> bool:
+    """日K仅在23:00-23:15北京时间抓取（避免每15分钟重复请求新浪）。"""
+    try:
+        from datetime import timedelta
+        bj_now = datetime.now(timezone(timedelta(hours=8))).time()
+        return time(23, 0) <= bj_now <= time(23, 15)
+    except Exception:
+        return True  # 兜底：取不到时间就走原逻辑
+
 def process_symbol(args: tuple) -> dict | None:
     """
     30min K线 → MA方向（均线排列）
@@ -880,13 +939,14 @@ def process_symbol(args: tuple) -> dict | None:
             df_15m = df_30m
             tf_label = "30m↓"
 
-        # ── H-005: 抓日K供 MTF 回踩状态机使用 ──
+        # ── H-005: 抓日K供 MTF 回踩状态机使用（仅23:00-23:15 BJ，失败不阻塞）──
         df_daily = None
-        try:
-            _time_module.sleep(_p()["fetch"]["request_delay_seconds"])
-            df_daily = fetch_klines_daily(code)
-        except Exception as e_d:
-            print(f"  [WARN-D] {symbol}({code}): 日K抓取失败: {e_d}", file=sys.stderr)
+        _in_window = _in_daily_k_window()
+        if _in_window:
+            try:
+                df_daily = fetch_klines_daily(code, rows=200)
+            except Exception as e_d:
+                print(f"  [WARN-D] {symbol}({code}): 日K抓取失败: {e_d}", file=sys.stderr)
 
         # ── 日线复盘数据（regime / direction 等）──
         daily_entry = None
@@ -1229,7 +1289,7 @@ def main():
     with ThreadPoolExecutor(max_workers=_p()["fetch"]["max_workers"]) as pool:
         futures = {pool.submit(process_symbol, s): s for s in SYMBOLS}
         for fut in as_completed(futures):
-            r = fut.result()
+            r = fut.result(timeout=300)
             if r: results.append(r)
 
     # ── Step 2: 抓取日K（仅在收盘后23:00-23:15执行，其余时间跳过，避免API挂死产生僵尸）──

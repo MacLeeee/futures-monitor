@@ -1,7 +1,7 @@
 {
-  "updatedAt": "2026-07-06T00:45:16.000Z",
-  "openCount": 4,
-  "totalCount": 10,
+  "updatedAt": "2026-07-06T01:12:21.000Z",
+  "openCount": 2,
+  "totalCount": 11,
   "positions": [
     {
       "id": "INV-铁矿石-L-20260630214637",
@@ -230,12 +230,12 @@
       "initialStopLoss": 410248.5714,
       "trailingActive": false,
       "breakEvenMoved": false,
-      "status": "open",
-      "exitReason": null,
-      "exitTime": null,
-      "exitPrice": null,
-      "pnl": null,
-      "pnlPct": null,
+      "status": "closed_sl",
+      "exitReason": "inverse_sl",
+      "exitTime": "2026-07-06 09:12",
+      "exitPrice": 410248.5714,
+      "pnl": -6748.5714,
+      "pnlPct": -1.6725,
       "triggerInfo": {
         "originalSignal": "breakout",
         "originalDirection": "long",
@@ -260,12 +260,12 @@
       "initialStopLoss": 2982.4286,
       "trailingActive": false,
       "breakEvenMoved": false,
-      "status": "open",
-      "exitReason": null,
-      "exitTime": null,
-      "exitPrice": null,
-      "pnl": null,
-      "pnlPct": null,
+      "status": "closed_sl",
+      "exitReason": "inverse_sl",
+      "exitTime": "2026-07-06 09:12",
+      "exitPrice": 2982.4286,
+      "pnl": -13.4286,
+      "pnlPct": -0.4523,
       "triggerInfo": {
         "originalSignal": "pullback",
         "originalDirection": "long",
@@ -290,6 +290,36 @@
       "initialStopLoss": 9587.2857,
       "trailingActive": false,
       "breakEvenMoved": false,
+      "status": "closed_tp",
+      "exitReason": "inverse_tp",
+      "exitTime": "2026-07-06 09:12",
+      "exitPrice": 9662.7143,
+      "pnl": 37.7143,
+      "pnlPct": 0.3918,
+      "triggerInfo": {
+        "originalSignal": "pullback",
+        "originalDirection": "short",
+        "trigger": "right_side_relaxed",
+        "zone": "fib_0.5"
+      }
+    },
+    {
+      "id": "INV-豆粕-S-20260706091221",
+      "symbol": "豆粕",
+      "direction": "short",
+      "originalDirection": "long",
+      "signalType": "breakout",
+      "source": "inverse",
+      "entryTime": "2026-07-06 09:12",
+      "entryPrice": 2994.0,
+      "atr": 8.3571,
+      "stopLoss": 3010.7142,
+      "takeProfit": 2977.2858,
+      "riskDist": 16.7142,
+      "initialRiskDist": 16.7142,
+      "initialStopLoss": 3010.7142,
+      "trailingActive": false,
+      "breakEvenMoved": false,
       "status": "open",
       "exitReason": null,
       "exitTime": null,
@@ -297,10 +327,10 @@
       "pnl": null,
       "pnlPct": null,
       "triggerInfo": {
-        "originalSignal": "pullback",
-        "originalDirection": "short",
-        "trigger": "right_side_relaxed",
-        "zone": "fib_0.5"
+        "originalSignal": "breakout",
+        "originalDirection": "long",
+        "macdSign": "positive",
+        "expansionRate": 5.17
       }
     }
   ]

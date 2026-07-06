@@ -447,6 +447,16 @@ export default function TradeLog() {
     [positions]
   );
 
+  // 过滤后的持仓中
+  const filteredOpen = useMemo(
+    () => openPositions.filter(p =>
+      filterInverse === "inverse" ? isInverse(p)
+      : filterInverse === "original" ? !isInverse(p)
+      : true
+    ),
+    [openPositions, filterInverse]
+  );
+
   // 构建 id → metrics 映射，方便表格查找
   const metricsMap = useMemo(
     () => new Map(metrics.rows.map((r) => [r.pos.id, r])),
@@ -544,7 +554,7 @@ export default function TradeLog() {
               value={pr === "—" ? "—" : `${pr}:1`}
               color={parseFloat(pr) >= 1.5 ? "emerald" : "yellow"} />
             <StatCard label="持仓中"
-              value={openPositions.length} color="sky" />
+              value={filteredOpen.length} color="sky" />
           </>
         ) : (
           <>
@@ -566,7 +576,7 @@ export default function TradeLog() {
               value={viewAvgLoss ? `${(viewAvgLoss / 10000).toFixed(2)}万` : "—"}
               color="red" />
             <StatCard label="持仓中"
-              value={openPositions.filter(p => filterInverse === "inverse" ? isInverse(p) : !isInverse(p)).length}
+              value={filteredOpen.length}
               color="sky" />
           </>
         )}
@@ -695,10 +705,10 @@ export default function TradeLog() {
       )}
 
       {/* ── 持仓中 ──────────────────────────────────────── */}
-      {!loading && openPositions.length > 0 && (
+      {!loading && filteredOpen.length > 0 && (
         <>
           <h2 className="mb-3 text-sm font-semibold text-stone-400">
-            持仓中 <span className="ml-1 text-sky-600">{openPositions.length}</span>
+            持仓中 <span className="ml-1 text-sky-600">{filteredOpen.length}</span>
           </h2>
           <div className="overflow-x-auto rounded-xl border border-stone-200">
             <table className="w-full text-xs">
@@ -718,7 +728,7 @@ export default function TradeLog() {
                 </tr>
               </thead>
               <tbody>
-                {openPositions.map((pos) => {
+                {filteredOpen.map((pos) => {
                   const [mult, mgnRate, unit] = getSpec(pos.symbol);
                   const mpl = pos.entryPrice * mult * mgnRate;
                   const lots = Math.max(1, Math.floor(MARGIN_PER_TRADE / mpl));
@@ -775,7 +785,7 @@ export default function TradeLog() {
       )}
 
       <p className="mt-4 text-right text-xs text-stone-300">
-        共 {positions.length} 条 · 已平仓 {viewWins + viewLosses} · 持仓中 {openPositions.filter(p => filterInverse === "inverse" ? isInverse(p) : filterInverse === "original" ? !isInverse(p) : true).length}{filterInverse !== "all" && <> · {filterInverse === "inverse" ? "反指" : "原交易"}</>}
+        共 {positions.length} 条 · 已平仓 {viewWins + viewLosses} · 持仓中 {filteredOpen.length}{filterInverse !== "all" && <> · {filterInverse === "inverse" ? "反指" : "原交易"}</>}
       </p>
     </div>
   );

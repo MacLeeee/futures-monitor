@@ -359,8 +359,9 @@ const SIG_LABEL: Record<string, string> = {
 };
 const isInverse = (pos: Position) => pos.source === "inverse" || pos.id?.startsWith("INV-");
 
-type FilterStatus = "all" | PositionStatus;
-type FilterDir    = "all" | "long" | "short";
+type FilterStatus  = "all" | PositionStatus;
+type FilterDir     = "all" | "long" | "short";
+type FilterInverse = "all" | "original" | "inverse";
 
 // ══════════════════════════════════════════════════════════════
 // 主组件
@@ -368,9 +369,10 @@ type FilterDir    = "all" | "long" | "short";
 export default function TradeLog() {
   const [data,        setData]        = useState<PositionsData | null>(null);
   const [loading,     setLoading]     = useState(true);
-  const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
-  const [filterDir,    setFilterDir]    = useState<FilterDir>("all");
-  const [updatedAt,    setUpdatedAt]    = useState("");
+  const [filterStatus,  setFilterStatus]  = useState<FilterStatus>("all");
+  const [filterDir,     setFilterDir]     = useState<FilterDir>("all");
+  const [filterInverse, setFilterInverse] = useState<FilterInverse>("all");
+  const [updatedAt,     setUpdatedAt]     = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -425,6 +427,17 @@ export default function TradeLog() {
   // 账户级指标（全量已平仓）
   const metrics = useMemo(() => computeMetrics(positions), [positions]);
 
+  // 反指单独统计
+  const inverseStats = useMemo(() => {
+    const invClosed = metrics.rows.filter((r) => isInverse(r.pos));
+    const wins  = invClosed.filter((r) => r.pnlRmb > 0);
+    const losses = invClosed.filter((r) => r.pnlRmb < 0);
+    const totalPnl = invClosed.reduce((s, r) => s + r.pnlRmb, 0);
+    const avgWin  = wins.length  ? wins.reduce((s, r) => s + r.pnlRmb, 0) / wins.length : 0;
+    const avgLoss = losses.length ? losses.reduce((s, r) => s + r.pnlRmb, 0) / losses.length : 0;
+    return { count: invClosed.length, wins: wins.length, losses: losses.length, totalPnl, avgWin, avgLoss };
+  }, [metrics.rows]);
+
   // 开仓中持仓（含规格信息，仅显示用）
   const openPositions = useMemo(
     () =>
@@ -445,18 +458,52 @@ export default function TradeLog() {
     return [...metrics.rows]
       .reverse()
       .filter((r) => {
-        if (filterStatus !== "all" && r.pos.status !== filterStatus) return false;
-        if (filterDir    !== "all" && r.pos.direction !== filterDir)  return false;
+        if (filterStatus  !== "all" && r.pos.status       !== filterStatus)  return false;
+        if (filterDir     !== "all" && r.pos.direction     !== filterDir)     return false;
+        if (filterInverse === "original" && isInverse(r.pos))  return false;
+        if (filterInverse === "inverse"  && !isInverse(r.pos)) return false;
         return true;
       });
-  }, [metrics.rows, filterStatus, filterDir]);
+  }, [metrics.rows, filterStatus, filterDir, filterInverse]);
 
-  const winRate = metrics.wins + metrics.losses > 0
-    ? ((metrics.wins / (metrics.wins + metrics.losses)) * 100).toFixed(1)
+  // 当前视图的统计指标
+  const viewWins   = filterInverse === "inverse" ? inverseStats.wins
+    : filterInverse === "original" ? (metrics.wins - inverseStats.wins)
+    : metrics.wins;
+  const viewLosses = filterInverse === "inverse" ? inverseStats.losses
+    : filterInverse === "original" ? (metrics.losses - inverseStats.losses)
+    : metrics.losses;
+  const viewTotalPnl = filterInverse === "inverse" ? inverseStats.totalPnl
+    : filterInverse === "original" ? (metrics.totalPnl - inverseStats.totalPnl)
+    : metrics.totalPnl;
+
+  // 原交易 avgWin / avgLoss 精确计算
+  const origAvgWin = useMemo(() => {
+    const origRows = metrics.rows.filter(r => !isInverse(r.pos) && r.pnlRmb > 0);
+    return origRows.length ? origRows.reduce((s, r) => s + r.pnlRmb, 0) / origRows.length : 0;
+  }, [metrics.rows]);
+  const origAvgLoss = useMemo(() => {
+    const origRows = metrics.rows.filter(r => !isInverse(r.pos) && r.pnlRmb < 0);
+    return origRows.length ? origRows.reduce((s, r) => s + r.pnlRmb, 0) / origRows.length : 0;
+  }, [metrics.rows]);
+
+  const viewAvgWin  = filterInverse === "inverse" ? inverseStats.avgWin
+    : filterInverse === "original" ? origAvgWin
+    : metrics.avgWin;
+  const viewAvgLoss = filterInverse === "inverse" ? inverseStats.avgLoss
+    : filterInverse === "original" ? origAvgLoss
+    : metrics.avgLoss;
+
+  const winRate = viewWins + viewLosses > 0
+    ? ((viewWins / (viewWins + viewLosses)) * 100).toFixed(1)
     : "—";
-  const pr = metrics.avgLoss !== 0
-    ? Math.abs(metrics.avgWin / metrics.avgLoss).toFixed(2)
-    : "—";
+  const pr = (filterInverse === "inverse" && inverseStats.avgLoss !== 0)
+    ? Math.abs(inverseStats.avgWin / inverseStats.avgLoss).toFixed(2)
+    : (filterInverse === "original" && origAvgLoss !== 0)
+      ? Math.abs(origAvgWin / origAvgLoss).toFixed(2)
+      : metrics.avgLoss !== 0
+        ? Math.abs(metrics.avgWin / metrics.avgLoss).toFixed(2)
+        : "—";
 
   return (
     <div className="min-h-screen bg-[#faf8f5] text-stone-800 p-4 md:p-6 lg:p-8">
@@ -472,31 +519,79 @@ export default function TradeLog() {
       </div>
 
       {/* ── 统计卡片 ─────────────────────────────────────── */}
-      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
-        <StatCard label="最终净值"
-          value={metrics.rows.length ? metrics.finalNav.toFixed(4) : "—"}
-          sub={metrics.rows.length ? `${((metrics.finalNav - 1) * 100) >= 0 ? "+" : ""}${((metrics.finalNav - 1) * 100).toFixed(2)}%` : ""}
-          color={metrics.finalNav >= 1 ? "emerald" : "red"} />
-        <StatCard label="账户资产"
-          value={metrics.rows.length ? `${(metrics.rows[metrics.rows.length - 1].accountAfter / 10000).toFixed(1)}万` : "1000万"}
-          color="sky" />
-        <StatCard label="累计盈亏"
-          value={metrics.rows.length ? `${metrics.totalPnl >= 0 ? "+" : ""}${(metrics.totalPnl / 10000).toFixed(1)}万` : "—"}
-          color={metrics.totalPnl >= 0 ? "emerald" : "red"} />
-        <StatCard label="最大回撤"
-          value={metrics.rows.length ? `${metrics.maxDd.toFixed(2)}%` : "—"}
-          color="red" />
-        <StatCard label="已平仓"
-          value={`${metrics.wins + metrics.losses}`} color="gray" />
-        <StatCard label="胜率"
-          value={winRate === "—" ? "—" : `${winRate}%`}
-          color={parseFloat(winRate) >= 50 ? "emerald" : "red"} />
-        <StatCard label="盈亏比"
-          value={pr === "—" ? "—" : `${pr}:1`}
-          color={parseFloat(pr) >= 1.5 ? "emerald" : "yellow"} />
-        <StatCard label="持仓中"
-          value={openPositions.length} color="sky" />
+      <div className="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
+        {filterInverse === "all" ? (
+          <>
+            <StatCard label="最终净值"
+              value={metrics.rows.length ? metrics.finalNav.toFixed(4) : "—"}
+              sub={metrics.rows.length ? `${((metrics.finalNav - 1) * 100) >= 0 ? "+" : ""}${((metrics.finalNav - 1) * 100).toFixed(2)}%` : ""}
+              color={metrics.finalNav >= 1 ? "emerald" : "red"} />
+            <StatCard label="账户资产"
+              value={metrics.rows.length ? `${(metrics.rows[metrics.rows.length - 1].accountAfter / 10000).toFixed(1)}万` : "1000万"}
+              color="sky" />
+            <StatCard label="累计盈亏"
+              value={metrics.rows.length ? `${metrics.totalPnl >= 0 ? "+" : ""}${(metrics.totalPnl / 10000).toFixed(1)}万` : "—"}
+              color={metrics.totalPnl >= 0 ? "emerald" : "red"} />
+            <StatCard label="最大回撤"
+              value={metrics.rows.length ? `${metrics.maxDd.toFixed(2)}%` : "—"}
+              color="red" />
+            <StatCard label="已平仓"
+              value={`${metrics.wins + metrics.losses}`} color="gray" />
+            <StatCard label="胜率"
+              value={winRate === "—" ? "—" : `${winRate}%`}
+              color={parseFloat(winRate) >= 50 ? "emerald" : "red"} />
+            <StatCard label="盈亏比"
+              value={pr === "—" ? "—" : `${pr}:1`}
+              color={parseFloat(pr) >= 1.5 ? "emerald" : "yellow"} />
+            <StatCard label="持仓中"
+              value={openPositions.length} color="sky" />
+          </>
+        ) : (
+          <>
+            <StatCard label={filterInverse === "inverse" ? "反指盈亏" : "原交易盈亏"}
+              value={`${viewTotalPnl >= 0 ? "+" : ""}${(viewTotalPnl / 10000).toFixed(1)}万`}
+              color={viewTotalPnl >= 0 ? "emerald" : "red"} />
+            <StatCard label="已平仓"
+              value={`${viewWins + viewLosses}`} color="gray" />
+            <StatCard label="胜率"
+              value={winRate === "—" ? "—" : `${winRate}%`}
+              color={parseFloat(winRate) >= 50 ? "emerald" : "red"} />
+            <StatCard label="盈亏比"
+              value={pr === "—" ? "—" : `${pr}:1`}
+              color={parseFloat(pr) >= 1.5 ? "emerald" : "yellow"} />
+            <StatCard label="平均盈"
+              value={viewAvgWin ? `+${(viewAvgWin / 10000).toFixed(2)}万` : "—"}
+              color="emerald" />
+            <StatCard label="平均亏"
+              value={viewAvgLoss ? `${(viewAvgLoss / 10000).toFixed(2)}万` : "—"}
+              color="red" />
+            <StatCard label="持仓中"
+              value={openPositions.filter(p => filterInverse === "inverse" ? isInverse(p) : !isInverse(p)).length}
+              color="sky" />
+          </>
+        )}
       </div>
+
+      {/* ── 反指汇总（全部视图时显示） ─────────────────────── */}
+      {filterInverse === "all" && inverseStats.count > 0 && (
+        <div className="mb-6 flex flex-wrap items-center gap-x-6 gap-y-1 rounded-lg border border-amber-200 bg-amber-50/50 px-4 py-2.5 text-xs">
+          <span className="font-medium text-amber-800">🔁 反指交易</span>
+          <span className="text-stone-500">已平仓 <b className="text-stone-700">{inverseStats.count}</b> 笔</span>
+          <span className={inverseStats.totalPnl >= 0 ? "text-emerald-600" : "text-red-600"}>
+            累计 {inverseStats.totalPnl >= 0 ? "+" : ""}{(inverseStats.totalPnl / 10000).toFixed(1)}万
+          </span>
+          <span className="text-stone-500">
+            胜率 {inverseStats.count > 0 ? ((inverseStats.wins / inverseStats.count) * 100).toFixed(1) : "—"}%
+          </span>
+          <span className="text-stone-500">
+            盈亏比 {inverseStats.avgLoss !== 0 ? Math.abs(inverseStats.avgWin / inverseStats.avgLoss).toFixed(2) : "—"}:1
+          </span>
+          <span className="text-stone-500">
+            均盈 <span className="text-emerald-600">+{(inverseStats.avgWin / 10000).toFixed(2)}万</span>
+            &nbsp;均亏 <span className="text-red-600">{(inverseStats.avgLoss / 10000).toFixed(2)}万</span>
+          </span>
+        </div>
+      )}
 
       {/* ── 净值曲线图 ───────────────────────────────────── */}
       {!loading && metrics.navPoints.length > 1 && (
@@ -540,6 +635,20 @@ export default function TradeLog() {
             </button>
           ))}
         </div>
+        {inverseStats.count > 0 && (
+          <div className="ml-2 flex gap-2">
+            {(["all", "original", "inverse"] as FilterInverse[]).map((v) => (
+              <button key={v} onClick={() => setFilterInverse(v)}
+                className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
+                  filterInverse === v
+                    ? "bg-amber-600 text-white"
+                    : "bg-stone-100 text-stone-500 hover:bg-stone-200"
+                }`}>
+                {v === "all" ? "全部" : v === "original" ? "原交易" : "反指"}
+              </button>
+            ))}
+          </div>
+        )}
         {updatedAt && (
           <span className="ml-auto text-xs text-stone-300 self-center">
             更新：{updatedAt}
@@ -666,7 +775,7 @@ export default function TradeLog() {
       )}
 
       <p className="mt-4 text-right text-xs text-stone-300">
-        共 {positions.length} 条 · 已平仓 {metrics.wins + metrics.losses} · 持仓中 {openPositions.length}
+        共 {positions.length} 条 · 已平仓 {viewWins + viewLosses} · 持仓中 {openPositions.filter(p => filterInverse === "inverse" ? isInverse(p) : filterInverse === "original" ? !isInverse(p) : true).length}{filterInverse !== "all" && <> · {filterInverse === "inverse" ? "反指" : "原交易"}</>}
       </p>
     </div>
   );

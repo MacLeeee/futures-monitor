@@ -20,6 +20,15 @@ import warnings
 import pandas as pd
 import numpy as np
 
+# ── 新浪API反爬补丁：强制所有 requests 请求带 timeout，防止永久挂死 ──
+import requests as _requests
+_original_send_copper = _requests.Session.send
+def _send_with_timeout_copper(self, request, **kwargs):
+    if "timeout" not in kwargs or kwargs["timeout"] is None:
+        kwargs["timeout"] = 15
+    return _original_send_copper(self, request, **kwargs)
+_requests.Session.send = _send_with_timeout_copper
+
 warnings.filterwarnings("ignore")
 
 try:

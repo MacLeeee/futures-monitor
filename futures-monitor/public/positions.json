@@ -1,7 +1,7 @@
 {
-  "updatedAt": "2026-07-07T13:46:36.000Z",
+  "updatedAt": "2026-07-07T14:02:46.000Z",
   "openCount": 4,
-  "totalCount": 236,
+  "totalCount": 237,
   "positions": [
     {
       "id": "白银-L-20260407214545",
@@ -4442,12 +4442,12 @@
       "initialRiskDist": 15.3571,
       "trailingActive": true,
       "breakEvenMoved": true,
-      "exitReason": null,
-      "status": "open",
-      "exitTime": null,
-      "exitPrice": null,
-      "pnl": null,
-      "pnlPct": null,
+      "exitReason": "trailing_sl",
+      "status": "closed_tp",
+      "exitTime": "2026-07-07 22:02",
+      "exitPrice": 3039.4572,
+      "pnl": 70.4572,
+      "pnlPct": 2.3731,
       "trailingActivatedAt": "2026-07-06 09:12"
     },
     {
@@ -4511,12 +4511,12 @@
       "entryTime": "2026-07-07 15:02",
       "entryPrice": 443.0,
       "atr": 2.0643,
-      "stopLoss": 443.0,
+      "stopLoss": 447.3428,
       "initialStopLoss": 438.8714,
       "takeProfit": 451.2572,
       "riskDist": 4.1286,
       "initialRiskDist": 4.1286,
-      "trailingActive": false,
+      "trailingActive": true,
       "breakEvenMoved": true,
       "exitReason": null,
       "status": "open",
@@ -4530,6 +4530,37 @@
         "breakoutClose": 443.0,
         "triggerLevel": 441.75,
         "barsWaited": 0,
+        "confirmRule": "15m_kd_cool_hold_body50"
+      },
+      "trailingActivatedAt": "2026-07-07 22:02"
+    },
+    {
+      "id": "纯碱-S-20260707220244",
+      "symbol": "纯碱",
+      "direction": "short",
+      "signalType": "breakout",
+      "entryTime": "2026-07-07 22:02",
+      "entryPrice": 1075.0,
+      "atr": 5.2143,
+      "stopLoss": 1083.2143,
+      "initialStopLoss": 1083.2143,
+      "takeProfit": 1058.5714,
+      "riskDist": 8.2143,
+      "initialRiskDist": 8.2143,
+      "trailingActive": false,
+      "breakEvenMoved": false,
+      "exitReason": null,
+      "status": "open",
+      "exitTime": null,
+      "exitPrice": null,
+      "pnl": null,
+      "pnlPct": null,
+      "breakoutConfirm": {
+        "breakoutTime": "2026-07-07 13:45:00",
+        "breakoutOpen": 1094.0,
+        "breakoutClose": 1085.0,
+        "triggerLevel": 1089.5,
+        "barsWaited": 6,
         "confirmRule": "15m_kd_cool_hold_body50"
       }
     }

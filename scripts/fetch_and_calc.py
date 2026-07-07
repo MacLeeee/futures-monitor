@@ -163,7 +163,7 @@ def _load_params() -> dict:
         "position": {"cooldown_minutes": 60, "max_wait_bars": 12},
         "trading_hours": {"morning": ["08:50", "11:40"], "afternoon": ["13:20", "15:10"],
                            "night": ["20:50", "23:40"], "daily_k_window": ["23:00", "23:15"]},
-        "fetch": {"max_workers": 3, "kline_rows": 200, "request_delay_seconds": 2.0, "max_retries": 3},
+        "fetch": {"max_workers": 1, "kline_rows": 200, "request_delay_seconds": 3.0, "max_retries": 3},
     }
     return _params_cache
 

@@ -1056,8 +1056,9 @@ def process_symbol_daily(args: tuple) -> dict | None:
 
 # ── Telegram 推送 ─────────────────────────────────────────────
 
-def tg_send(token: str, chat_id: str, text: str, label: str = "") -> None:
-    """调用 Telegram Bot API 发送消息，失败自动重试（应对 502/超时等瞬时故障）。"""
+def tg_send(token: str, chat_id: str, text: str, label: str = "") -> bool:
+    """调用 Telegram Bot API 发送消息，失败自动重试（应对 502/超时等瞬时故障）。
+    返回 True=成功 / False=失败。"""
     import time as _t
     url = f"https://api.telegram.org/bot{token}/sendMessage"
     payload = urllib.parse.urlencode({
@@ -1074,7 +1075,7 @@ def tg_send(token: str, chat_id: str, text: str, label: str = "") -> None:
                 pass
             print(f"[TG] {tag}推送成功 ({len(text)} chars)"
                   + (f" [第{attempt}次]" if attempt > 1 else ""))
-            return
+            return True
         except Exception as e:
             last_err = e
             # 瞬时错误（502/503/504/超时/连接）才重试；其他（如400/401）直接放弃
@@ -1084,6 +1085,30 @@ def tg_send(token: str, chat_id: str, text: str, label: str = "") -> None:
                 continue
             break
     print(f"[TG] {tag}推送失败(重试{3}次): {last_err}", file=sys.stderr)
+    _push_audit(f"SEND_FAIL {label}: {last_err}")
+    return False
+
+
+def _push_audit(note: str) -> None:
+    """推送审计日志：把每轮推送结果(有无信号/成功/失败)追加到文件，
+    让'Telegram没消息'可追溯——区分'本就无信号'和'推送失败'。"""
+    try:
+        from datetime import datetime as _dt
+        from zoneinfo import ZoneInfo as _Z
+        log_path = ROOT / "futures-monitor" / "public" / "push_audit.log"
+        ts = _dt.now(_Z("Asia/Shanghai")).strftime("%Y-%m-%d %H:%M:%S")
+        line = f"{ts} | {note}\n"
+        with open(log_path, "a", encoding="utf-8") as f:
+            f.write(line)
+        # 只保留最近500行，防止无限增长
+        try:
+            lines = open(log_path, encoding="utf-8").readlines()
+            if len(lines) > 500:
+                open(log_path, "w", encoding="utf-8").writelines(lines[-500:])
+        except Exception:
+            pass
+    except Exception:
+        pass
 
 
 def tg_send_all(text: str) -> None:
@@ -1099,12 +1124,18 @@ def tg_send_all(text: str) -> None:
         #  "Bot2"),
     ]
     sent = 0
+    ok = 0
     for token, chat_id, label in bots:
         if token and chat_id:
-            tg_send(token, chat_id, text, label)
+            if tg_send(token, chat_id, text, label):
+                ok += 1
             sent += 1
     if sent == 0:
         print("[TG] 未配置任何 Bot Token，跳过推送")
+        _push_audit("SKIP: 未配置Token")
+    else:
+        _push_audit(f"PUSH signals=Y bot1={'ok' if ok else 'FAIL'} ({len(text)}chars)")
+
 
 
 def build_breakout_message(data: list[dict], bj_time: str) -> str | None:
@@ -1384,6 +1415,7 @@ def main():
         tg_send_all("\n\n".join(messages))
     else:
         print("[TG] 无信号，不推送")
+        _push_audit("NO_SIGNAL 无信号(正常,不推送)")
 
     # ── Git Push（仅本地/服务器运行时；GitHub Actions 由 workflow 自行处理）──
     if not os.environ.get("GITHUB_ACTIONS"):

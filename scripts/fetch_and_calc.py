@@ -1087,14 +1087,16 @@ def tg_send(token: str, chat_id: str, text: str, label: str = "") -> None:
 
 
 def tg_send_all(text: str) -> None:
-    """向所有配置的 Telegram Bot 发送同一条消息。"""
+    """向所有配置的 Telegram Bot 发送同一条消息。
+    注：Bot2 已停用（2026-07），只推送 Bot1（敷敷分身频道）。"""
     bots = [
         (os.environ.get("TELEGRAM_BOT_TOKEN",   ""),
          os.environ.get("TELEGRAM_CHAT_ID",     ""),
          "Bot1"),
-        (os.environ.get("TELEGRAM_BOT_TOKEN_2", ""),
-         os.environ.get("TELEGRAM_CHAT_ID_2",   ""),
-         "Bot2"),
+        # Bot2 已停用：只在敷敷分身频道推送
+        # (os.environ.get("TELEGRAM_BOT_TOKEN_2", ""),
+        #  os.environ.get("TELEGRAM_CHAT_ID_2",   ""),
+        #  "Bot2"),
     ]
     sent = 0
     for token, chat_id, label in bots:

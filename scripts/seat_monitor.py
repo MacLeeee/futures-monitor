@@ -268,8 +268,8 @@ def build_outputs(agg: dict, date: str) -> tuple[dict, str, list[str]]:
 
 
 def tg_push(text: str) -> None:
-    bots = [(os.environ.get("TELEGRAM_BOT_TOKEN", ""), os.environ.get("TELEGRAM_CHAT_ID", "")),
-            (os.environ.get("TELEGRAM_BOT_TOKEN_2", ""), os.environ.get("TELEGRAM_CHAT_ID_2", ""))]
+    bots = [(os.environ.get("TELEGRAM_BOT_TOKEN", ""), os.environ.get("TELEGRAM_CHAT_ID", ""))]
+    # Bot2 已停用：只在敷敷分身频道推送
     for token, chat_id in bots:
         if not token or not chat_id:
             continue

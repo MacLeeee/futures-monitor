@@ -410,9 +410,10 @@ def main():
             (os.environ.get("TELEGRAM_BOT_TOKEN", ""),
              os.environ.get("TELEGRAM_CHAT_ID", ""),
              "Bot1"),
-            (os.environ.get("TELEGRAM_BOT_TOKEN_2", ""),
-             os.environ.get("TELEGRAM_CHAT_ID_2", ""),
-             "Bot2"),
+            # Bot2 已停用：只在敷敷分身频道推送
+            # (os.environ.get("TELEGRAM_BOT_TOKEN_2", ""),
+            #  os.environ.get("TELEGRAM_CHAT_ID_2", ""),
+            #  "Bot2"),
         ]
         for token, chat_id, label in bots:
             if token and chat_id:

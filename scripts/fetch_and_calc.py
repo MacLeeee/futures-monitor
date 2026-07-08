@@ -1057,22 +1057,33 @@ def process_symbol_daily(args: tuple) -> dict | None:
 # ── Telegram 推送 ─────────────────────────────────────────────
 
 def tg_send(token: str, chat_id: str, text: str, label: str = "") -> None:
-    """调用 Telegram Bot API 发送消息，失败不崩溃。"""
-    try:
-        url = f"https://api.telegram.org/bot{token}/sendMessage"
-        payload = urllib.parse.urlencode({
-            "chat_id":    chat_id,
-            "text":       text,
-            "parse_mode": "HTML",
-        }).encode()
-        req = urllib.request.Request(url, data=payload, method="POST")
-        with urllib.request.urlopen(req, timeout=10):
-            pass
-        tag = f"[{label}] " if label else ""
-        print(f"[TG] {tag}推送成功 ({len(text)} chars)")
-    except Exception as e:
-        tag = f"[{label}] " if label else ""
-        print(f"[TG] {tag}推送失败: {e}", file=sys.stderr)
+    """调用 Telegram Bot API 发送消息，失败自动重试（应对 502/超时等瞬时故障）。"""
+    import time as _t
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
+    payload = urllib.parse.urlencode({
+        "chat_id":    chat_id,
+        "text":       text,
+        "parse_mode": "HTML",
+    }).encode()
+    tag = f"[{label}] " if label else ""
+    last_err = None
+    for attempt in range(1, 4):  # 最多3次
+        try:
+            req = urllib.request.Request(url, data=payload, method="POST")
+            with urllib.request.urlopen(req, timeout=10):
+                pass
+            print(f"[TG] {tag}推送成功 ({len(text)} chars)"
+                  + (f" [第{attempt}次]" if attempt > 1 else ""))
+            return
+        except Exception as e:
+            last_err = e
+            # 瞬时错误（502/503/504/超时/连接）才重试；其他（如400/401）直接放弃
+            transient = any(s in str(e) for s in ("502", "503", "504", "timed out", "timeout", "Connection", "reset"))
+            if attempt < 3 and transient:
+                _t.sleep(2 * attempt)  # 2s, 4s 退避
+                continue
+            break
+    print(f"[TG] {tag}推送失败(重试{3}次): {last_err}", file=sys.stderr)
 
 
 def tg_send_all(text: str) -> None:
@@ -1956,6 +1967,24 @@ def _git_push():
     import subprocess
 
     repo_root = Path(__file__).resolve().parent.parent
+
+    # 死锁清理：残留 index.lock 但无活跃 git 进程时安全删除（应对上次崩溃/并发残留）
+    lock_file = repo_root / ".git" / "index.lock"
+    if lock_file.exists():
+        import subprocess as _sp
+        try:
+            has_git = _sp.run(["pgrep", "-x", "git"], capture_output=True).returncode == 0
+        except Exception:
+            has_git = False
+        if not has_git:
+            print("[GIT] 清理残留 index.lock（无活跃git进程）", file=sys.stderr)
+            try:
+                lock_file.unlink()
+            except Exception:
+                pass
+        else:
+            print("[GIT] index.lock 存在且有git进程运行，跳过本轮push（数据已写入，下轮重试）", file=sys.stderr)
+            return
 
     def run(cmd: list[str]) -> tuple[int, str]:
         r = subprocess.run(cmd, cwd=repo_root, capture_output=True, text=True)

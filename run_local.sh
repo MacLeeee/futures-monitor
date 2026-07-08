@@ -57,6 +57,17 @@ run_once() {
 
     cd "$REPO_DIR"
 
+    # ── 死锁清理：若存在 index.lock 但无活跃 git 进程，说明是上次崩溃残留，安全删除 ──
+    if [ -f "$REPO_DIR/.git/index.lock" ]; then
+        if ! pgrep -f "git.*$REPO_DIR" >/dev/null 2>&1 && ! pgrep -x git >/dev/null 2>&1; then
+            log "⚠️  发现残留 index.lock（无活跃git进程），清理"
+            rm -f "$REPO_DIR/.git/index.lock"
+        else
+            log "⏳ index.lock 存在且有git进程运行中，本轮跳过git（数据已写入，下轮重试）"
+            return 0
+        fi
+    fi
+
     # ── Git 健康检查：清理上次失败残留，确保在 main 分支（非 detached HEAD）──
     git rebase --abort 2>/dev/null || true
     git merge  --abort 2>/dev/null || true

@@ -1,7 +1,7 @@
 {
-  "updatedAt": "2026-07-10T15:31:34.000Z",
+  "updatedAt": "2026-07-13T01:03:10.000Z",
   "openCount": 2,
-  "totalCount": 245,
+  "totalCount": 246,
   "positions": [
     {
       "id": "白银-L-20260407214545",
@@ -4777,12 +4777,42 @@
       "initialRiskDist": 64.9643,
       "trailingActive": false,
       "breakEvenMoved": false,
+      "exitReason": "initial_sl",
+      "status": "closed_sl",
+      "exitTime": "2026-07-13 09:03",
+      "exitPrice": 3196.9643,
+      "pnl": -64.9643,
+      "pnlPct": -2.0742
+    },
+    {
+      "id": "硅铁-S-20260713090309",
+      "symbol": "硅铁",
+      "direction": "short",
+      "signalType": "breakout",
+      "entryTime": "2026-07-13 09:03",
+      "entryPrice": 5756.0,
+      "atr": 21.2857,
+      "stopLoss": 5798.5714,
+      "initialStopLoss": 5798.5714,
+      "takeProfit": 5670.8572,
+      "riskDist": 42.5714,
+      "initialRiskDist": 42.5714,
+      "trailingActive": false,
+      "breakEvenMoved": false,
       "exitReason": null,
       "status": "open",
       "exitTime": null,
       "exitPrice": null,
       "pnl": null,
-      "pnlPct": null
+      "pnlPct": null,
+      "breakoutConfirm": {
+        "breakoutTime": "2026-07-13 09:30:00",
+        "breakoutOpen": 5790.0,
+        "breakoutClose": 5756.0,
+        "triggerLevel": 5773.0,
+        "barsWaited": 0,
+        "confirmRule": "15m_kd_cool_hold_body50"
+      }
     }
   ]
 }

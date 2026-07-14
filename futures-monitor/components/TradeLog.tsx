@@ -424,8 +424,14 @@ export default function TradeLog() {
 
   const positions = data?.positions ?? [];
 
-  // 账户级指标（全量已平仓）
+  // 账户级指标（全量已平仓，含反指）
   const metrics = useMemo(() => computeMetrics(positions), [positions]);
+
+  // 纯原交易指标（净值曲线用，排除反指）
+  const originalMetrics = useMemo(() => {
+    const origPositions = positions.filter((p) => !isInverse(p));
+    return computeMetrics(origPositions);
+  }, [positions]);
 
   // 反指单独统计
   const inverseStats = useMemo(() => {
@@ -604,19 +610,19 @@ export default function TradeLog() {
       )}
 
       {/* ── 净值曲线图 ───────────────────────────────────── */}
-      {!loading && metrics.navPoints.length > 1 && (
+      {!loading && originalMetrics.navPoints.length > 1 && (
         <div className="mb-8 rounded-xl border border-stone-200 bg-stone-50 p-4">
           <p className="mb-3 text-xs text-stone-500">
-            净值曲线  ·  {metrics.wins + metrics.losses} 笔已平仓
-            {metrics.rows.length > 0 && (
-              <>  ·  平均盈 <span className="text-emerald-600">+{(metrics.avgWin / 10000).toFixed(2)}万</span>
-              &nbsp;·  平均亏 <span className="text-red-600">{(metrics.avgLoss / 10000).toFixed(2)}万</span></>
+            净值曲线  ·  {originalMetrics.wins + originalMetrics.losses} 笔已平仓（仅原交易）
+            {originalMetrics.rows.length > 0 && (
+              <>  ·  平均盈 <span className="text-emerald-600">+{(originalMetrics.avgWin / 10000).toFixed(2)}万</span>
+              &nbsp;·  平均亏 <span className="text-red-600">{(originalMetrics.avgLoss / 10000).toFixed(2)}万</span></>
             )}
           </p>
           <NavChart
-            navPoints={metrics.navPoints}
-            ddPoints={metrics.ddPoints}
-            tradeRows={metrics.rows}
+            navPoints={originalMetrics.navPoints}
+            ddPoints={originalMetrics.ddPoints}
+            tradeRows={originalMetrics.rows}
           />
         </div>
       )}

@@ -1,7 +1,7 @@
 {
-  "updatedAt": "2026-07-30T01:15:50.000Z",
-  "openCount": 3,
-  "totalCount": 45,
+  "updatedAt": "2026-07-30T01:30:42.000Z",
+  "openCount": 4,
+  "totalCount": 47,
   "positions": [
     {
       "id": "INV-铁矿石-L-20260630214637",
@@ -1220,12 +1220,12 @@
       "initialStopLoss": 23590.0,
       "trailingActive": false,
       "breakEvenMoved": false,
-      "status": "open",
-      "exitReason": null,
-      "exitTime": null,
-      "exitPrice": null,
-      "pnl": null,
-      "pnlPct": null,
+      "status": "closed_sl",
+      "exitReason": "inverse_sl",
+      "exitTime": "2026-07-30 09:30",
+      "exitPrice": 23590.0,
+      "pnl": -155.0,
+      "pnlPct": -0.6614,
       "triggerInfo": {
         "originalSignal": "breakout",
         "originalDirection": "long",
@@ -1351,6 +1351,66 @@
         "originalDirection": "long",
         "macdSign": "positive",
         "expansionRate": -0.24
+      }
+    },
+    {
+      "id": "INV-铝-S-20260730093042",
+      "symbol": "铝",
+      "direction": "short",
+      "originalDirection": "long",
+      "signalType": "breakout",
+      "source": "inverse",
+      "entryTime": "2026-07-30 09:30",
+      "entryPrice": 23670.0,
+      "atr": 51.0714,
+      "stopLoss": 23772.1428,
+      "takeProfit": 23567.8572,
+      "riskDist": 102.1428,
+      "initialRiskDist": 102.1428,
+      "initialStopLoss": 23772.1428,
+      "trailingActive": false,
+      "breakEvenMoved": false,
+      "status": "open",
+      "exitReason": null,
+      "exitTime": null,
+      "exitPrice": null,
+      "pnl": null,
+      "pnlPct": null,
+      "triggerInfo": {
+        "originalSignal": "breakout",
+        "originalDirection": "long",
+        "macdSign": "positive",
+        "expansionRate": 11.68
+      }
+    },
+    {
+      "id": "INV-锡-S-20260730093042",
+      "symbol": "锡",
+      "direction": "short",
+      "originalDirection": "long",
+      "signalType": "breakout",
+      "source": "inverse",
+      "entryTime": "2026-07-30 09:30",
+      "entryPrice": 422640.0,
+      "atr": 1778.5714,
+      "stopLoss": 426197.1428,
+      "takeProfit": 419082.8572,
+      "riskDist": 3557.1428,
+      "initialRiskDist": 3557.1428,
+      "initialStopLoss": 426197.1428,
+      "trailingActive": false,
+      "breakEvenMoved": false,
+      "status": "open",
+      "exitReason": null,
+      "exitTime": null,
+      "exitPrice": null,
+      "pnl": null,
+      "pnlPct": null,
+      "triggerInfo": {
+        "originalSignal": "breakout",
+        "originalDirection": "long",
+        "macdSign": "positive",
+        "expansionRate": 12.32
       }
     }
   ]

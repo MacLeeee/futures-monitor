@@ -1,7 +1,7 @@
 {
-  "updatedAt": "2026-08-10T13:46:54.000Z",
+  "updatedAt": "2026-08-10T14:01:00.000Z",
   "openCount": 1,
-  "totalCount": 59,
+  "totalCount": 60,
   "positions": [
     {
       "id": "INV-铁矿石-L-20260630214637",
@@ -1730,12 +1730,12 @@
       "initialStopLoss": 423361.4286,
       "trailingActive": false,
       "breakEvenMoved": false,
-      "status": "open",
-      "exitReason": null,
-      "exitTime": null,
-      "exitPrice": null,
-      "pnl": null,
-      "pnlPct": null,
+      "status": "closed_sl",
+      "exitReason": "inverse_sl",
+      "exitTime": "2026-08-10 22:01",
+      "exitPrice": 423361.4286,
+      "pnl": -4368.5714,
+      "pnlPct": -1.0213,
       "triggerInfo": {
         "originalSignal": "breakout",
         "originalDirection": "short",
@@ -1771,6 +1771,36 @@
         "originalDirection": "short",
         "trigger": "right_side_relaxed",
         "zone": "daily_ema20"
+      }
+    },
+    {
+      "id": "INV-锡-L-20260810220100",
+      "symbol": "锡",
+      "direction": "long",
+      "originalDirection": "short",
+      "signalType": "breakout",
+      "source": "inverse",
+      "entryTime": "2026-08-10 22:01",
+      "entryPrice": 423400.0,
+      "atr": 1823.5714,
+      "stopLoss": 419752.8572,
+      "takeProfit": 427047.1428,
+      "riskDist": 3647.1428,
+      "initialRiskDist": 3647.1428,
+      "initialStopLoss": 419752.8572,
+      "trailingActive": false,
+      "breakEvenMoved": false,
+      "status": "open",
+      "exitReason": null,
+      "exitTime": null,
+      "exitPrice": null,
+      "pnl": null,
+      "pnlPct": null,
+      "triggerInfo": {
+        "originalSignal": "breakout",
+        "originalDirection": "short",
+        "macdSign": "negative",
+        "expansionRate": 2.2
       }
     }
   ]

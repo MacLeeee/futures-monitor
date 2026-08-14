@@ -1,7 +1,7 @@
 {
-  "updatedAt": "2026-08-14T13:46:36.000Z",
-  "openCount": 4,
-  "totalCount": 292,
+  "updatedAt": "2026-08-14T14:01:35.000Z",
+  "openCount": 5,
+  "totalCount": 293,
   "positions": [
     {
       "id": "白银-L-20260407214545",
@@ -5981,19 +5981,20 @@
       "entryTime": "2026-08-13 23:02",
       "entryPrice": 4865.0,
       "atr": 31.6429,
-      "stopLoss": 4865.0,
+      "stopLoss": 4932.8572,
       "initialStopLoss": 4793.1786,
       "takeProfit": 5008.6428,
       "riskDist": 71.8214,
       "initialRiskDist": 71.8214,
-      "trailingActive": false,
+      "trailingActive": true,
       "breakEvenMoved": true,
       "exitReason": null,
       "status": "open",
       "exitTime": null,
       "exitPrice": null,
       "pnl": null,
-      "pnlPct": null
+      "pnlPct": null,
+      "trailingActivatedAt": "2026-08-14 22:01"
     },
     {
       "id": "白银-S-20260814091554",
@@ -6112,6 +6113,36 @@
         "breakoutClose": 14180.0,
         "triggerLevel": 14202.5,
         "barsWaited": 7,
+        "confirmRule": "15m_kd_cool_hold_body50"
+      }
+    },
+    {
+      "id": "菜油-L-20260814220134",
+      "symbol": "菜油",
+      "direction": "long",
+      "signalType": "breakout",
+      "entryTime": "2026-08-14 22:01",
+      "entryPrice": 10402.0,
+      "atr": 34.5,
+      "stopLoss": 10366.5,
+      "initialStopLoss": 10366.5,
+      "takeProfit": 10473.0,
+      "riskDist": 35.5,
+      "initialRiskDist": 35.5,
+      "trailingActive": false,
+      "breakEvenMoved": false,
+      "exitReason": null,
+      "status": "open",
+      "exitTime": null,
+      "exitPrice": null,
+      "pnl": null,
+      "pnlPct": null,
+      "breakoutConfirm": {
+        "breakoutTime": "2026-08-14 10:45:00",
+        "breakoutOpen": 10237.0,
+        "breakoutClose": 10303.0,
+        "triggerLevel": 10270.0,
+        "barsWaited": 8,
         "confirmRule": "15m_kd_cool_hold_body50"
       }
     }

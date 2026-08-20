@@ -1,7 +1,7 @@
 {
-  "updatedAt": "2026-08-20T14:46:09.000Z",
+  "updatedAt": "2026-08-20T15:01:49.000Z",
   "openCount": 1,
-  "totalCount": 299,
+  "totalCount": 300,
   "positions": [
     {
       "id": "白银-L-20260407214545",
@@ -6245,12 +6245,12 @@
       "initialRiskDist": 116.4286,
       "trailingActive": true,
       "breakEvenMoved": true,
-      "exitReason": null,
-      "status": "open",
-      "exitTime": null,
-      "exitPrice": null,
-      "pnl": null,
-      "pnlPct": null,
+      "exitReason": "trailing_sl",
+      "status": "closed_tp",
+      "exitTime": "2026-08-20 23:01",
+      "exitPrice": 23556.8572,
+      "pnl": 118.1428,
+      "pnlPct": 0.499,
       "breakoutConfirm": {
         "breakoutTime": "2026-08-19 09:30:00",
         "breakoutOpen": 23765.0,
@@ -6321,6 +6321,28 @@
         "confirmRule": "15m_kd_cool_hold_body50"
       },
       "trailingActivatedAt": "2026-08-20 21:00"
+    },
+    {
+      "id": "原油-L-20260820230147",
+      "symbol": "原油",
+      "direction": "long",
+      "signalType": "pullback",
+      "entryTime": "2026-08-20 23:01",
+      "entryPrice": 589.9,
+      "atr": 5.1643,
+      "stopLoss": 572.8179,
+      "initialStopLoss": 572.8179,
+      "takeProfit": 624.0642,
+      "riskDist": 17.0821,
+      "initialRiskDist": 17.0821,
+      "trailingActive": false,
+      "breakEvenMoved": false,
+      "exitReason": null,
+      "status": "open",
+      "exitTime": null,
+      "exitPrice": null,
+      "pnl": null,
+      "pnlPct": null
     }
   ]
 }

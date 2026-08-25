@@ -1,7 +1,7 @@
 {
-  "updatedAt": "2026-08-25T07:01:26.000Z",
+  "updatedAt": "2026-08-25T13:01:09.000Z",
   "openCount": 3,
-  "totalCount": 303,
+  "totalCount": 304,
   "positions": [
     {
       "id": "白银-L-20260407214545",
@@ -6337,12 +6337,12 @@
       "initialRiskDist": 17.0821,
       "trailingActive": false,
       "breakEvenMoved": false,
-      "exitReason": null,
-      "status": "open",
-      "exitTime": null,
-      "exitPrice": null,
-      "pnl": null,
-      "pnlPct": null
+      "exitReason": "initial_sl",
+      "status": "closed_sl",
+      "exitTime": "2026-08-25 21:01",
+      "exitPrice": 572.8179,
+      "pnl": -17.0821,
+      "pnlPct": -2.8958
     },
     {
       "id": "镍-L-20260824094549",
@@ -6430,6 +6430,36 @@
         "breakoutOpen": 2697.0,
         "breakoutClose": 2683.0,
         "triggerLevel": 2690.0,
+        "barsWaited": 0,
+        "confirmRule": "15m_kd_cool_hold_body50"
+      }
+    },
+    {
+      "id": "氧化铝-S-20260825210108",
+      "symbol": "氧化铝",
+      "direction": "short",
+      "signalType": "breakout",
+      "entryTime": "2026-08-25 21:01",
+      "entryPrice": 2665.0,
+      "atr": 9.1429,
+      "stopLoss": 2683.2858,
+      "initialStopLoss": 2683.2858,
+      "takeProfit": 2628.4284,
+      "riskDist": 18.2858,
+      "initialRiskDist": 18.2858,
+      "trailingActive": false,
+      "breakEvenMoved": false,
+      "exitReason": null,
+      "status": "open",
+      "exitTime": null,
+      "exitPrice": null,
+      "pnl": null,
+      "pnlPct": null,
+      "breakoutConfirm": {
+        "breakoutTime": "2026-08-25 21:30:00",
+        "breakoutOpen": 2675.0,
+        "breakoutClose": 2665.0,
+        "triggerLevel": 2670.0,
         "barsWaited": 0,
         "confirmRule": "15m_kd_cool_hold_body50"
       }

@@ -1,7 +1,7 @@
 {
-  "updatedAt": "2026-09-01T01:00:46.000Z",
-  "openCount": 1,
-  "totalCount": 127,
+  "updatedAt": "2026-09-01T01:15:44.000Z",
+  "openCount": 2,
+  "totalCount": 129,
   "positions": [
     {
       "id": "INV-铁矿石-L-20260630214637",
@@ -3800,6 +3800,36 @@
       "initialStopLoss": 641.6286,
       "trailingActive": false,
       "breakEvenMoved": false,
+      "status": "closed_sl",
+      "exitReason": "inverse_sl",
+      "exitTime": "2026-09-01 09:15",
+      "exitPrice": 641.6286,
+      "pnl": -13.0286,
+      "pnlPct": -2.0726,
+      "triggerInfo": {
+        "originalSignal": "breakout",
+        "originalDirection": "long",
+        "macdSign": "positive",
+        "expansionRate": -2.53
+      }
+    },
+    {
+      "id": "INV-铝-S-20260901091544",
+      "symbol": "铝",
+      "direction": "short",
+      "originalDirection": "long",
+      "signalType": "breakout",
+      "source": "inverse",
+      "entryTime": "2026-09-01 09:15",
+      "entryPrice": 24105.0,
+      "atr": 51.0714,
+      "stopLoss": 24207.1428,
+      "takeProfit": 24002.8572,
+      "riskDist": 102.1428,
+      "initialRiskDist": 102.1428,
+      "initialStopLoss": 24207.1428,
+      "trailingActive": false,
+      "breakEvenMoved": false,
       "status": "open",
       "exitReason": null,
       "exitTime": null,
@@ -3810,7 +3840,37 @@
         "originalSignal": "breakout",
         "originalDirection": "long",
         "macdSign": "positive",
-        "expansionRate": -2.53
+        "expansionRate": -10.72
+      }
+    },
+    {
+      "id": "INV-锡-S-20260901091544",
+      "symbol": "锡",
+      "direction": "short",
+      "originalDirection": "long",
+      "signalType": "breakout",
+      "source": "inverse",
+      "entryTime": "2026-09-01 09:15",
+      "entryPrice": 425380.0,
+      "atr": 1561.4286,
+      "stopLoss": 428502.8572,
+      "takeProfit": 422257.1428,
+      "riskDist": 3122.8572,
+      "initialRiskDist": 3122.8572,
+      "initialStopLoss": 428502.8572,
+      "trailingActive": false,
+      "breakEvenMoved": false,
+      "status": "open",
+      "exitReason": null,
+      "exitTime": null,
+      "exitPrice": null,
+      "pnl": null,
+      "pnlPct": null,
+      "triggerInfo": {
+        "originalSignal": "breakout",
+        "originalDirection": "long",
+        "macdSign": "positive",
+        "expansionRate": 1.05
       }
     }
   ]

@@ -1,7 +1,7 @@
 {
-  "updatedAt": "2026-09-08T01:31:13.000Z",
-  "openCount": 1,
-  "totalCount": 322,
+  "updatedAt": "2026-09-08T01:46:03.000Z",
+  "openCount": 3,
+  "totalCount": 324,
   "positions": [
     {
       "id": "白银-L-20260407214545",
@@ -6760,19 +6760,20 @@
       "entryTime": "2026-09-02 23:01",
       "entryPrice": 24190.0,
       "atr": 57.1429,
-      "stopLoss": 24190.0,
+      "stopLoss": 24416.0,
       "initialStopLoss": 23971.4286,
       "takeProfit": 24627.1428,
       "riskDist": 218.5714,
       "initialRiskDist": 218.5714,
-      "trailingActive": false,
+      "trailingActive": true,
       "breakEvenMoved": true,
       "exitReason": null,
       "status": "open",
       "exitTime": null,
       "exitPrice": null,
       "pnl": null,
-      "pnlPct": null
+      "pnlPct": null,
+      "trailingActivatedAt": "2026-09-08 09:46"
     },
     {
       "id": "铝-L-20260903091607",
@@ -6974,6 +6975,66 @@
         "breakoutClose": 142060.0,
         "triggerLevel": 144640.0,
         "barsWaited": 6,
+        "confirmRule": "15m_kd_cool_hold_body50"
+      }
+    },
+    {
+      "id": "铝-L-20260908094602",
+      "symbol": "铝",
+      "direction": "long",
+      "signalType": "breakout",
+      "entryTime": "2026-09-08 09:46",
+      "entryPrice": 24540.0,
+      "atr": 45.0,
+      "stopLoss": 24450.0,
+      "initialStopLoss": 24450.0,
+      "takeProfit": 24720.0,
+      "riskDist": 90.0,
+      "initialRiskDist": 90.0,
+      "trailingActive": false,
+      "breakEvenMoved": false,
+      "exitReason": null,
+      "status": "open",
+      "exitTime": null,
+      "exitPrice": null,
+      "pnl": null,
+      "pnlPct": null,
+      "breakoutConfirm": {
+        "breakoutTime": "2026-09-08 10:00:00",
+        "breakoutOpen": 24470.0,
+        "breakoutClose": 24540.0,
+        "triggerLevel": 24505.0,
+        "barsWaited": 0,
+        "confirmRule": "15m_kd_cool_hold_body50"
+      }
+    },
+    {
+      "id": "铜-L-20260908094602",
+      "symbol": "铜",
+      "direction": "long",
+      "signalType": "breakout",
+      "entryTime": "2026-09-08 09:46",
+      "entryPrice": 110820.0,
+      "atr": 287.1429,
+      "stopLoss": 110245.7142,
+      "initialStopLoss": 110245.7142,
+      "takeProfit": 111968.5716,
+      "riskDist": 574.2858,
+      "initialRiskDist": 574.2858,
+      "trailingActive": false,
+      "breakEvenMoved": false,
+      "exitReason": null,
+      "status": "open",
+      "exitTime": null,
+      "exitPrice": null,
+      "pnl": null,
+      "pnlPct": null,
+      "breakoutConfirm": {
+        "breakoutTime": "2026-09-08 10:00:00",
+        "breakoutOpen": 110440.0,
+        "breakoutClose": 110820.0,
+        "triggerLevel": 110630.0,
+        "barsWaited": 0,
         "confirmRule": "15m_kd_cool_hold_body50"
       }
     }

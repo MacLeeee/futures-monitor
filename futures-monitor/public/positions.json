@@ -1,7 +1,7 @@
 {
-  "updatedAt": "2026-09-18T13:01:20.000Z",
+  "updatedAt": "2026-09-18T13:16:19.000Z",
   "openCount": 2,
-  "totalCount": 336,
+  "totalCount": 337,
   "positions": [
     {
       "id": "白银-L-20260407214545",
@@ -7357,12 +7357,12 @@
       "initialRiskDist": 45.0,
       "trailingActive": false,
       "breakEvenMoved": false,
-      "exitReason": null,
-      "status": "open",
-      "exitTime": null,
-      "exitPrice": null,
-      "pnl": null,
-      "pnlPct": null,
+      "exitReason": "initial_sl",
+      "status": "closed_sl",
+      "exitTime": "2026-09-18 21:16",
+      "exitPrice": 2997.0,
+      "pnl": -45.0,
+      "pnlPct": -1.5244,
       "breakoutConfirm": {
         "breakoutTime": "2026-09-18 10:00:00",
         "breakoutOpen": 2989.0,
@@ -7399,6 +7399,36 @@
         "breakoutClose": 7492.0,
         "triggerLevel": 7464.4,
         "barsWaited": 1,
+        "confirmRule": "15m_kd_cool_hold_body50"
+      }
+    },
+    {
+      "id": "焦煤-S-20260918211617",
+      "symbol": "焦煤",
+      "direction": "short",
+      "signalType": "breakout",
+      "entryTime": "2026-09-18 21:16",
+      "entryPrice": 1501.5,
+      "atr": 15.0714,
+      "stopLoss": 1506.5714,
+      "initialStopLoss": 1506.5714,
+      "takeProfit": 1491.3572,
+      "riskDist": 5.0714,
+      "initialRiskDist": 5.0714,
+      "trailingActive": false,
+      "breakEvenMoved": false,
+      "exitReason": null,
+      "status": "open",
+      "exitTime": null,
+      "exitPrice": null,
+      "pnl": null,
+      "pnlPct": null,
+      "breakoutConfirm": {
+        "breakoutTime": "2026-09-18 10:00:00",
+        "breakoutOpen": 1528.0,
+        "breakoutClose": 1505.0,
+        "triggerLevel": 1516.5,
+        "barsWaited": 7,
         "confirmRule": "15m_kd_cool_hold_body50"
       }
     }

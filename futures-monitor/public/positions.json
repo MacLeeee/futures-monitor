@@ -1,7 +1,7 @@
 {
-  "updatedAt": "2026-09-23T01:16:35.000Z",
+  "updatedAt": "2026-09-23T01:31:36.000Z",
   "openCount": 1,
-  "totalCount": 340,
+  "totalCount": 341,
   "positions": [
     {
       "id": "白银-L-20260407214545",
@@ -7478,12 +7478,12 @@
       "initialRiskDist": 77.8571,
       "trailingActive": false,
       "breakEvenMoved": false,
-      "exitReason": null,
-      "status": "open",
-      "exitTime": null,
-      "exitPrice": null,
-      "pnl": null,
-      "pnlPct": null
+      "exitReason": "initial_sl",
+      "status": "closed_sl",
+      "exitTime": "2026-09-23 09:31",
+      "exitPrice": 5885.8571,
+      "pnl": -77.8571,
+      "pnlPct": -1.3405
     },
     {
       "id": "纯碱-S-20260921230208",
@@ -7506,6 +7506,36 @@
       "exitPrice": 1027.75,
       "pnl": -10.75,
       "pnlPct": -1.057
+    },
+    {
+      "id": "锰硅-L-20260923093135",
+      "symbol": "锰硅",
+      "direction": "long",
+      "signalType": "breakout",
+      "entryTime": "2026-09-23 09:31",
+      "entryPrice": 5888.0,
+      "atr": 18.2857,
+      "stopLoss": 5851.4286,
+      "initialStopLoss": 5851.4286,
+      "takeProfit": 5961.1428,
+      "riskDist": 36.5714,
+      "initialRiskDist": 36.5714,
+      "trailingActive": false,
+      "breakEvenMoved": false,
+      "exitReason": null,
+      "status": "open",
+      "exitTime": null,
+      "exitPrice": null,
+      "pnl": null,
+      "pnlPct": null,
+      "breakoutConfirm": {
+        "breakoutTime": "2026-09-23 09:30:00",
+        "breakoutOpen": 5838.0,
+        "breakoutClose": 5888.0,
+        "triggerLevel": 5863.0,
+        "barsWaited": 0,
+        "confirmRule": "15m_kd_cool_hold_body50"
+      }
     }
   ]
 }
